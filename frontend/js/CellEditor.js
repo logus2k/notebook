@@ -5,35 +5,21 @@ import { CellOutput } from './CellOutput.js';
  * CodeMirror 6 is loaded dynamically from ESM CDN on first use.
  */
 
-let cmModules = null;
+import {
+    EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
+    EditorState,
+    defaultKeymap, indentWithTab, history, historyKeymap,
+    python,
+    oneDark
+} from '/static/vendor/codemirror/codemirror.bundle.js';
 
-async function loadCodeMirror() {
-    if (cmModules) return cmModules;
+const cmModules = {
+    EditorView, keymap, lineNumbers, highlightActiveLine,
+    highlightActiveLineGutter, EditorState, defaultKeymap,
+    indentWithTab, history, historyKeymap, python, oneDark
+};
 
-    // Use esm.sh's ?bundle flag and pin @codemirror/state as a shared
-    // dependency to prevent duplicate instances breaking instanceof checks.
-    const stateVersion = '6.5.0';
-    const deps = `@codemirror/state@${stateVersion}`;
-
-    const [
-        { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter },
-        { EditorState },
-        { defaultKeymap, indentWithTab, history, historyKeymap },
-        { python },
-        { oneDark }
-    ] = await Promise.all([
-        import(`https://esm.sh/@codemirror/view@6.35.0?deps=${deps}`),
-        import(`https://esm.sh/@codemirror/state@${stateVersion}`),
-        import(`https://esm.sh/@codemirror/commands@6.7.1?deps=${deps}`),
-        import(`https://esm.sh/@codemirror/lang-python@6.1.6?deps=${deps}`),
-        import(`https://esm.sh/@codemirror/theme-one-dark@6.1.2?deps=${deps}`)
-    ]);
-
-    cmModules = {
-        EditorView, keymap, lineNumbers, highlightActiveLine,
-        highlightActiveLineGutter, EditorState, defaultKeymap,
-        indentWithTab, history, historyKeymap, python, oneDark
-    };
+function loadCodeMirror() {
     return cmModules;
 }
 
