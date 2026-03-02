@@ -1,0 +1,206 @@
+.cell {
+    position: relative;
+    margin: 4px 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    background: var(--bg-secondary);
+    transition: border-color 0.15s;
+}
+
+.cell:hover {
+    border-color: var(--border-color);
+}
+
+.cell.focused {
+    border-color: var(--accent-blue);
+}
+
+.cell.locked-by-other {
+    border-color: var(--accent-orange);
+    opacity: 0.85;
+}
+
+.cell.executing {
+    border-color: var(--accent-yellow);
+}
+
+.cell-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.cell-type-badge {
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.cell-type-badge.code {
+    background: rgba(108, 140, 255, 0.15);
+    color: var(--accent-blue);
+}
+
+.cell-type-badge.markdown {
+    background: rgba(108, 207, 108, 0.15);
+    color: var(--accent-green);
+}
+
+.cell-execution-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    min-width: 40px;
+}
+
+.cell-header-spacer {
+    flex: 1;
+}
+
+.cell-lock-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--accent-orange);
+}
+
+.cell-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.cell:hover .cell-actions {
+    opacity: 1;
+}
+
+.cell-actions button {
+    padding: 2px 6px;
+    font-size: 11px;
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+.cell-actions button:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.cell-actions button.run-btn {
+    color: var(--accent-green);
+}
+
+.cell-actions button.run-btn:hover {
+    background: rgba(108, 207, 108, 0.15);
+}
+
+.cell-editor {
+    padding: 0;
+    min-height: 36px;
+}
+
+.cell-editor .cm-editor {
+    background: transparent;
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+
+.cell-editor .cm-editor .cm-content {
+    padding: 8px 12px;
+    caret-color: var(--text-primary);
+}
+
+.cell-editor .cm-editor .cm-gutters {
+    background: var(--bg-tertiary);
+    border-right: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 11px;
+    min-width: 40px;
+}
+
+.cell-editor .cm-editor .cm-activeLineGutter {
+    background: var(--bg-hover);
+}
+
+.cell-editor .cm-editor .cm-activeLine {
+    background: rgba(108, 140, 255, 0.05);
+}
+
+.cell-editor .cm-editor.cm-focused {
+    outline: none;
+}
+
+.cell-editor .cm-editor .cm-selectionBackground {
+    background: rgba(108, 140, 255, 0.2) !important;
+}
+
+.cell-markdown-rendered {
+    padding: 12px 16px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.cell-markdown-rendered h1,
+.cell-markdown-rendered h2,
+.cell-markdown-rendered h3 {
+    margin: 12px 0 8px;
+    color: var(--text-primary);
+}
+
+.cell-markdown-rendered p {
+    margin: 6px 0;
+}
+
+.cell-markdown-rendered code {
+    font-family: var(--font-mono);
+    background: var(--bg-tertiary);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.cell-markdown-rendered pre {
+    background: var(--bg-tertiary);
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+}
+
+.cell-markdown-rendered pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.cell-drag-handle {
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 24px;
+    cursor: grab;
+    opacity: 0;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+}
+
+.cell:hover .cell-drag-handle {
+    opacity: 0.5;
+}
+
+.cell-drag-handle:hover {
+    opacity: 1 !important;
+}

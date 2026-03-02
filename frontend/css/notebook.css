@@ -1,0 +1,93 @@
+.notebook {
+    max-width: 960px;
+    margin: 0 auto;
+    padding-bottom: 120px;
+}
+
+.notebook-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+
+.notebook-empty p {
+    margin-bottom: 16px;
+    font-size: 15px;
+}
+
+.add-cell-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 8px;
+    margin: 4px 0;
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    color: var(--text-muted);
+    font-size: 13px;
+    border-radius: var(--radius);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.notebook:hover .add-cell-button,
+.add-cell-button:focus {
+    opacity: 1;
+}
+
+.add-cell-button:hover {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-color: var(--text-muted);
+}
+
+.project-browser {
+    max-width: 600px;
+    margin: 40px auto;
+}
+
+.project-browser h2 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.project-list, .notebook-list {
+    list-style: none;
+}
+
+.project-list li, .notebook-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    margin-bottom: 4px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.project-list li:hover, .notebook-list li:hover {
+    background: var(--bg-tertiary);
+}
+
+.project-list li span, .notebook-list li span {
+    font-size: 14px;
+}
+
+.project-list li .meta, .notebook-list li .meta {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.create-form {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.create-form input {
+    flex: 1;
+}

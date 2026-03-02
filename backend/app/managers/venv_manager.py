@@ -1,0 +1,151 @@
+import os
+import sys
+import json
+import asyncio
+import shutil
+from typing import Optional
+from app.config import PROJECTS_DIR, SHARED_VENVS_DIR
+
+
+class VenvManager:
+    """Manages Python virtual environments and their packages."""
+
+    def _project_venvs_dir(self, project_id: str) -> str:
+        return os.path.join(PROJECTS_DIR, project_id, "venvs")
+
+    def _resolve_venv_path(self, name: str, project_id: Optional[str] = None) -> str:
+        if project_id:
+            return os.path.join(self._project_venvs_dir(project_id), name)
+        return os.path.join(SHARED_VENVS_DIR, name)
+
+    def _validate_name(self, name: str):
+        if ".." in name or "/" in name or "\\" in name or not name:
+            raise ValueError("Invalid venv name")
+
+    def get_python_path(self, name: str, project_id: Optional[str] = None) -> str:
+        venv_path = self._resolve_venv_path(name, project_id)
+        python_path = os.path.join(venv_path, "bin", "python")
+        if not os.path.exists(python_path):
+            raise FileNotFoundError(f"Venv not found: {name}")
+        return python_path
+
+    def list_venvs(self, project_id: Optional[str] = None) -> list[dict]:
+        if project_id:
+            base_dir = self._project_venvs_dir(project_id)
+        else:
+            base_dir = SHARED_VENVS_DIR
+        if not os.path.exists(base_dir):
+            return []
+        venvs = []
+        for name in sorted(os.listdir(base_dir)):
+            venv_path = os.path.join(base_dir, name)
+            python_path = os.path.join(venv_path, "bin", "python")
+            if os.path.isdir(venv_path) and os.path.exists(python_path):
+                venvs.append({
+                    "name": name,
+                    "path": venv_path,
+                    "python": python_path,
+                    "type": "project" if project_id else "shared"
+                })
+        return venvs
+
+    async def create_venv(self, name: str, project_id: Optional[str] = None,
+                          requirements: Optional[list[str]] = None) -> dict:
+        self._validate_name(name)
+        venv_path = self._resolve_venv_path(name, project_id)
+        if os.path.exists(venv_path):
+            raise FileExistsError(f"Venv already exists: {name}")
+        os.makedirs(os.path.dirname(venv_path), exist_ok=True)
+
+        proc = await asyncio.create_subprocess_exec(
+            sys.executable, "-m", "venv", venv_path,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            raise RuntimeError(f"Failed to create venv: {stderr.decode()}")
+
+        # Install ipykernel so jupyter_client can use this venv
+        pip_path = os.path.join(venv_path, "bin", "pip")
+        proc = await asyncio.create_subprocess_exec(
+            pip_path, "install", "ipykernel",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        await proc.communicate()
+
+        if requirements:
+            await self.install_packages(name, requirements, project_id)
+
+        return {
+            "name": name,
+            "path": venv_path,
+            "type": "project" if project_id else "shared",
+            "created": True
+        }
+
+    async def delete_venv(self, name: str, project_id: Optional[str] = None) -> dict:
+        self._validate_name(name)
+        venv_path = self._resolve_venv_path(name, project_id)
+        if not os.path.exists(venv_path):
+            raise FileNotFoundError(f"Venv not found: {name}")
+        shutil.rmtree(venv_path)
+        return {"name": name, "deleted": True}
+
+    async def list_packages(self, name: str,
+                            project_id: Optional[str] = None) -> list[dict]:
+        self._validate_name(name)
+        pip_path = os.path.join(
+            self._resolve_venv_path(name, project_id), "bin", "pip"
+        )
+        if not os.path.exists(pip_path):
+            raise FileNotFoundError(f"Venv not found: {name}")
+
+        proc = await asyncio.create_subprocess_exec(
+            pip_path, "list", "--format=json",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            raise RuntimeError(f"Failed to list packages: {stderr.decode()}")
+        return json.loads(stdout.decode())
+
+    async def install_packages(self, name: str, packages: list[str],
+                               project_id: Optional[str] = None) -> dict:
+        self._validate_name(name)
+        pip_path = os.path.join(
+            self._resolve_venv_path(name, project_id), "bin", "pip"
+        )
+        if not os.path.exists(pip_path):
+            raise FileNotFoundError(f"Venv not found: {name}")
+
+        proc = await asyncio.create_subprocess_exec(
+            pip_path, "install", *packages,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            raise RuntimeError(f"Failed to install packages: {stderr.decode()}")
+        return {"installed": packages, "output": stdout.decode()}
+
+    async def remove_packages(self, name: str, packages: list[str],
+                              project_id: Optional[str] = None) -> dict:
+        self._validate_name(name)
+        pip_path = os.path.join(
+            self._resolve_venv_path(name, project_id), "bin", "pip"
+        )
+        if not os.path.exists(pip_path):
+            raise FileNotFoundError(f"Venv not found: {name}")
+
+        proc = await asyncio.create_subprocess_exec(
+            pip_path, "uninstall", "-y", *packages,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            raise RuntimeError(f"Failed to remove packages: {stderr.decode()}")
+        return {"removed": packages, "output": stdout.decode()}
