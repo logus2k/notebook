@@ -49,10 +49,25 @@ class KernelManagerService:
             await self.stop_kernel(session_id)
 
         km = JupyterKernelManager(kernel_name="python3")
+
+        # Bypass kernel spec lookup by providing the command directly.
+        # Setting kernel_cmd before start_kernel() tells jupyter_client
+        # to use this command instead of looking up a kernel spec.
         km.kernel_cmd = [
             python_path, "-m", "ipykernel_launcher",
             "-f", "{connection_file}"
         ]
+
+        # Provide a minimal kernel spec so the manager doesn't try to
+        # look one up from disk (which fails if ipykernel isn't installed
+        # in the server's own environment).
+        from jupyter_client.kernelspec import KernelSpec
+        km._kernel_spec = KernelSpec(
+            argv=[python_path, "-m", "ipykernel_launcher", "-f", "{connection_file}"],
+            display_name="Python 3 (venv)",
+            language="python"
+        )
+
         km.start_kernel()
 
         session = KernelSession(

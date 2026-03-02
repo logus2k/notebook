@@ -10,6 +10,11 @@ let cmModules = null;
 async function loadCodeMirror() {
     if (cmModules) return cmModules;
 
+    // Use esm.sh's ?bundle flag and pin @codemirror/state as a shared
+    // dependency to prevent duplicate instances breaking instanceof checks.
+    const stateVersion = '6.5.0';
+    const deps = `@codemirror/state@${stateVersion}`;
+
     const [
         { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter },
         { EditorState },
@@ -17,11 +22,11 @@ async function loadCodeMirror() {
         { python },
         { oneDark }
     ] = await Promise.all([
-        import('https://esm.sh/@codemirror/view@6.35.0'),
-        import('https://esm.sh/@codemirror/state@6.5.0'),
-        import('https://esm.sh/@codemirror/commands@6.7.1'),
-        import('https://esm.sh/@codemirror/lang-python@6.1.6'),
-        import('https://esm.sh/@codemirror/theme-one-dark@6.1.2')
+        import(`https://esm.sh/@codemirror/view@6.35.0?deps=${deps}`),
+        import(`https://esm.sh/@codemirror/state@${stateVersion}`),
+        import(`https://esm.sh/@codemirror/commands@6.7.1?deps=${deps}`),
+        import(`https://esm.sh/@codemirror/lang-python@6.1.6?deps=${deps}`),
+        import(`https://esm.sh/@codemirror/theme-one-dark@6.1.2?deps=${deps}`)
     ]);
 
     cmModules = {
@@ -158,7 +163,8 @@ export class CellEditor {
                 ...cm.defaultKeymap,
                 ...cm.historyKeymap,
                 cm.indentWithTab,
-                { key: 'Shift-Enter', run: () => { this._onRun(); return true; } }
+                { key: 'Shift-Enter', run: () => { this._onRun(); return true; } },
+                { key: 'Ctrl-Enter', run: () => { this._onRun(); return true; } }
             ]),
             cm.oneDark,
             cm.EditorView.updateListener.of((update) => {

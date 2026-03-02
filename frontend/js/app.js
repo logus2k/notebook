@@ -24,6 +24,8 @@ class App {
             this._client
         );
 
+        this._suppressToolbarEvents = false;
+
         this._toolbar = new NotebookToolbar(
             document.getElementById('toolbar'),
             this._client,
@@ -33,7 +35,9 @@ class App {
                 onVenvPanelToggle: () => this._venvPanel.toggle(),
                 onProjectChange: (projectId) => this._onProjectChange(projectId),
                 onNotebookChange: (projectId, notebookName) => {
-                    this._onNotebookChange(projectId, notebookName);
+                    if (!this._suppressToolbarEvents) {
+                        this._onNotebookChange(projectId, notebookName);
+                    }
                 }
             }
         );
@@ -85,16 +89,18 @@ class App {
         const projectId = params.get('project');
         const notebook = params.get('notebook');
         if (projectId) {
+            this._suppressToolbarEvents = true;
             this._toolbar.setProject(projectId);
             await this._onProjectChange(projectId);
             if (notebook) {
                 this._toolbar.setNotebook(notebook);
                 this._onNotebookChange(projectId, notebook);
             }
+            this._suppressToolbarEvents = false;
         }
     }
 
-    _onProjectChange(projectId) {
+    async _onProjectChange(projectId) {
         if (this._currentNotebook) {
             this._editor.closeNotebook();
         }
@@ -103,8 +109,8 @@ class App {
         this._venvPanel.setProjectId(projectId);
 
         if (projectId) {
-            this._toolbar.loadNotebooks(projectId);
-            this._toolbar.loadVenvs(projectId);
+            await this._toolbar.loadNotebooks(projectId);
+            await this._toolbar.loadVenvs(projectId);
         }
     }
 

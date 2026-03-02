@@ -71,7 +71,7 @@ class CollaborationManager:
             "name": user_name,
             "joined_at": datetime.utcnow().isoformat()
         }
-        self._sio.enter_room(sid, room_id)
+        await self._sio.enter_room(sid, room_id)
         await self._sio.emit("user:joined", {
             "sid": sid, "name": user_name
         }, room=room_id, skip_sid=sid)
@@ -85,7 +85,7 @@ class CollaborationManager:
             return
         user_info = room.clients.pop(sid, {})
         await self._release_locks_for_sid(room, sid)
-        self._sio.leave_room(sid, room_id)
+        await self._sio.leave_room(sid, room_id)
         await self._sio.emit("user:left", {
             "sid": sid, "name": user_info.get("name", "Anonymous")
         }, room=room_id)
