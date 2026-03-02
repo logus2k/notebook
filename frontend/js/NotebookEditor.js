@@ -129,15 +129,21 @@ export class NotebookEditor {
     }
 
     _createAddCellButton(insertIndex) {
-        const btn = document.createElement('button');
-        btn.className = 'add-cell-button';
-        btn.textContent = '+ Add Cell';
-        btn.addEventListener('click', () => this._addCell(insertIndex, 'code'));
-        btn.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            this._addCell(insertIndex, 'markdown');
-        });
-        return btn;
+        const container = document.createElement('div');
+        container.className = 'add-cell-container';
+
+        const codeBtn = document.createElement('button');
+        codeBtn.className = 'add-cell-button';
+        codeBtn.textContent = '+ Code';
+        codeBtn.addEventListener('click', () => this._addCell(insertIndex, 'code'));
+
+        const mdBtn = document.createElement('button');
+        mdBtn.className = 'add-cell-button';
+        mdBtn.textContent = '+ Markdown';
+        mdBtn.addEventListener('click', () => this._addCell(insertIndex, 'markdown'));
+
+        container.append(codeBtn, mdBtn);
+        return container;
     }
 
     // --- Local cell operations ---

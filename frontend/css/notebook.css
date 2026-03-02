@@ -15,25 +15,31 @@
     font-size: 15px;
 }
 
+.add-cell-container {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 4px 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.notebook:hover .add-cell-container,
+.add-cell-container:focus-within {
+    opacity: 1;
+}
+
 .add-cell-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    padding: 8px;
-    margin: 4px 0;
+    padding: 6px 20px;
     background: transparent;
     border: 1px dashed var(--border-color);
     color: var(--text-muted);
     font-size: 13px;
     border-radius: var(--radius);
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.notebook:hover .add-cell-button,
-.add-cell-button:focus {
-    opacity: 1;
+    transition: background 0.15s, color 0.15s;
 }
 
 .add-cell-button:hover {
