@@ -44,6 +44,10 @@ export class NotebookToolbar {
         newNotebookBtn.title = 'Create notebook';
         navGroup.appendChild(newNotebookBtn);
 
+        const importBtn = this._createButton('Import', () => this._onImportNotebook());
+        importBtn.title = 'Import .ipynb file';
+        navGroup.appendChild(importBtn);
+
         this._container.appendChild(navGroup);
         this._container.appendChild(this._createSeparator());
 
@@ -265,6 +269,48 @@ export class NotebookToolbar {
         } catch (err) {
             alert(`Error: ${err.message}`);
         }
+    }
+
+    _onImportNotebook() {
+        const projectId = this._projectSelect.value;
+        if (!projectId) {
+            alert('Select a project first');
+            return;
+        }
+
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.ipynb';
+        input.addEventListener('change', async () => {
+            const file = input.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const content = JSON.parse(text);
+                if (!content.cells || !Array.isArray(content.cells)) {
+                    throw new Error('Invalid notebook: missing cells array');
+                }
+
+                const name = file.name.replace(/\.ipynb$/, '');
+                const resp = await fetch(`/api/projects/${projectId}/notebooks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, content })
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || 'Failed to import notebook');
+                }
+                await this.loadNotebooks(projectId);
+                const nbName = name.endsWith('.ipynb') ? name : name + '.ipynb';
+                this._notebookSelect.value = nbName;
+                this._onNotebookChange();
+            } catch (err) {
+                alert(`Import error: ${err.message}`);
+            }
+        });
+        input.click();
     }
 
     _onStartKernel() {
