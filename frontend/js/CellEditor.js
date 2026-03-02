@@ -146,11 +146,11 @@ export class CellEditor {
             cm.highlightActiveLineGutter(),
             cm.history(),
             cm.keymap.of([
+                { key: 'Shift-Enter', run: () => { this._onRun(); return true; } },
+                { key: 'Ctrl-Enter', run: () => { this._onRun(); return true; } },
                 ...cm.defaultKeymap,
                 ...cm.historyKeymap,
-                cm.indentWithTab,
-                { key: 'Shift-Enter', run: () => { this._onRun(); return true; } },
-                { key: 'Ctrl-Enter', run: () => { this._onRun(); return true; } }
+                cm.indentWithTab
             ]),
             cm.oneDark,
             cm.EditorView.updateListener.of((update) => {

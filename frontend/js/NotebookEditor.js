@@ -163,10 +163,12 @@ export class NotebookEditor {
         this._cells.splice(index, 0, cellEditor);
         this._reindexCells();
 
-        // Insert into DOM
+        // Insert into DOM: structure is [addBtn, cell, addBtn, cell, addBtn, ...]
+        // addBtn(i) is at children[2*i], cell(i) at children[2*i+1].
+        // Insert new cell + addBtn after the addBtn at position index*2.
         if (this._wrapperEl) {
             const addBtn = this._createAddCellButton(index + 1);
-            const refChild = this._wrapperEl.children[index * 2] || null;
+            const refChild = this._wrapperEl.children[index * 2 + 1] || null;
             this._wrapperEl.insertBefore(cellEditor.element, refChild);
             this._wrapperEl.insertBefore(addBtn, cellEditor.element.nextSibling);
         }
@@ -176,22 +178,29 @@ export class NotebookEditor {
     }
 
     _onCellDelete(index) {
-        if (this._cells.length <= 1) return; // Keep at least one cell
+        const isLastCell = this._cells.length <= 1;
 
         const cell = this._cells[index];
         cell.destroy();
         this._cells.splice(index, 1);
 
-        // Remove cell element and its following add-button from DOM
+        // Remove cell element and its following add-button from DOM.
+        // Structure is [addBtn, cell, addBtn, cell, addBtn, ...],
+        // so cell(i) is at children[2*i+1], its trailing addBtn at children[2*i+2].
         if (this._wrapperEl) {
-            const cellEl = this._wrapperEl.children[index * 2];
-            const addBtnEl = this._wrapperEl.children[index * 2 + 1];
+            const cellEl = this._wrapperEl.children[index * 2 + 1];
+            const addBtnEl = this._wrapperEl.children[index * 2 + 2];
             if (cellEl) cellEl.remove();
             if (addBtnEl) addBtnEl.remove();
         }
 
         this._reindexCells();
         this._client.deleteCell(index);
+
+        // If that was the last cell, insert a fresh empty code cell
+        if (isLastCell) {
+            this._addCell(0, 'code');
+        }
     }
 
     _reindexCells() {
@@ -247,7 +256,7 @@ export class NotebookEditor {
 
         if (this._wrapperEl) {
             const addBtn = this._createAddCellButton(index + 1);
-            const refChild = this._wrapperEl.children[index * 2] || null;
+            const refChild = this._wrapperEl.children[index * 2 + 1] || null;
             this._wrapperEl.insertBefore(cellEditor.element, refChild);
             this._wrapperEl.insertBefore(addBtn, cellEditor.element.nextSibling);
         }
@@ -261,8 +270,8 @@ export class NotebookEditor {
             this._cells.splice(index, 1);
 
             if (this._wrapperEl) {
-                const cellEl = this._wrapperEl.children[index * 2];
-                const addBtnEl = this._wrapperEl.children[index * 2 + 1];
+                const cellEl = this._wrapperEl.children[index * 2 + 1];
+                const addBtnEl = this._wrapperEl.children[index * 2 + 2];
                 if (cellEl) cellEl.remove();
                 if (addBtnEl) addBtnEl.remove();
             }
