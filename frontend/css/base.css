@@ -28,7 +28,7 @@ html, body {
     height: 100%;
     font-family: var(--font-sans);
     font-size: 14px;
-    background-color: #06060699;
+    background-color: #25252533;
     background-image: url("/static/images/low-contrast-linen.png");
     color: var(--text-primary);
     overflow: hidden;
