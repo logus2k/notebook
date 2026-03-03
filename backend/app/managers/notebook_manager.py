@@ -83,7 +83,7 @@ class NotebookManager:
                     "id": str(uuid.uuid4())[:8],
                     "metadata": {},
                     "source": [
-                        "# Welcome to Notebook\n",
+                        "# Welcome to Note!\n",
                         "\n",
                         "Write Python in a **code cell** and press `Shift + Enter` to run it.  \n",
                         "Use the toolbar icons to **open** a project, **save**, or manage **environments**.\n",
