@@ -120,6 +120,10 @@ class App {
                     this._currentNotebook,
                     this._userName
                 );
+                // Re-start kernel if a venv was selected
+                if (this._activeVenvRef) {
+                    this._client.startKernel(this._activeVenvRef);
+                }
             }
         });
 
@@ -189,6 +193,8 @@ class App {
             const pythonVersion = parts[2] || null;
             this._activeVenvRef = { type, name, pythonVersion };
             this._infoBar.setVenv(name, pythonVersion);
+            // Auto-start the kernel with the restored venv
+            this._client.startKernel(this._activeVenvRef);
         } else {
             this._activeVenvRef = null;
             this._infoBar.setVenv(null);
@@ -215,6 +221,8 @@ class App {
                     val
                 );
             }
+            // Auto-start the kernel with the selected venv
+            this._client.startKernel(venvRef);
         } else {
             this._infoBar.setVenv(null);
             if (this._currentProject && this._currentNotebook) {

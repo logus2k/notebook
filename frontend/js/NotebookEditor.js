@@ -82,7 +82,6 @@ export class NotebookEditor {
         for (let i = 0; i < this._cells.length; i++) {
             const cell = this._cells[i];
             if (cell.cellType === 'code') {
-                this._client.executeCell(i, cell.source);
                 cell._onRun();
             }
         }

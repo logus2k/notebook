@@ -20,6 +20,7 @@ class KernelSession:
     client_sid: str
     last_heartbeat: datetime = field(default_factory=datetime.utcnow)
     status: str = "starting"
+    _cached_client: object = field(default=None, repr=False)
 
 
 class KernelManagerService:
@@ -28,6 +29,7 @@ class KernelManagerService:
     def __init__(self):
         self._kernels: dict[str, KernelSession] = {}
         self._cleanup_task: Optional[asyncio.Task] = None
+        self._client_locks: dict[str, asyncio.Lock] = {}
 
     async def start(self):
         self._cleanup_task = asyncio.create_task(self._idle_cleanup_loop())
@@ -88,13 +90,34 @@ class KernelManagerService:
             status="idle"
         )
         self._kernels[session_id] = session
+        self._client_locks[session_id] = asyncio.Lock()
+
+        # Eagerly create and cache the kernel client
+        kc = km.client()
+        kc.start_channels()
+        try:
+            await asyncio.get_event_loop().run_in_executor(
+                None, lambda: kc.wait_for_ready(timeout=15)
+            )
+            session._cached_client = kc
+        except RuntimeError as e:
+            logger.warning(f"Kernel client not immediately ready: {e}")
+            kc.stop_channels()
+
         logger.info(f"Kernel started: {session_id} with {python_path}")
         return session
 
     async def stop_kernel(self, session_id: str) -> bool:
         session = self._kernels.pop(session_id, None)
+        self._client_locks.pop(session_id, None)
         if not session:
             return False
+        try:
+            if session._cached_client:
+                session._cached_client.stop_channels()
+                session._cached_client = None
+        except Exception as e:
+            logger.error(f"Error stopping kernel client channels {session_id}: {e}")
         try:
             if session.kernel_manager.is_alive():
                 session.kernel_manager.shutdown_kernel(now=True)
@@ -143,18 +166,29 @@ class KernelManagerService:
         if not session.kernel_manager.is_alive():
             logger.error(f"Kernel process is not alive for session {session_id}")
             return None
-        kc = session.kernel_manager.client()
-        kc.start_channels()
-        try:
-            # Run blocking wait_for_ready in a thread so we don't block the event loop
-            await asyncio.get_event_loop().run_in_executor(
-                None, lambda: kc.wait_for_ready(timeout=15)
-            )
-        except RuntimeError as e:
-            logger.error(f"Kernel not ready for session {session_id}: {e}")
-            kc.stop_channels()
+        # Fast path: return cached client without locking
+        if session._cached_client and session._cached_client.channels_running:
+            return session._cached_client
+        # Slow path: create client under lock to prevent concurrent creation
+        lock = self._client_locks.get(session_id)
+        if not lock:
             return None
-        return kc
+        async with lock:
+            # Re-check after acquiring lock
+            if session._cached_client and session._cached_client.channels_running:
+                return session._cached_client
+            kc = session.kernel_manager.client()
+            kc.start_channels()
+            try:
+                await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: kc.wait_for_ready(timeout=15)
+                )
+            except RuntimeError as e:
+                logger.error(f"Kernel not ready for session {session_id}: {e}")
+                kc.stop_channels()
+                return None
+            session._cached_client = kc
+            return kc
 
     def heartbeat(self, session_id: str):
         session = self._kernels.get(session_id)
