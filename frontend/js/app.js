@@ -24,6 +24,25 @@ class App {
             document.documentElement.style.setProperty('--notebook-max-width', `${savedWidth}px`);
         }
 
+        // Restore display toggles
+        const toggleMap = {
+            'show-cell-titles': 'hide-cell-titles',
+            'show-cell-borders': 'hide-cell-borders',
+            'show-cell-bg': 'hide-cell-bg',
+            'show-code-cells': 'hide-code-cells',
+            'show-line-numbers': 'hide-line-numbers',
+            'show-output': 'hide-output',
+            'show-table-stripes': 'hide-table-stripes',
+            'show-add-cell-areas': 'hide-add-cell-areas',
+            'show-bg-image': 'hide-bg-image',
+            'show-bg-color': 'hide-bg-color',
+        };
+        for (const [key, cls] of Object.entries(toggleMap)) {
+            if (localStorage.getItem(`notebook-${key}`) === '0') {
+                document.body.classList.add(cls);
+            }
+        }
+
         // Initialize components
         this._editor = new NotebookEditor(
             document.getElementById('notebook-container'),

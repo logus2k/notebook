@@ -98,3 +98,23 @@
 .project-selector, .notebook-selector {
     min-width: 140px;
 }
+
+.toolbar-settings-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+
+.toolbar-settings-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}

@@ -103,6 +103,60 @@ input:focus, select:focus {
     display: none !important;
 }
 
+/* Display toggles */
+body.hide-cell-titles .cell-header {
+    display: none;
+}
+
+body.hide-cell-titles .cell-editor,
+body.hide-cell-titles .cell-markdown-rendered {
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+
+body.hide-cell-borders .cell {
+    border-color: transparent !important;
+    box-shadow: none;
+}
+
+body.hide-cell-bg .cell {
+    background: transparent;
+}
+
+body.hide-cell-bg .cell-output {
+    background-color: transparent;
+}
+
+body.hide-code-cells .cell[data-cell-type="code"] {
+    display: none;
+}
+
+body.hide-line-numbers .cm-gutters {
+    display: none !important;
+}
+
+body.hide-output .cell-output {
+    display: none !important;
+}
+
+body.hide-table-stripes tr:nth-child(even) {
+    background: transparent !important;
+}
+
+body.hide-add-cell-areas .add-cell-container {
+    display: none;
+}
+
+body.hide-bg-image,
+html:has(.hide-bg-image) {
+    background-image: none !important;
+}
+
+body.hide-bg-color,
+html:has(.hide-bg-color) {
+    background-color: transparent !important;
+}
+
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;

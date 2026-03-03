@@ -87,6 +87,48 @@ export class VenvPanel {
         sliderRow.append(sliderLabel, sliderValue);
         settings.append(settingsTitle, sliderRow, slider);
 
+        // Display toggles
+        const toggles = [
+            { key: 'show-cell-titles', label: 'Cell Titles', bodyClass: 'hide-cell-titles', defaultOn: true },
+            { key: 'show-cell-borders', label: 'Cell Borders', bodyClass: 'hide-cell-borders', defaultOn: true },
+            { key: 'show-cell-bg', label: 'Cells Background', bodyClass: 'hide-cell-bg', defaultOn: true },
+            { key: 'show-code-cells', label: 'Code Cells', bodyClass: 'hide-code-cells', defaultOn: true },
+            { key: 'show-line-numbers', label: 'Line Numbers', bodyClass: 'hide-line-numbers', defaultOn: true },
+            { key: 'show-output', label: 'Output Cells', bodyClass: 'hide-output', defaultOn: true },
+            { key: 'show-table-stripes', label: 'Alternating Row Shading', bodyClass: 'hide-table-stripes', defaultOn: true },
+            { key: 'show-add-cell-areas', label: 'Add Cell Buttons', bodyClass: 'hide-add-cell-areas', defaultOn: true },
+            { key: 'show-bg-image', label: 'Background Image', bodyClass: 'hide-bg-image', defaultOn: true },
+            { key: 'show-bg-color', label: 'Background Color', bodyClass: 'hide-bg-color', defaultOn: true },
+        ];
+
+        for (const t of toggles) {
+            const saved = localStorage.getItem(`notebook-${t.key}`);
+            const isOn = saved !== null ? saved === '1' : t.defaultOn;
+            if (!isOn) document.body.classList.add(t.bodyClass);
+
+            const row = document.createElement('div');
+            row.className = 'settings-toggle-row';
+
+            const label = document.createElement('label');
+            label.textContent = t.label;
+
+            const toggle = document.createElement('input');
+            toggle.type = 'checkbox';
+            toggle.className = 'settings-toggle';
+            toggle.checked = isOn;
+            toggle.addEventListener('change', () => {
+                if (toggle.checked) {
+                    document.body.classList.remove(t.bodyClass);
+                } else {
+                    document.body.classList.add(t.bodyClass);
+                }
+                localStorage.setItem(`notebook-${t.key}`, toggle.checked ? '1' : '0');
+            });
+
+            row.append(label, toggle);
+            settings.appendChild(row);
+        }
+
         // Body
         this._body = document.createElement('div');
         this._body.className = 'venv-panel-body';
@@ -105,11 +147,25 @@ export class VenvPanel {
         this._isOpen = true;
         this._panel.classList.add('open');
         this._refresh();
+
+        // Close on click outside
+        setTimeout(() => {
+            this._outsideClickHandler = (e) => {
+                if (!this._panel.contains(e.target) && !e.target.closest('.toolbar-settings-btn')) {
+                    this.close();
+                }
+            };
+            document.addEventListener('click', this._outsideClickHandler);
+        }, 0);
     }
 
     close() {
         this._isOpen = false;
         this._panel.classList.remove('open');
+        if (this._outsideClickHandler) {
+            document.removeEventListener('click', this._outsideClickHandler);
+            this._outsideClickHandler = null;
+        }
     }
 
     toggle() {
