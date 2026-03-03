@@ -127,7 +127,17 @@ body.hide-cell-bg .cell-output {
     background-color: transparent;
 }
 
-body.hide-code-cells .cell[data-cell-type="code"] {
+body.hide-code-cells .cell[data-cell-type="code"] .cell-header,
+body.hide-code-cells .cell[data-cell-type="code"] .cell-editor,
+body.hide-code-cells .cell[data-cell-type="code"] .cell-sidebar {
+    display: none;
+}
+
+body.hide-code-cells .cell[data-cell-type="code"] .cell-output {
+    border-top: none;
+}
+
+body.hide-code-cells .cell[data-cell-type="code"]:has(.cell-output:empty) {
     display: none;
 }
 
