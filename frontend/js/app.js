@@ -3,8 +3,7 @@ import { NotebookEditor } from './NotebookEditor.js';
 import { NotebookToolbar } from './NotebookToolbar.js';
 import { InfoBar } from './InfoBar.js';
 import { VenvPanel } from './VenvPanel.js';
-import { ProjectPanel } from './panels/ProjectPanel.js';
-import { NotebookPanel } from './panels/NotebookPanel.js';
+import { BrowserPanel } from './panels/BrowserPanel.js';
 import { VenvSelectPanel } from './panels/VenvSelectPanel.js';
 
 /**
@@ -17,8 +16,7 @@ class App {
         this._toolbar = null;
         this._infoBar = null;
         this._venvPanel = null;
-        this._projectPanel = null;
-        this._notebookPanel = null;
+        this._browserPanel = null;
         this._venvSelectPanel = null;
         this._currentProject = null;
         this._currentNotebook = null;
@@ -63,14 +61,7 @@ class App {
             document.getElementById('toolbar'),
             this._client,
             {
-                onProjectClick: () => this._projectPanel.open(),
-                onNotebookClick: () => {
-                    if (!this._currentProject) {
-                        alert('Select a project first');
-                        return;
-                    }
-                    this._notebookPanel.open(this._currentProject);
-                },
+                onBrowse: () => this._browserPanel.open(),
                 onImport: () => this._onImportNotebook(),
                 onSave: () => this._editor.save(),
                 onExport: () => this._editor.export(),
@@ -99,12 +90,8 @@ class App {
         );
 
         // Initialize jsPanel-based selection panels
-        this._projectPanel = new ProjectPanel({
-            onProjectSelect: (projectId) => this._onProjectChange(projectId),
-        });
-
-        this._notebookPanel = new NotebookPanel({
-            onNotebookSelect: (projectId, notebookName) => this._onNotebookChange(projectId, notebookName),
+        this._browserPanel = new BrowserPanel({
+            onSelect: (projectId, notebookName) => this._onNotebookChange(projectId, notebookName),
         });
 
         this._venvSelectPanel = new VenvSelectPanel({
@@ -190,6 +177,7 @@ class App {
 
         this._infoBar.setProject(projectId);
         this._infoBar.setNotebook(notebookName);
+        this._venvPanel.setProjectId(projectId);
 
         this._editor.openNotebook(projectId, notebookName, this._userName);
 

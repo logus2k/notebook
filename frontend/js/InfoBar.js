@@ -62,7 +62,9 @@ export class InfoBar {
             if (this._callbacks.onStartKernel) this._callbacks.onStartKernel();
         }));
         controls.appendChild(this._iconButton(ICONS.stop, 'Stop kernel', () => this._client.stopKernel()));
-        controls.appendChild(this._iconButton(ICONS.restart, 'Restart kernel', () => this._client.restartKernel()));
+        const restartBtn = this._iconButton(ICONS.restart, 'Restart kernel', () => this._client.restartKernel());
+        restartBtn.classList.add('no-fill');
+        controls.appendChild(restartBtn);
         controls.appendChild(this._iconButton(ICONS.interrupt, 'Interrupt kernel', () => this._client.interruptKernel()));
 
         this._container.appendChild(controls);

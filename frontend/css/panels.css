@@ -163,3 +163,29 @@
 .panel-footer-link:hover {
     text-decoration: underline;
 }
+
+/* Tree-style browser panel */
+.panel-tree-chevron {
+    width: 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.panel-project-item {
+    font-weight: 500;
+    gap: 4px;
+}
+
+.panel-project-item.expanded {
+    background: var(--bg-secondary);
+}
+
+.panel-notebook-item {
+    padding-left: 34px;
+}
+
+.panel-new-item {
+    border-bottom: none;
+}
