@@ -53,6 +53,74 @@ class NotebookManager:
             ]
         }
 
+    def ensure_welcome_notebook(self) -> tuple[str, str]:
+        """Create the Welcome project and notebook if they don't exist.
+        Returns (project_id, notebook_name)."""
+        project_id = "Welcome"
+        notebook_name = "Welcome.ipynb"
+        project_path = os.path.join(PROJECTS_DIR, project_id)
+        notebooks_dir = os.path.join(project_path, "notebooks")
+        filepath = os.path.join(notebooks_dir, notebook_name)
+
+        if os.path.exists(filepath):
+            return project_id, notebook_name
+
+        os.makedirs(notebooks_dir, exist_ok=True)
+        notebook = {
+            "nbformat": 4,
+            "nbformat_minor": 5,
+            "metadata": {
+                "kernelspec": {
+                    "display_name": "Python 3",
+                    "language": "python",
+                    "name": "python3"
+                },
+                "language_info": {"name": "python"}
+            },
+            "cells": [
+                {
+                    "cell_type": "markdown",
+                    "id": str(uuid.uuid4())[:8],
+                    "metadata": {},
+                    "source": [
+                        "# Welcome to Notebook\n",
+                        "\n",
+                        "Write Python in a **code cell** and press `Shift + Enter` to run it.  \n",
+                        "Use the toolbar icons to **open** a project, **save**, or manage **environments**.\n",
+                        "\n",
+                        "| Shortcut | Action |\n",
+                        "| --- | --- |\n",
+                        "| `Shift + Enter` | Run cell and advance |\n",
+                        "| `Ctrl + Enter` | Run cell (stay) |\n",
+                        "| `Ctrl + S` | Save notebook |"
+                    ]
+                },
+                {
+                    "cell_type": "code",
+                    "id": str(uuid.uuid4())[:8],
+                    "metadata": {},
+                    "source": [
+                        "import math\n",
+                        "\n",
+                        "# Calculate the golden ratio\n",
+                        "phi = (1 + math.sqrt(5)) / 2\n",
+                        "print(f\"The golden ratio is {phi:.6f}\")\n",
+                        "\n",
+                        "# Generate a Fibonacci sequence\n",
+                        "fib = [0, 1]\n",
+                        "for _ in range(8):\n",
+                        "    fib.append(fib[-1] + fib[-2])\n",
+                        "print(f\"Fibonacci: {fib}\")"
+                    ],
+                    "outputs": [],
+                    "execution_count": None
+                }
+            ]
+        }
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(notebook, f, indent=2)
+        return project_id, notebook_name
+
     def list_projects(self) -> list[dict]:
         projects = []
         if not os.path.exists(PROJECTS_DIR):

@@ -138,6 +138,10 @@
     background: var(--accent-red);
 }
 
+.kernel-status-dot.standby {
+    background: var(--text-muted);
+}
+
 .kernel-status-dot.starting {
     background: var(--accent-orange);
     animation: pulse 0.5s infinite;

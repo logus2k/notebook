@@ -3,8 +3,11 @@ import sys
 import json
 import asyncio
 import shutil
+import platform
 from typing import Optional
 from app.config import PROJECTS_DIR, SHARED_VENVS_DIR
+
+DEFAULT_ENV_NAME = "Default"
 
 
 class VenvManager:
@@ -17,6 +20,20 @@ class VenvManager:
         if project_id:
             return os.path.join(self._project_venvs_dir(project_id), name)
         return os.path.join(SHARED_VENVS_DIR, name)
+
+    @staticmethod
+    def is_default(name: str) -> bool:
+        return name == DEFAULT_ENV_NAME
+
+    def _default_env_entry(self) -> dict:
+        return {
+            "name": DEFAULT_ENV_NAME,
+            "path": None,
+            "python": sys.executable,
+            "python_version": platform.python_version(),
+            "type": "default",
+            "readonly": True,
+        }
 
     def _validate_name(self, name: str):
         if ".." in name or "/" in name or "\\" in name or not name:
@@ -38,20 +55,25 @@ class VenvManager:
         return None
 
     def get_python_path(self, name: str, project_id: Optional[str] = None) -> str:
+        if self.is_default(name):
+            return sys.executable
         venv_path = self._resolve_venv_path(name, project_id)
         python_path = os.path.join(venv_path, "bin", "python")
         if not os.path.exists(python_path):
             raise FileNotFoundError(f"Venv not found: {name}")
         return python_path
 
-    def list_venvs(self, project_id: Optional[str] = None) -> list[dict]:
+    def list_venvs(self, project_id: Optional[str] = None,
+                   include_default: bool = False) -> list[dict]:
         if project_id:
             base_dir = self._project_venvs_dir(project_id)
         else:
             base_dir = SHARED_VENVS_DIR
-        if not os.path.exists(base_dir):
-            return []
         venvs = []
+        if include_default:
+            venvs.append(self._default_env_entry())
+        if not os.path.exists(base_dir):
+            return venvs
         for name in sorted(os.listdir(base_dir)):
             venv_path = os.path.join(base_dir, name)
             python_path = os.path.join(venv_path, "bin", "python")
@@ -112,6 +134,8 @@ class VenvManager:
         }
 
     async def delete_venv(self, name: str, project_id: Optional[str] = None) -> dict:
+        if self.is_default(name):
+            raise ValueError("Cannot delete the Default environment")
         self._validate_name(name)
         venv_path = self._resolve_venv_path(name, project_id)
         if not os.path.exists(venv_path):

@@ -143,7 +143,7 @@ class App {
             }
         });
 
-        // Check URL params for auto-open
+        // Check URL params for auto-open, or open Welcome notebook
         const params = new URLSearchParams(window.location.search);
         const projectId = params.get('project');
         const notebook = params.get('notebook');
@@ -152,6 +152,9 @@ class App {
             if (notebook) {
                 this._onNotebookChange(projectId, notebook);
             }
+        } else {
+            // Open the Welcome notebook by default
+            this._onNotebookChange('Welcome', 'Welcome.ipynb');
         }
     }
 
@@ -170,7 +173,7 @@ class App {
         this._venvPanel.setProjectId(projectId);
     }
 
-    _onNotebookChange(projectId, notebookName) {
+    async _onNotebookChange(projectId, notebookName) {
         if (this._currentNotebook) {
             this._editor.closeNotebook();
         }
@@ -193,11 +196,10 @@ class App {
             const pythonVersion = parts[2] || null;
             this._activeVenvRef = { type, name, pythonVersion };
             this._infoBar.setVenv(name, pythonVersion);
-            // Auto-start the kernel with the restored venv
             this._client.startKernel(this._activeVenvRef);
         } else {
-            this._activeVenvRef = null;
-            this._infoBar.setVenv(null);
+            // Auto-select the first available venv
+            await this._autoSelectVenv();
         }
 
         // Update URL
@@ -205,6 +207,29 @@ class App {
         url.searchParams.set('project', projectId);
         url.searchParams.set('notebook', notebookName);
         window.history.replaceState({}, '', url);
+    }
+
+    async _autoSelectVenv() {
+        try {
+            // Fetch shared/default venvs — Default is always first
+            const resp = await fetch('api/venvs');
+            if (!resp.ok) return;
+            const venvs = await resp.json();
+            // Prefer the Default env
+            const defaultEnv = venvs.find(v => v.type === 'default');
+            if (defaultEnv) {
+                const venvRef = { type: 'default', name: defaultEnv.name, pythonVersion: defaultEnv.python_version || null };
+                this._onVenvSelect(venvRef);
+                return;
+            }
+            // Fallback to first available
+            if (venvs.length > 0) {
+                const v = venvs[0];
+                this._onVenvSelect({ type: v.type, name: v.name, pythonVersion: v.python_version || null });
+            }
+        } catch (err) {
+            console.warn('Auto-select venv failed:', err);
+        }
     }
 
     _onVenvSelect(venvRef) {
@@ -221,8 +246,10 @@ class App {
                     val
                 );
             }
-            // Auto-start the kernel with the selected venv
-            this._client.startKernel(venvRef);
+            // Auto-start the kernel with the selected venv (only if a notebook is open)
+            if (this._currentNotebook) {
+                this._client.startKernel(venvRef);
+            }
         } else {
             this._infoBar.setVenv(null);
             if (this._currentProject && this._currentNotebook) {

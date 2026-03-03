@@ -105,3 +105,95 @@
 .create-form input {
     flex: 1;
 }
+
+/* Welcome screen */
+.welcome-screen {
+    display: flex;
+    justify-content: center;
+    padding: 48px 24px 80px;
+}
+
+.welcome-content {
+    max-width: 560px;
+    width: 100%;
+}
+
+.welcome-content h1 {
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.welcome-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+}
+
+.welcome-section {
+    margin-bottom: 28px;
+}
+
+.welcome-section h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.welcome-section ol {
+    padding-left: 20px;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.8;
+}
+
+.welcome-section ol li {
+    padding-left: 4px;
+}
+
+.welcome-shortcuts {
+    font-size: 13px;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.welcome-shortcuts td {
+    padding: 5px 0;
+    color: var(--text-primary);
+}
+
+.welcome-shortcuts td:first-child {
+    width: 160px;
+}
+
+.welcome-content kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    box-shadow: 0 1px 0 var(--border-color);
+}
+
+.welcome-code {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.welcome-code code {
+    font-family: inherit;
+}

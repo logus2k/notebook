@@ -39,6 +39,7 @@ DISCONNECT_GRACE_SECONDS = 15
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    notebook_mgr.ensure_welcome_notebook()
     await kernel_mgr.start()
     logger.info("Notebook server started")
     yield
@@ -275,7 +276,9 @@ async def on_kernel_start(sid, data):
 
     try:
         project_id = ctx.get("project_id")
-        if venv_type == "project":
+        if venv_type == "default":
+            python_path = venv_mgr.get_python_path(venv_name)
+        elif venv_type == "project":
             python_path = venv_mgr.get_python_path(venv_name, project_id)
         else:
             python_path = venv_mgr.get_python_path(venv_name)

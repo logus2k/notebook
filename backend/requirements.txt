@@ -3,4 +3,5 @@ uvicorn[standard]
 python-socketio
 aiofiles
 jupyter_client
+ipykernel
 pyzmq

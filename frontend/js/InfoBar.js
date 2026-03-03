@@ -108,6 +108,10 @@ export class InfoBar {
     setVenv(name, pythonVersion) {
         this._venvName = name;
         this._pythonVersion = pythonVersion;
+        // If a venv is selected but kernel hasn't started yet, show standby (gray) instead of dead (red)
+        if (name && this._kernelStatus === 'dead') {
+            this._kernelDot.className = 'kernel-status-dot standby';
+        }
         this._updateKernelLabel();
     }
 

@@ -20,7 +20,7 @@ class PackagesRequest(BaseModel):
 
 @router.get("/venvs")
 def list_shared_venvs():
-    return venv_mgr.list_venvs()
+    return venv_mgr.list_venvs(include_default=True)
 
 
 @router.post("/venvs")

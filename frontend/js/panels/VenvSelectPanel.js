@@ -54,6 +54,7 @@ export class VenvSelectPanel {
 
         let projectVenvs = [];
         let sharedVenvs = [];
+        let defaultEnv = null;
 
         try {
             const fetches = [fetch('api/venvs')];
@@ -61,11 +62,20 @@ export class VenvSelectPanel {
                 fetches.unshift(fetch(`api/projects/${this._projectId}/venvs`));
             }
             const responses = await Promise.all(fetches);
+            let allShared;
             if (this._projectId) {
                 projectVenvs = await responses[0].json();
-                sharedVenvs = await responses[1].json();
+                allShared = await responses[1].json();
             } else {
-                sharedVenvs = await responses[0].json();
+                allShared = await responses[0].json();
+            }
+            // Separate default from shared
+            for (const v of allShared) {
+                if (v.type === 'default') {
+                    defaultEnv = v;
+                } else {
+                    sharedVenvs.push(v);
+                }
             }
         } catch (err) {
             content.innerHTML = `<div class="panel-error">Failed to load environments</div>`;
@@ -77,16 +87,10 @@ export class VenvSelectPanel {
         const list = document.createElement('div');
         list.className = 'panel-list';
 
-        // No-env option
-        const noEnvItem = document.createElement('div');
-        noEnvItem.className = 'panel-list-item';
-        if (!this._activeVenv) noEnvItem.classList.add('active');
-        noEnvItem.addEventListener('click', () => this._onSelect(null));
-        const noEnvName = document.createElement('span');
-        noEnvName.className = 'panel-item-name muted';
-        noEnvName.textContent = 'No environment';
-        noEnvItem.appendChild(noEnvName);
-        list.appendChild(noEnvItem);
+        // Default environment (always first)
+        if (defaultEnv) {
+            list.appendChild(this._buildVenvItem(defaultEnv, 'default'));
+        }
 
         // Project venvs
         if (projectVenvs.length > 0) {
@@ -110,13 +114,6 @@ export class VenvSelectPanel {
             for (const v of sharedVenvs) {
                 list.appendChild(this._buildVenvItem(v, 'shared'));
             }
-        }
-
-        if (projectVenvs.length === 0 && sharedVenvs.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'panel-empty';
-            empty.textContent = 'No environments available';
-            list.appendChild(empty);
         }
 
         content.appendChild(list);
