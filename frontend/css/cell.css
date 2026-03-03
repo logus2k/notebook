@@ -51,8 +51,8 @@
 }
 
 .cell-type-badge.markdown {
-    background: rgba(108, 207, 108, 0.15);
-    color: var(--accent-green);
+    background: rgb(108 207 108 / 37%);
+    color: #007a00;
 }
 
 .cell-execution-count {
@@ -72,6 +72,31 @@
     gap: 4px;
     font-size: 11px;
     color: var(--accent-orange);
+}
+
+.cell-delete-btn {
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.cell:hover .cell-delete-btn {
+    opacity: 1;
+}
+
+.cell-delete-btn:hover {
+    background: rgba(224, 69, 69, 0.1);
+    color: var(--accent-red);
 }
 
 .cell-sidebar {
@@ -109,8 +134,8 @@
 }
 
 .cell-sidebar .cell-run-btn:hover {
-    background: rgba(108, 207, 108, 0.15);
-    color: #8de88d;
+    background: rgba(46, 168, 46, 0.12);
+    color: #1e8c1e;
 }
 
 .cell-drag-handle {
@@ -261,6 +286,6 @@
 }
 
 .cell-markdown-rendered tr:nth-child(even) {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(0, 0, 0, 0.03);
 }
 

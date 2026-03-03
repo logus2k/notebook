@@ -9,14 +9,16 @@ import {
     EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
     EditorState,
     defaultKeymap, indentWithTab, history, historyKeymap,
-    python,
-    oneDark
+    syntaxHighlighting, defaultHighlightStyle,
+    python
 } from '/static/vendor/codemirror/codemirror.bundle.js';
 
 const cmModules = {
     EditorView, keymap, lineNumbers, highlightActiveLine,
     highlightActiveLineGutter, EditorState, defaultKeymap,
-    indentWithTab, history, historyKeymap, python, oneDark
+    indentWithTab, history, historyKeymap,
+    syntaxHighlighting, defaultHighlightStyle,
+    python
 };
 
 function loadCodeMirror() {
@@ -116,7 +118,16 @@ export class CellEditor {
         lockIndicator.className = 'cell-lock-indicator hidden';
         this._lockIndicatorEl = lockIndicator;
 
-        header.append(typeBadge, execCount, spacer, lockIndicator);
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'cell-delete-btn';
+        deleteBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M10 3h3v1h-1v9l-1 1H5l-1-1V4H3V3h3V2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1zM9 2H7v1h2V2zM5 4v9h6V4H5zm2 2h1v5H7V6zm3 0h-1v5h1V6z"/></svg>';
+        deleteBtn.title = 'Delete cell';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this._callbacks.onDelete) this._callbacks.onDelete(this._index);
+        });
+
+        header.append(typeBadge, execCount, spacer, lockIndicator, deleteBtn);
 
         // Editor area
         const editorArea = document.createElement('div');
@@ -156,6 +167,7 @@ export class CellEditor {
             cm.highlightActiveLine(),
             cm.highlightActiveLineGutter(),
             cm.history(),
+            cm.syntaxHighlighting(cm.defaultHighlightStyle, { fallback: true }),
             cm.keymap.of([
                 { key: 'Shift-Enter', run: () => { this._onRun(); return true; } },
                 { key: 'Ctrl-Enter', run: () => { this._onRun(); return true; } },
@@ -163,7 +175,6 @@ export class CellEditor {
                 ...cm.historyKeymap,
                 cm.indentWithTab
             ]),
-            cm.oneDark,
             cm.EditorView.updateListener.of((update) => {
                 if (update.docChanged) this._onContentChanged();
                 if (update.focusChanged) {

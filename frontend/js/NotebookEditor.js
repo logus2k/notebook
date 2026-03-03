@@ -185,13 +185,11 @@ export class NotebookEditor {
         cell.destroy();
         this._cells.splice(index, 1);
 
-        // Remove cell element and its following add-button from DOM.
-        // Structure is [addBtn, cell, addBtn, cell, addBtn, ...],
-        // so cell(i) is at children[2*i+1], its trailing addBtn at children[2*i+2].
+        // cell.destroy() already removed the cell element from the DOM.
+        // That leaves two adjacent addBtns where the cell was.
+        // Remove one of them (the trailing one, now at index*2+1).
         if (this._wrapperEl) {
-            const cellEl = this._wrapperEl.children[index * 2 + 1];
-            const addBtnEl = this._wrapperEl.children[index * 2 + 2];
-            if (cellEl) cellEl.remove();
+            const addBtnEl = this._wrapperEl.children[index * 2 + 1];
             if (addBtnEl) addBtnEl.remove();
         }
 
@@ -348,10 +346,10 @@ export class NotebookEditor {
             cell.destroy();
             this._cells.splice(index, 1);
 
+            // cell.destroy() already removed the cell element from the DOM.
+            // Remove one of the two now-adjacent addBtns.
             if (this._wrapperEl) {
-                const cellEl = this._wrapperEl.children[index * 2 + 1];
-                const addBtnEl = this._wrapperEl.children[index * 2 + 2];
-                if (cellEl) cellEl.remove();
+                const addBtnEl = this._wrapperEl.children[index * 2 + 1];
                 if (addBtnEl) addBtnEl.remove();
             }
             this._reindexCells();
