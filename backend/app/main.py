@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import uuid
 import socketio
@@ -30,6 +31,11 @@ venv_mgr = VenvManager()
 # Track client context: sid -> {project_id, notebook_path, user_name}
 client_context: dict[str, dict] = {}
 
+# Pending disconnect cleanup tasks: sid -> asyncio.Task
+_pending_disconnects: dict[str, asyncio.Task] = {}
+
+DISCONNECT_GRACE_SECONDS = 15
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,12 +61,28 @@ async def connect(sid, environ):
 @sio.event
 async def disconnect(sid):
     logger.info(f"Client disconnected: {sid}")
-    await collab_mgr.leave_all_rooms(sid)
-    session = kernel_mgr.get_session_by_sid(sid)
-    if session:
-        execution_bridge.stop_iopub_listener(session.session_id)
-        await kernel_mgr.stop_kernel(session.session_id)
-    client_context.pop(sid, None)
+    # Schedule delayed cleanup to allow reconnection
+    task = asyncio.create_task(_delayed_disconnect_cleanup(sid))
+    _pending_disconnects[sid] = task
+
+
+async def _delayed_disconnect_cleanup(sid):
+    """Wait before cleaning up, allowing the client to reconnect."""
+    try:
+        await asyncio.sleep(DISCONNECT_GRACE_SECONDS)
+        # Grace period expired — client didn't reconnect
+        logger.info(f"Disconnect grace period expired for {sid}, cleaning up")
+        await collab_mgr.leave_all_rooms(sid)
+        session = kernel_mgr.get_session_by_sid(sid)
+        if session:
+            execution_bridge.stop_iopub_listener(session.session_id)
+            await kernel_mgr.stop_kernel(session.session_id)
+        client_context.pop(sid, None)
+    except asyncio.CancelledError:
+        # Reconnection happened — cleanup was cancelled
+        logger.info(f"Disconnect cleanup cancelled for {sid} (reconnected)")
+    finally:
+        _pending_disconnects.pop(sid, None)
 
 
 # --- Notebook events ---
@@ -78,6 +100,27 @@ async def on_notebook_open(sid, data):
         }, to=sid)
         return
 
+    # Check for pending disconnects from same user (reconnection scenario).
+    # Transfer kernel session and cancel cleanup.
+    for old_sid, ctx in list(client_context.items()):
+        if (old_sid != sid and
+                ctx.get("project_id") == project_id and
+                ctx.get("notebook_path") == notebook_path and
+                ctx.get("user_name") == user_name):
+            # Cancel pending disconnect cleanup
+            pending = _pending_disconnects.get(old_sid)
+            if pending:
+                pending.cancel()
+                _pending_disconnects.pop(old_sid, None)
+            # Transfer kernel session to new sid
+            session = kernel_mgr.get_session_by_sid(old_sid)
+            if session:
+                session.client_sid = sid
+                logger.info(f"Transferred kernel {session.session_id} from {old_sid} to {sid}")
+            # Clean up old context
+            await collab_mgr.leave_all_rooms(old_sid)
+            client_context.pop(old_sid, None)
+
     client_context[sid] = {
         "project_id": project_id,
         "notebook_path": notebook_path,
@@ -94,6 +137,11 @@ async def on_notebook_open(sid, data):
             "locks": room_state["cell_locks"],
             "connected_users": room_state["clients"]
         }, to=sid)
+
+        # If kernel was transferred, notify about its status
+        session = kernel_mgr.get_session_by_sid(sid)
+        if session:
+            await sio.emit("kernel:status", {"status": session.status}, to=sid)
     except FileNotFoundError:
         await sio.emit("error", {
             "message": f"Notebook not found: {notebook_path}",

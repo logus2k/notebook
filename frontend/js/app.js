@@ -88,6 +88,15 @@ class App {
 
         this._client.on('connected', () => {
             console.log('Connected to server');
+            // Re-establish notebook context on reconnection
+            if (this._currentProject && this._currentNotebook) {
+                console.log('Reconnecting to notebook...');
+                this._editor.openNotebook(
+                    this._currentProject,
+                    this._currentNotebook,
+                    this._userName
+                );
+            }
         });
 
         this._client.on('disconnected', (data) => {
