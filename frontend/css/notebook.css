@@ -34,9 +34,9 @@
     align-items: center;
     justify-content: center;
     padding: 4px 15px;
-    background: transparent;
+    background: #83838375;
     border: 1px dashed var(--border-color);
-    color: var(--text-muted);
+    color: #000000;
     font-size: 13px;
     border-radius: var(--radius);
     transition: background 0.15s, color 0.15s;
