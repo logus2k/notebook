@@ -35,18 +35,25 @@
     align-items: center;
     justify-content: center;
     padding: 4px 15px;
-    background: #83838375;
+    background: var(--bg-secondary);
     border: 1px dashed var(--border-color);
-    color: #000000;
+    color: var(--text-secondary);
     font-size: 13px;
     border-radius: var(--radius);
     transition: background 0.15s, color 0.15s;
 }
 
 .add-cell-button:hover {
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
+    color: #000000;
     border-color: var(--text-muted);
+}
+
+.add-cell-code:hover {
+    background: #d3e9ff;
+}
+
+.add-cell-markdown:hover {
+    background: #d5eecf;
 }
 
 .project-browser {

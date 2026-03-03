@@ -227,16 +227,12 @@ export class CellEditor {
     _onFocus() {
         this._focused = true;
         this._el.classList.add('focused');
-        if (this._cellType === 'markdown') this._hideMarkdownRendered();
         if (this._callbacks.onFocus) this._callbacks.onFocus(this._index);
     }
 
     _onBlur() {
         this._focused = false;
         this._el.classList.remove('focused');
-        if (this._cellType === 'markdown' && this._getSource().trim()) {
-            this._showMarkdownRendered();
-        }
         if (this._callbacks.onBlur) this._callbacks.onBlur(this._index);
     }
 
@@ -317,7 +313,7 @@ export class CellEditor {
         this._editorAreaEl.classList.add('hidden');
         this._markdownRendered = true;
 
-        this._mdRenderedEl.addEventListener('click', () => {
+        this._mdRenderedEl.addEventListener('dblclick', () => {
             this._hideMarkdownRendered();
             if (this._editorView) this._editorView.focus();
         }, { once: true });

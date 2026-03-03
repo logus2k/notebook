@@ -65,8 +65,9 @@
 .cell-execution-count {
     font-family: var(--font-mono);
     font-size: 11px;
-    color: var(--text-muted);
+    color: #656565;
     min-width: 40px;
+    padding-top: 1px;
 }
 
 .cell-header-spacer {

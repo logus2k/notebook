@@ -135,12 +135,12 @@ export class NotebookEditor {
         container.className = 'add-cell-container';
 
         const codeBtn = document.createElement('button');
-        codeBtn.className = 'add-cell-button';
+        codeBtn.className = 'add-cell-button add-cell-code';
         codeBtn.textContent = '+ Code';
         codeBtn.addEventListener('click', () => this._addCell(insertIndex, 'code'));
 
         const mdBtn = document.createElement('button');
-        mdBtn.className = 'add-cell-button';
+        mdBtn.className = 'add-cell-button add-cell-markdown';
         mdBtn.textContent = '+ Markdown';
         mdBtn.addEventListener('click', () => this._addCell(insertIndex, 'markdown'));
 
