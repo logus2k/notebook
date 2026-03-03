@@ -35,6 +35,7 @@ export class NotebookEditor {
         this._client.on('cell:output', (data) => this._onCellOutput(data));
         this._client.on('cell:execute_complete', (data) => this._onExecuteComplete(data));
         this._client.on('cell:lock_changed', (data) => this._onLockChanged(data));
+        this._client.on('error', (data) => this._onError(data));
     }
 
     openNotebook(projectId, notebookPath, userName) {
@@ -392,6 +393,21 @@ export class NotebookEditor {
             cell.setLock(data.owner, data.owner_sid, isSelf);
         } else {
             cell.clearLock();
+        }
+    }
+
+    _onError(data) {
+        // Stop all executing cells and show the error
+        for (const cell of this._cells) {
+            if (cell._executing) {
+                cell.addOutput({
+                    output_type: 'error',
+                    ename: data.code || 'Error',
+                    evalue: data.message || 'Unknown error',
+                    traceback: []
+                });
+                cell.onExecuteComplete(null);
+            }
         }
     }
 
