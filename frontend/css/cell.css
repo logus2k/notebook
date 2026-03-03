@@ -1,6 +1,7 @@
 .cell {
     position: relative;
     margin: 4px 0;
+    margin-left: 36px;
     border: 1px solid transparent;
     border-radius: var(--radius);
     background: var(--bg-secondary);
@@ -73,35 +74,85 @@
     color: var(--accent-orange);
 }
 
-.cell-actions {
+.cell-sidebar {
+    position: absolute;
+    left: -36px;
+    top: 0;
+    bottom: 0;
+    width: 32px;
     display: flex;
-    gap: 4px;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding-top: 1px;
     opacity: 0;
     transition: opacity 0.15s;
 }
 
-.cell:hover .cell-actions {
+.cell:hover .cell-sidebar {
     opacity: 1;
 }
 
-.cell-actions button {
-    padding: 2px 6px;
-    font-size: 11px;
+.cell-sidebar .cell-run-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    font-size: 14px;
+    line-height: 24px;
+    text-align: center;
     background: transparent;
-    color: var(--text-secondary);
+    color: var(--accent-green);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
-.cell-actions button:hover {
+.cell-sidebar .cell-run-btn:hover {
+    background: rgba(108, 207, 108, 0.15);
+    color: #8de88d;
+}
+
+.cell-drag-handle {
+    flex: 1;
+    width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    color: var(--text-muted);
+    font-size: 16px;
+    border-radius: 4px;
+    user-select: none;
+}
+
+.cell-drag-handle:hover {
     background: var(--bg-hover);
     color: var(--text-primary);
 }
 
-.cell-actions button.run-btn {
-    color: var(--accent-green);
+.cell-drag-handle:active {
+    cursor: grabbing;
 }
 
-.cell-actions button.run-btn:hover {
-    background: rgba(108, 207, 108, 0.15);
+.cell.dragging {
+    opacity: 0.4;
+}
+
+.add-cell-container.drop-target {
+    position: relative;
+}
+
+.add-cell-container.drop-target::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 3px;
+    background: var(--accent-blue);
+    border-radius: 2px;
+    transform: translateY(-50%);
 }
 
 .cell-editor {
@@ -161,6 +212,16 @@
     margin: 6px 0;
 }
 
+.cell-markdown-rendered ul,
+.cell-markdown-rendered ol {
+    margin: 6px 0;
+    padding-left: 2em;
+}
+
+.cell-markdown-rendered li {
+    margin: 2px 0;
+}
+
 .cell-markdown-rendered code {
     font-family: var(--font-mono);
     background: var(--bg-tertiary);
@@ -181,26 +242,25 @@
     padding: 0;
 }
 
-.cell-drag-handle {
-    position: absolute;
-    left: -20px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 14px;
-    height: 24px;
-    cursor: grab;
-    opacity: 0;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
+.cell-markdown-rendered table {
+    border-collapse: collapse;
+    margin: 8px 0;
+    width: auto;
 }
 
-.cell:hover .cell-drag-handle {
-    opacity: 0.5;
+.cell-markdown-rendered th,
+.cell-markdown-rendered td {
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    text-align: left;
 }
 
-.cell-drag-handle:hover {
-    opacity: 1 !important;
+.cell-markdown-rendered th {
+    background: var(--bg-tertiary);
+    font-weight: 600;
 }
+
+.cell-markdown-rendered tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+

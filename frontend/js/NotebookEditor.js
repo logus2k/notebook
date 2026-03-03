@@ -107,6 +107,7 @@ export class NotebookEditor {
         }
 
         this._container.appendChild(this._wrapperEl);
+        this._setupDragDrop();
     }
 
     _clear() {
@@ -229,6 +230,84 @@ export class NotebookEditor {
 
     _onCellRun(index, code) {
         this._client.executeCell(index, code);
+    }
+
+    _setupDragDrop() {
+        if (!this._wrapperEl) return;
+
+        this._wrapperEl.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            this._updateDropIndicator(e.clientY);
+        });
+
+        this._wrapperEl.addEventListener('dragleave', (e) => {
+            if (!this._wrapperEl.contains(e.relatedTarget)) {
+                this._clearDropIndicator();
+            }
+        });
+
+        this._wrapperEl.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+            const toIndex = this._dropTargetIndex;
+            this._clearDropIndicator();
+
+            if (isNaN(fromIndex) || toIndex == null) return;
+            // Adjust target: if dragging down, the target shifts after removal
+            const adjustedTo = toIndex > fromIndex ? toIndex - 1 : toIndex;
+            if (adjustedTo === fromIndex) return;
+
+            const [cell] = this._cells.splice(fromIndex, 1);
+            this._cells.splice(adjustedTo, 0, cell);
+            this._reindexCells();
+
+            this._notebook.cells = this._cells.map(c => c.toJSON());
+            this._render();
+
+            this._client.moveCell(fromIndex, adjustedTo);
+        });
+    }
+
+    _updateDropIndicator(clientY) {
+        this._clearDropIndicator();
+
+        // Find the closest gap between cells based on cursor Y position
+        let closestIndex = 0;
+        let closestDist = Infinity;
+
+        for (let i = 0; i <= this._cells.length; i++) {
+            let y;
+            if (i < this._cells.length) {
+                y = this._cells[i].element.getBoundingClientRect().top;
+            } else {
+                const last = this._cells[this._cells.length - 1].element;
+                y = last.getBoundingClientRect().bottom;
+            }
+            const dist = Math.abs(clientY - y);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestIndex = i;
+            }
+        }
+
+        this._dropTargetIndex = closestIndex;
+
+        // Show indicator on the add-cell-container at that position
+        // DOM structure: [addBtn(0), cell(0), addBtn(1), cell(1), addBtn(2), ...]
+        // addBtn(i) is at children[2*i]
+        const indicator = this._wrapperEl.children[closestIndex * 2];
+        if (indicator) {
+            indicator.classList.add('drop-target');
+        }
+    }
+
+    _clearDropIndicator() {
+        this._dropTargetIndex = null;
+        if (!this._wrapperEl) return;
+        for (const el of this._wrapperEl.querySelectorAll('.drop-target')) {
+            el.classList.remove('drop-target');
+        }
     }
 
     // --- Remote events ---

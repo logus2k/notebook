@@ -1,6 +1,13 @@
 /**
  * CellOutput - Renders cell outputs (text, images, HTML, errors).
  */
+
+/** Normalize ipynb text values: arrays of strings or plain strings. */
+function textValue(v) {
+    if (Array.isArray(v)) return v.join('');
+    return v || '';
+}
+
 export class CellOutput {
     constructor() {
         this._el = document.createElement('div');
@@ -54,19 +61,19 @@ export class CellOutput {
     _renderStream(output) {
         const div = document.createElement('div');
         div.className = `output-stream ${output.name === 'stderr' ? 'stderr' : ''}`;
-        div.textContent = output.text || '';
+        div.textContent = textValue(output.text);
         return div;
     }
 
     _renderResult(output) {
         const data = output.data || {};
-        if (data['text/html']) return this._renderHTML(data['text/html']);
-        if (data['image/png']) return this._renderImage(data['image/png'], 'image/png');
-        if (data['image/svg+xml']) return this._renderSVG(data['image/svg+xml']);
+        if (data['text/html']) return this._renderHTML(textValue(data['text/html']));
+        if (data['image/png']) return this._renderImage(textValue(data['image/png']), 'image/png');
+        if (data['image/svg+xml']) return this._renderSVG(textValue(data['image/svg+xml']));
 
         const div = document.createElement('div');
         div.className = 'output-result';
-        div.textContent = data['text/plain'] || '';
+        div.textContent = textValue(data['text/plain']);
         return div;
     }
 
@@ -76,19 +83,19 @@ export class CellOutput {
         container.className = 'output-display';
 
         if (data['image/png']) {
-            container.appendChild(this._renderImage(data['image/png'], 'image/png'));
+            container.appendChild(this._renderImage(textValue(data['image/png']), 'image/png'));
         } else if (data['image/jpeg']) {
-            container.appendChild(this._renderImage(data['image/jpeg'], 'image/jpeg'));
+            container.appendChild(this._renderImage(textValue(data['image/jpeg']), 'image/jpeg'));
         } else if (data['image/svg+xml']) {
-            container.appendChild(this._renderSVG(data['image/svg+xml']));
+            container.appendChild(this._renderSVG(textValue(data['image/svg+xml'])));
         } else if (data['text/html']) {
-            container.appendChild(this._renderHTML(data['text/html']));
+            container.appendChild(this._renderHTML(textValue(data['text/html'])));
         } else if (data['application/json']) {
             container.appendChild(this._renderJSON(data['application/json']));
         } else if (data['text/plain']) {
             const div = document.createElement('div');
             div.className = 'output-result';
-            div.textContent = data['text/plain'];
+            div.textContent = textValue(data['text/plain']);
             container.appendChild(div);
         }
         return container;

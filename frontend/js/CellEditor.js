@@ -62,6 +62,7 @@ export class CellEditor {
         this._index = val;
         this._updateExecutionCount();
     }
+
     get cellType() { return this._cellType; }
     get source() { return this._getSource(); }
     get cellId() { return this._data.id; }
@@ -71,6 +72,29 @@ export class CellEditor {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.cellType = this._cellType;
+
+        // Sidebar
+        const sidebar = document.createElement('div');
+        sidebar.className = 'cell-sidebar';
+
+        const runBtn = this._sidebarBtn('\u25B6', 'Run cell', () => this._onRun());
+        runBtn.className = 'cell-run-btn';
+        sidebar.appendChild(runBtn);
+
+        const dragHandle = document.createElement('div');
+        dragHandle.className = 'cell-drag-handle';
+        dragHandle.textContent = '\u2847';
+        dragHandle.title = 'Drag to reorder';
+        dragHandle.draggable = true;
+        dragHandle.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', String(this._index));
+            e.dataTransfer.effectAllowed = 'move';
+            cell.classList.add('dragging');
+        });
+        dragHandle.addEventListener('dragend', () => {
+            cell.classList.remove('dragging');
+        });
+        sidebar.appendChild(dragHandle);
 
         // Header
         const header = document.createElement('div');
@@ -92,31 +116,7 @@ export class CellEditor {
         lockIndicator.className = 'cell-lock-indicator hidden';
         this._lockIndicatorEl = lockIndicator;
 
-        const actions = document.createElement('div');
-        actions.className = 'cell-actions';
-
-        if (this._cellType === 'code') {
-            const runBtn = document.createElement('button');
-            runBtn.className = 'run-btn';
-            runBtn.textContent = 'Run';
-            runBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this._onRun();
-            });
-            actions.appendChild(runBtn);
-        }
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = 'Delete';
-        deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (this._callbacks.onDelete) {
-                this._callbacks.onDelete(this._index);
-            }
-        });
-        actions.appendChild(deleteBtn);
-
-        header.append(typeBadge, execCount, spacer, lockIndicator, actions);
+        header.append(typeBadge, execCount, spacer, lockIndicator);
 
         // Editor area
         const editorArea = document.createElement('div');
@@ -128,13 +128,24 @@ export class CellEditor {
         mdRendered.className = 'cell-markdown-rendered hidden';
         this._mdRenderedEl = mdRendered;
 
-        cell.append(header, editorArea, mdRendered);
+        cell.append(sidebar, header, editorArea, mdRendered);
 
         if (this._cellType === 'code') {
             cell.appendChild(this._output.element);
         }
 
         return cell;
+    }
+
+    _sidebarBtn(label, title, onClick) {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.title = title;
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            onClick();
+        });
+        return btn;
     }
 
     async _initEditor() {
@@ -232,6 +243,8 @@ export class CellEditor {
             if (this._callbacks.onRun) {
                 this._callbacks.onRun(this._index, this._getSource());
             }
+        } else if (this._cellType === 'markdown') {
+            this._showMarkdownRendered();
         }
     }
 
