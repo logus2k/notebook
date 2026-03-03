@@ -18,6 +18,12 @@ class App {
     }
 
     async init() {
+        // Restore saved cell width
+        const savedWidth = localStorage.getItem('notebook-cell-width');
+        if (savedWidth) {
+            document.documentElement.style.setProperty('--notebook-max-width', `${savedWidth}px`);
+        }
+
         // Initialize components
         this._editor = new NotebookEditor(
             document.getElementById('notebook-container'),

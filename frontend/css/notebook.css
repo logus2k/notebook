@@ -1,5 +1,5 @@
 .notebook {
-    max-width: 960px;
+    max-width: var(--notebook-max-width, 960px);
     margin: 0 auto;
     padding-bottom: 120px;
 }

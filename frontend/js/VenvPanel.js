@@ -32,11 +32,66 @@ export class VenvPanel {
         closeBtn.addEventListener('click', () => this.close());
         header.append(title, closeBtn);
 
+        // Display settings
+        const settings = document.createElement('div');
+        settings.className = 'venv-panel-settings';
+
+        const settingsTitle = document.createElement('div');
+        settingsTitle.className = 'venv-section-title';
+        settingsTitle.textContent = 'Display';
+
+        const sliderRow = document.createElement('div');
+        sliderRow.className = 'settings-slider-row';
+
+        const sliderLabel = document.createElement('label');
+        sliderLabel.textContent = 'Cell Width';
+
+        const sliderValue = document.createElement('span');
+        sliderValue.className = 'settings-slider-value';
+
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = '500';
+        slider.step = '10';
+        slider.className = 'settings-slider';
+
+        const getMaxWidth = () => {
+            const container = document.getElementById('notebook-container');
+            return container ? container.clientWidth - 80 : 1800;
+        };
+
+        const applyWidth = (val) => {
+            const max = parseInt(slider.max, 10);
+            const isFull = val >= max;
+            sliderValue.textContent = isFull ? 'Full' : `${val}px`;
+            document.documentElement.style.setProperty('--notebook-max-width', isFull ? 'none' : `${val}px`);
+        };
+
+        slider.max = String(getMaxWidth());
+
+        const saved = localStorage.getItem('notebook-cell-width');
+        const initial = saved ? Math.min(parseInt(saved, 10), getMaxWidth()) : 960;
+        slider.value = String(initial);
+        applyWidth(initial);
+
+        slider.addEventListener('input', () => {
+            const val = parseInt(slider.value, 10);
+            applyWidth(val);
+            localStorage.setItem('notebook-cell-width', String(val));
+        });
+
+        window.addEventListener('resize', () => {
+            slider.max = String(getMaxWidth());
+        });
+
+        sliderRow.append(sliderLabel, sliderValue);
+        settings.append(settingsTitle, sliderRow, slider);
+
         // Body
         this._body = document.createElement('div');
         this._body.className = 'venv-panel-body';
 
-        this._panel.append(header, this._body);
+        this._panel.append(header, settings, this._body);
         this._container.appendChild(this._panel);
     }
 

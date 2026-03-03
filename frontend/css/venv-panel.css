@@ -37,6 +37,38 @@
     padding: 2px 6px;
 }
 
+.venv-panel-settings {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-slider-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.settings-slider-row label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.settings-slider-value {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+}
+
+.settings-slider {
+    width: 100%;
+    accent-color: var(--accent-blue);
+    padding: 0;
+    border: none;
+    background: transparent;
+    margin: 0;
+}
+
 .venv-panel-body {
     flex: 1;
     overflow-y: auto;
