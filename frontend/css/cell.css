@@ -6,6 +6,7 @@
     border-radius: var(--radius);
     background: var(--bg-secondary);
     transition: border-color 0.15s;
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }
 
 .cell:hover {
@@ -59,7 +60,7 @@
 }
 
 .cell-type-badge.markdown {
-    background: rgb(112 168 112 / 37%);
+    background: rgb(112 168 112 / 26%);
     color: #298829;
 }
 
