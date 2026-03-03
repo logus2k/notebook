@@ -1,20 +1,27 @@
+const S = 'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+const ICONS = {
+    folder:    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
+    file:      `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+    upload:    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+    save:      `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`,
+    download:  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+    settings:  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+};
+
 /**
- * NotebookToolbar - Kernel status, venv selector, action buttons, connected users.
+ * NotebookToolbar - Navigation, file actions, settings, connected users.
  */
 export class NotebookToolbar {
     /**
      * @param {HTMLElement} containerEl
      * @param {import('./KernelClient.js').KernelClient} kernelClient
-     * @param {object} callbacks - { onSave, onRunAll, onVenvPanelToggle }
+     * @param {object} callbacks - { onProjectClick, onNotebookClick, onImport, onSave, onExport, onSettingsToggle }
      */
     constructor(containerEl, kernelClient, callbacks = {}) {
         this._container = containerEl;
         this._client = kernelClient;
         this._callbacks = callbacks;
-        this._kernelStatus = 'dead';
         this._connectedUsers = {};
-        this._venvs = { project: [], shared: [] };
-        this._selectedVenv = null;
 
         this._build();
         this._setupListeners();
@@ -23,99 +30,40 @@ export class NotebookToolbar {
     _build() {
         this._container.innerHTML = '';
 
-        // Project/notebook selector group
+        // Navigation: Project + Notebook
         const navGroup = this._createGroup();
 
-        this._projectSelect = document.createElement('select');
-        this._projectSelect.className = 'project-selector';
-        this._projectSelect.addEventListener('change', () => this._onProjectChange());
-        navGroup.appendChild(this._projectSelect);
-
-        const newProjectBtn = this._createButton('+', () => this._onCreateProject());
-        newProjectBtn.title = 'Create project';
-        navGroup.appendChild(newProjectBtn);
-
-        this._notebookSelect = document.createElement('select');
-        this._notebookSelect.className = 'notebook-selector';
-        this._notebookSelect.addEventListener('change', () => this._onNotebookChange());
-        navGroup.appendChild(this._notebookSelect);
-
-        const newNotebookBtn = this._createButton('+', () => this._onCreateNotebook());
-        newNotebookBtn.title = 'Create notebook';
-        navGroup.appendChild(newNotebookBtn);
-
-        const importBtn = this._createButton('Import', () => this._onImportNotebook());
-        importBtn.title = 'Import .ipynb file';
-        navGroup.appendChild(importBtn);
-
-        const exportBtn = this._createButton('Export', () => {
-            if (this._callbacks.onExport) this._callbacks.onExport();
-        });
-        exportBtn.title = 'Export as .ipynb file';
-        navGroup.appendChild(exportBtn);
-
+        navGroup.appendChild(this._iconButton(ICONS.folder, 'Open project', () => {
+            if (this._callbacks.onProjectClick) this._callbacks.onProjectClick();
+        }));
+        navGroup.appendChild(this._iconButton(ICONS.file, 'Open notebook', () => {
+            if (this._callbacks.onNotebookClick) this._callbacks.onNotebookClick();
+        }));
         this._container.appendChild(navGroup);
-        this._container.appendChild(this._createSeparator());
 
-        // Action buttons
+        // Action buttons: Save, Import, Export, Settings
         const actionsGroup = this._createGroup();
 
-        this._saveBtn = this._createButton('Save', () => {
+        this._saveBtn = this._iconButton(ICONS.save, 'Save', () => {
             if (this._callbacks.onSave) this._callbacks.onSave();
         });
         actionsGroup.appendChild(this._saveBtn);
 
-        this._runAllBtn = this._createButton('Run All', () => {
-            if (this._callbacks.onRunAll) this._callbacks.onRunAll();
+        actionsGroup.appendChild(this._iconButton(ICONS.upload, 'Import .ipynb file', () => {
+            if (this._callbacks.onImport) this._callbacks.onImport();
+        }));
+
+        this._exportBtn = this._iconButton(ICONS.download, 'Export as .ipynb', () => {
+            if (this._callbacks.onExport) this._callbacks.onExport();
         });
-        actionsGroup.appendChild(this._runAllBtn);
+        actionsGroup.appendChild(this._exportBtn);
 
-        this._container.appendChild(actionsGroup);
-        this._container.appendChild(this._createSeparator());
-
-        // Kernel controls
-        const kernelGroup = this._createGroup();
-
-        this._kernelStatusEl = document.createElement('div');
-        this._kernelStatusEl.className = 'kernel-status';
-        this._kernelDot = document.createElement('span');
-        this._kernelDot.className = 'kernel-status-dot dead';
-        this._kernelLabel = document.createElement('span');
-        this._kernelLabel.textContent = 'No Kernel';
-        this._kernelStatusEl.append(this._kernelDot, this._kernelLabel);
-        kernelGroup.appendChild(this._kernelStatusEl);
-
-        this._startKernelBtn = this._createButton('Start', () => this._onStartKernel());
-        this._stopKernelBtn = this._createButton('Stop', () => this._client.stopKernel());
-        this._restartKernelBtn = this._createButton('Restart', () => this._client.restartKernel());
-        this._interruptBtn = this._createButton('Interrupt', () => this._client.interruptKernel());
-
-        kernelGroup.append(this._startKernelBtn, this._stopKernelBtn,
-                           this._restartKernelBtn, this._interruptBtn);
-        this._container.appendChild(kernelGroup);
-        this._container.appendChild(this._createSeparator());
-
-        // Venv selector
-        const venvGroup = this._createGroup();
-        const venvLabel = document.createElement('span');
-        venvLabel.className = 'toolbar-label';
-        venvLabel.textContent = 'Env:';
-        venvGroup.appendChild(venvLabel);
-
-        this._venvSelect = document.createElement('select');
-        this._venvSelect.className = 'venv-selector';
-        venvGroup.appendChild(this._venvSelect);
-
-        const settingsBtn = document.createElement('button');
+        const settingsBtn = this._iconButton(ICONS.settings, 'Settings', () => {
+            if (this._callbacks.onSettingsToggle) this._callbacks.onSettingsToggle();
+        });
         settingsBtn.className = 'toolbar-settings-btn';
-        settingsBtn.title = 'Settings';
-        settingsBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
-        settingsBtn.addEventListener('click', () => {
-            if (this._callbacks.onVenvPanelToggle) this._callbacks.onVenvPanelToggle();
-        });
-        venvGroup.appendChild(settingsBtn);
-
-        this._container.appendChild(venvGroup);
+        actionsGroup.appendChild(settingsBtn);
+        this._container.appendChild(actionsGroup);
 
         // Spacer
         const spacer = document.createElement('div');
@@ -129,7 +77,6 @@ export class NotebookToolbar {
     }
 
     _setupListeners() {
-        this._client.on('kernel:status', (data) => this._setKernelStatus(data.status));
         this._client.on('user:joined', (data) => {
             this._connectedUsers[data.sid] = data.name;
             this._renderUsers();
@@ -146,225 +93,6 @@ export class NotebookToolbar {
             }
             this._renderUsers();
         });
-    }
-
-    // --- Public methods ---
-
-    async loadProjects() {
-        try {
-            const resp = await fetch('api/projects');
-            const projects = await resp.json();
-            this._projectSelect.innerHTML = '<option value="">Select project...</option>';
-            for (const p of projects) {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = `${p.id} (${p.notebooks_count} notebooks)`;
-                this._projectSelect.appendChild(opt);
-            }
-        } catch (err) {
-            console.error('Failed to load projects:', err);
-        }
-    }
-
-    async loadNotebooks(projectId) {
-        try {
-            const resp = await fetch(`api/projects/${projectId}/notebooks`);
-            const notebooks = await resp.json();
-            this._notebookSelect.innerHTML = '<option value="">Select notebook...</option>';
-            for (const nb of notebooks) {
-                const opt = document.createElement('option');
-                opt.value = nb.name;
-                opt.textContent = nb.name;
-                this._notebookSelect.appendChild(opt);
-            }
-        } catch (err) {
-            console.error('Failed to load notebooks:', err);
-        }
-    }
-
-    async loadVenvs(projectId) {
-        try {
-            const [projectResp, sharedResp] = await Promise.all([
-                fetch(`api/projects/${projectId}/venvs`),
-                fetch('api/venvs')
-            ]);
-            this._venvs.project = await projectResp.json();
-            this._venvs.shared = await sharedResp.json();
-            this._renderVenvSelect();
-        } catch (err) {
-            console.error('Failed to load venvs:', err);
-        }
-    }
-
-    setProject(projectId) {
-        this._projectSelect.value = projectId;
-    }
-
-    setNotebook(notebookName) {
-        this._notebookSelect.value = notebookName;
-    }
-
-    getSelectedVenvRef() {
-        const val = this._venvSelect.value;
-        if (!val) return null;
-        const [type, name] = val.split(':');
-        return { type, name };
-    }
-
-    // --- Internal ---
-
-    _onProjectChange() {
-        const projectId = this._projectSelect.value;
-        if (projectId) {
-            this.loadNotebooks(projectId);
-            this.loadVenvs(projectId);
-        }
-        if (this._callbacks.onProjectChange) {
-            this._callbacks.onProjectChange(projectId);
-        }
-    }
-
-    _onNotebookChange() {
-        const notebookName = this._notebookSelect.value;
-        if (this._callbacks.onNotebookChange) {
-            this._callbacks.onNotebookChange(
-                this._projectSelect.value, notebookName
-            );
-        }
-    }
-
-    async _onCreateProject() {
-        const name = prompt('Project name:');
-        if (!name || !name.trim()) return;
-        try {
-            const resp = await fetch('api/projects', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ project_id: name.trim() })
-            });
-            if (!resp.ok) {
-                const err = await resp.json();
-                throw new Error(err.detail || 'Failed to create project');
-            }
-            await this.loadProjects();
-            this._projectSelect.value = name.trim();
-            this._onProjectChange();
-        } catch (err) {
-            alert(`Error: ${err.message}`);
-        }
-    }
-
-    async _onCreateNotebook() {
-        const projectId = this._projectSelect.value;
-        if (!projectId) {
-            alert('Select a project first');
-            return;
-        }
-        const name = prompt('Notebook name (without .ipynb):');
-        if (!name || !name.trim()) return;
-        try {
-            const resp = await fetch(`api/projects/${projectId}/notebooks`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name.trim() })
-            });
-            if (!resp.ok) {
-                const err = await resp.json();
-                throw new Error(err.detail || 'Failed to create notebook');
-            }
-            await this.loadNotebooks(projectId);
-            const nbName = name.trim().endsWith('.ipynb') ? name.trim() : name.trim() + '.ipynb';
-            this._notebookSelect.value = nbName;
-            this._onNotebookChange();
-        } catch (err) {
-            alert(`Error: ${err.message}`);
-        }
-    }
-
-    _onImportNotebook() {
-        const projectId = this._projectSelect.value;
-        if (!projectId) {
-            alert('Select a project first');
-            return;
-        }
-
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.ipynb';
-        input.addEventListener('change', async () => {
-            const file = input.files[0];
-            if (!file) return;
-
-            try {
-                const text = await file.text();
-                const content = JSON.parse(text);
-                if (!content.cells || !Array.isArray(content.cells)) {
-                    throw new Error('Invalid notebook: missing cells array');
-                }
-
-                const name = file.name.replace(/\.ipynb$/, '');
-                const resp = await fetch(`api/projects/${projectId}/notebooks`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, content })
-                });
-                if (!resp.ok) {
-                    const err = await resp.json();
-                    throw new Error(err.detail || 'Failed to import notebook');
-                }
-                await this.loadNotebooks(projectId);
-                const nbName = name.endsWith('.ipynb') ? name : name + '.ipynb';
-                this._notebookSelect.value = nbName;
-                this._onNotebookChange();
-            } catch (err) {
-                alert(`Import error: ${err.message}`);
-            }
-        });
-        input.click();
-    }
-
-    _onStartKernel() {
-        const venvRef = this.getSelectedVenvRef();
-        if (!venvRef) {
-            alert('Select a virtual environment first');
-            return;
-        }
-        this._client.startKernel(venvRef);
-    }
-
-    _setKernelStatus(status) {
-        this._kernelStatus = status;
-        this._kernelDot.className = `kernel-status-dot ${status}`;
-        const labels = {
-            idle: 'Idle', busy: 'Busy', starting: 'Starting...', dead: 'Stopped'
-        };
-        this._kernelLabel.textContent = labels[status] || status;
-    }
-
-    _renderVenvSelect() {
-        this._venvSelect.innerHTML = '<option value="">No env</option>';
-        if (this._venvs.project.length > 0) {
-            const group = document.createElement('optgroup');
-            group.label = 'Project';
-            for (const v of this._venvs.project) {
-                const opt = document.createElement('option');
-                opt.value = `project:${v.name}`;
-                opt.textContent = v.name;
-                group.appendChild(opt);
-            }
-            this._venvSelect.appendChild(group);
-        }
-        if (this._venvs.shared.length > 0) {
-            const group = document.createElement('optgroup');
-            group.label = 'Shared';
-            for (const v of this._venvs.shared) {
-                const opt = document.createElement('option');
-                opt.value = `shared:${v.name}`;
-                opt.textContent = v.name;
-                group.appendChild(opt);
-            }
-            this._venvSelect.appendChild(group);
-        }
     }
 
     _renderUsers() {
@@ -386,15 +114,11 @@ export class NotebookToolbar {
         return div;
     }
 
-    _createSeparator() {
-        const div = document.createElement('div');
-        div.className = 'toolbar-separator';
-        return div;
-    }
-
-    _createButton(label, onClick) {
+    _iconButton(svgHtml, title, onClick) {
         const btn = document.createElement('button');
-        btn.textContent = label;
+        btn.className = 'toolbar-icon-btn';
+        btn.innerHTML = svgHtml;
+        btn.title = title;
         btn.addEventListener('click', onClick);
         return btn;
     }

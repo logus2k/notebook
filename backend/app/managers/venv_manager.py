@@ -22,6 +22,21 @@ class VenvManager:
         if ".." in name or "/" in name or "\\" in name or not name:
             raise ValueError("Invalid venv name")
 
+    def _get_python_version(self, venv_path: str) -> Optional[str]:
+        """Read Python version from pyvenv.cfg."""
+        cfg = os.path.join(venv_path, "pyvenv.cfg")
+        if not os.path.exists(cfg):
+            return None
+        try:
+            with open(cfg) as f:
+                for line in f:
+                    key, _, val = line.partition("=")
+                    if key.strip().lower() == "version":
+                        return val.strip()
+        except OSError:
+            pass
+        return None
+
     def get_python_path(self, name: str, project_id: Optional[str] = None) -> str:
         venv_path = self._resolve_venv_path(name, project_id)
         python_path = os.path.join(venv_path, "bin", "python")
@@ -41,10 +56,12 @@ class VenvManager:
             venv_path = os.path.join(base_dir, name)
             python_path = os.path.join(venv_path, "bin", "python")
             if os.path.isdir(venv_path) and os.path.exists(python_path):
+                version = self._get_python_version(venv_path)
                 venvs.append({
                     "name": name,
                     "path": venv_path,
                     "python": python_path,
+                    "python_version": version,
                     "type": "project" if project_id else "shared"
                 })
         return venvs

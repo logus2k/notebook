@@ -70,6 +70,14 @@ class KernelManagerService:
 
         km.start_kernel()
 
+        # Give kernel process a moment to either start or crash
+        await asyncio.sleep(1)
+        if not km.is_alive():
+            logger.error(f"Kernel process died immediately for {session_id} with {python_path}")
+            raise RuntimeError(
+                f"Kernel process failed to start. Ensure ipykernel is installed in the venv."
+            )
+
         session = KernelSession(
             session_id=session_id,
             kernel_manager=km,
@@ -128,12 +136,24 @@ class KernelManagerService:
                 return session
         return None
 
-    def get_kernel_client(self, session_id: str):
+    async def get_kernel_client(self, session_id: str):
         session = self._kernels.get(session_id)
         if not session:
             return None
+        if not session.kernel_manager.is_alive():
+            logger.error(f"Kernel process is not alive for session {session_id}")
+            return None
         kc = session.kernel_manager.client()
         kc.start_channels()
+        try:
+            # Run blocking wait_for_ready in a thread so we don't block the event loop
+            await asyncio.get_event_loop().run_in_executor(
+                None, lambda: kc.wait_for_ready(timeout=15)
+            )
+        except RuntimeError as e:
+            logger.error(f"Kernel not ready for session {session_id}: {e}")
+            kc.stop_channels()
+            return None
         return kc
 
     def heartbeat(self, session_id: str):

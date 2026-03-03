@@ -30,6 +30,20 @@ export class CellOutput {
         this._el.appendChild(div);
     }
 
+    showElapsed(seconds) {
+        // Remove any previous elapsed indicator
+        const prev = this._el.querySelector('.output-elapsed');
+        if (prev) prev.remove();
+        const label = seconds < 0.1 ? '0.0s'
+            : seconds < 10 ? seconds.toFixed(1) + 's'
+            : seconds < 60 ? Math.round(seconds) + 's'
+            : Math.floor(seconds / 60) + 'm ' + Math.round(seconds % 60) + 's';
+        const div = document.createElement('div');
+        div.className = 'output-elapsed';
+        div.innerHTML = `<span class="elapsed-check">\u2713</span> ${label}`;
+        this._el.appendChild(div);
+    }
+
     addOutput(output) {
         const executing = this._el.querySelector('.output-executing');
         if (executing) executing.remove();

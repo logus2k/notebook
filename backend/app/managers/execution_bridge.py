@@ -24,8 +24,21 @@ class ExecutionBridge:
             }, room=room)
             return
 
-        kc = self._kernel_manager.get_kernel_client(session_id)
+        kc = await self._kernel_manager.get_kernel_client(session_id)
         if not kc:
+            await self._sio.emit("cell:output", {
+                "cell_index": cell_index,
+                "output": {
+                    "output_type": "error",
+                    "ename": "KernelError",
+                    "evalue": "Kernel is not running or not responding. Try restarting the kernel.",
+                    "traceback": ["Kernel is not running or not responding. Try restarting the kernel."]
+                }
+            }, room=room)
+            await self._sio.emit("cell:execute_complete", {
+                "cell_index": cell_index,
+                "execution_count": None
+            }, room=room)
             return
 
         self._kernel_manager.update_status(session_id, "busy")
@@ -33,6 +46,7 @@ class ExecutionBridge:
 
         try:
             msg_id = kc.execute(code)
+            logger.info(f"Execute sent for cell {cell_index}, msg_id={msg_id}")
             await self._listen_for_outputs(kc, msg_id, session_id, cell_index, room)
         except Exception as e:
             logger.error(f"Execution error: {e}")
@@ -56,15 +70,24 @@ class ExecutionBridge:
     async def _listen_for_outputs(self, kc: KernelClient, msg_id: str,
                                   session_id: str, cell_index: int, room: str):
         execution_count = None
+        logger.info(f"IOPub listener started for session {session_id}, cell {cell_index}, msg_id={msg_id}")
         while True:
             try:
                 msg = await asyncio.get_event_loop().run_in_executor(
                     None, lambda: kc.get_iopub_msg(timeout=30)
                 )
-            except Exception:
+            except Exception as e:
+                logger.warning(f"IOPub timeout/error for session {session_id}, cell {cell_index}: {e}")
+                await self._sio.emit("cell:execute_complete", {
+                    "cell_index": cell_index,
+                    "execution_count": execution_count
+                }, room=room)
                 break
 
-            if msg.get("parent_header", {}).get("msg_id") != msg_id:
+            parent_msg_id = msg.get("parent_header", {}).get("msg_id")
+            msg_type = msg.get("msg_type", "")
+            if parent_msg_id != msg_id:
+                logger.debug(f"IOPub skipping msg_type={msg_type} (parent={parent_msg_id}, expected={msg_id})")
                 continue
 
             msg_type = msg.get("msg_type", "")
@@ -114,7 +137,9 @@ class ExecutionBridge:
                 }, room=room)
 
             elif msg_type == "status":
+                logger.info(f"IOPub status: {content.get('execution_state')} for cell {cell_index}")
                 if content.get("execution_state") == "idle":
+                    logger.info(f"Execution complete for cell {cell_index}, session {session_id}")
                     await self._sio.emit("cell:execute_complete", {
                         "cell_index": cell_index,
                         "execution_count": execution_count

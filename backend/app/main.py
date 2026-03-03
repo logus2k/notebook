@@ -246,18 +246,22 @@ async def on_cell_move(sid, data):
 @sio.on("cell:execute")
 async def on_cell_execute(sid, data):
     ctx = client_context.get(sid, {})
+    logger.info(f"Cell execute request from {sid}, cell_index={data.get('cell_index')}")
     session = kernel_mgr.get_session_by_sid(sid)
     if not session:
+        logger.warning(f"No kernel session for {sid}")
         await sio.emit("error", {
             "message": "No active kernel. Start a kernel first.",
             "code": "NO_KERNEL"
         }, to=sid)
         return
 
+    logger.info(f"Using kernel session {session.session_id}, alive={session.kernel_manager.is_alive()}")
     room_id = f"notebook:{ctx['project_id']}:{ctx['notebook_path']}"
-    await execution_bridge.execute_cell(
+    # Fire and forget — don't block the event handler so other events can be processed
+    asyncio.create_task(execution_bridge.execute_cell(
         session.session_id, data.get("cell_index"), data.get("code", ""), room_id
-    )
+    ))
 
 
 # --- Kernel events ---

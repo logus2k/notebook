@@ -245,6 +245,7 @@ export class CellEditor {
     _onRun() {
         if (this._cellType === 'code') {
             this._executing = true;
+            this._executeStart = performance.now();
             this._el.classList.add('executing');
             this._output.showExecuting();
             if (this._callbacks.onRun) {
@@ -260,6 +261,15 @@ export class CellEditor {
         this._el.classList.remove('executing');
         this._executionCount = executionCount;
         this._updateExecutionCount();
+        // Clear the "Running..." spinner if no output replaced it
+        const executing = this._output.element.querySelector('.output-executing');
+        if (executing) executing.remove();
+        // Show elapsed time
+        if (this._executeStart) {
+            const elapsed = (performance.now() - this._executeStart) / 1000;
+            this._executeStart = null;
+            this._output.showElapsed(elapsed);
+        }
     }
 
     addOutput(output) {

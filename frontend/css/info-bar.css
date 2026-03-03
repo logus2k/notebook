@@ -1,0 +1,138 @@
+#info-bar {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 12px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+/* Left section: breadcrumb */
+.info-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+}
+
+/* Right section: kernel status */
+.info-bar-right {
+    display: flex;
+    align-items: center;
+}
+
+/* Plain text labels for project/notebook */
+.info-bar-text {
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 240px;
+}
+
+.info-bar-text.has-value {
+    color: var(--text-secondary);
+}
+
+.info-bar-separator {
+    color: var(--text-muted);
+    opacity: 0.4;
+    font-size: 11px;
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
+.info-bar-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+}
+
+/* Centered kernel controls */
+.info-bar-controls {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+
+.info-bar-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 22px;
+    padding: 0;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+
+.info-bar-icon-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+/* Clickable kernel/environment status */
+.info-bar-kernel {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-family: var(--font-mono);
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+}
+
+.info-bar-kernel:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.info-bar-kernel .kernel-status-dot {
+    width: 6px;
+    height: 6px;
+}
+
+/* Kernel status dot (shared with toolbar.css) */
+.kernel-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.kernel-status-dot.idle {
+    background: var(--accent-green);
+}
+
+.kernel-status-dot.busy {
+    background: var(--accent-yellow);
+    animation: pulse 1s infinite;
+}
+
+.kernel-status-dot.dead {
+    background: var(--accent-red);
+}
+
+.kernel-status-dot.starting {
+    background: var(--accent-orange);
+    animation: pulse 0.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
