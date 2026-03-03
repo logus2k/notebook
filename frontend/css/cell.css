@@ -133,7 +133,7 @@
     justify-content: center;
     width: 24px;
     height: 24px;
-    padding: 0 0 0 3px;
+    padding: 0 0 1px 3px;
     font-size: 14px;
     background: #00000080;
     color: var(--accent-green);
