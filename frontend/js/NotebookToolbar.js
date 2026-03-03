@@ -146,7 +146,7 @@ export class NotebookToolbar {
 
     async loadProjects() {
         try {
-            const resp = await fetch('/api/projects');
+            const resp = await fetch('api/projects');
             const projects = await resp.json();
             this._projectSelect.innerHTML = '<option value="">Select project...</option>';
             for (const p of projects) {
@@ -162,7 +162,7 @@ export class NotebookToolbar {
 
     async loadNotebooks(projectId) {
         try {
-            const resp = await fetch(`/api/projects/${projectId}/notebooks`);
+            const resp = await fetch(`api/projects/${projectId}/notebooks`);
             const notebooks = await resp.json();
             this._notebookSelect.innerHTML = '<option value="">Select notebook...</option>';
             for (const nb of notebooks) {
@@ -179,8 +179,8 @@ export class NotebookToolbar {
     async loadVenvs(projectId) {
         try {
             const [projectResp, sharedResp] = await Promise.all([
-                fetch(`/api/projects/${projectId}/venvs`),
-                fetch('/api/venvs')
+                fetch(`api/projects/${projectId}/venvs`),
+                fetch('api/venvs')
             ]);
             this._venvs.project = await projectResp.json();
             this._venvs.shared = await sharedResp.json();
@@ -231,7 +231,7 @@ export class NotebookToolbar {
         const name = prompt('Project name:');
         if (!name || !name.trim()) return;
         try {
-            const resp = await fetch('/api/projects', {
+            const resp = await fetch('api/projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ project_id: name.trim() })
@@ -257,7 +257,7 @@ export class NotebookToolbar {
         const name = prompt('Notebook name (without .ipynb):');
         if (!name || !name.trim()) return;
         try {
-            const resp = await fetch(`/api/projects/${projectId}/notebooks`, {
+            const resp = await fetch(`api/projects/${projectId}/notebooks`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: name.trim() })
@@ -297,7 +297,7 @@ export class NotebookToolbar {
                 }
 
                 const name = file.name.replace(/\.ipynb$/, '');
-                const resp = await fetch(`/api/projects/${projectId}/notebooks`, {
+                const resp = await fetch(`api/projects/${projectId}/notebooks`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, content })

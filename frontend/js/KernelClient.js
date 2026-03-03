@@ -11,7 +11,11 @@ export class KernelClient {
     }
 
     connect(url = '') {
+        // Derive Socket.IO path from page URL so it works behind subpath proxies
+        const basePath = new URL('.', window.location.href).pathname;
+
         this._socket = io(url, {
+            path: basePath + 'socket.io',
             transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionDelay: 1000,

@@ -11,7 +11,7 @@ import {
     defaultKeymap, indentWithTab, history, historyKeymap,
     syntaxHighlighting, defaultHighlightStyle,
     python
-} from '/static/vendor/codemirror/codemirror.bundle.js';
+} from '../vendor/codemirror/codemirror.bundle.js';
 
 const cmModules = {
     EditorView, keymap, lineNumbers, highlightActiveLine,

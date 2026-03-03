@@ -188,7 +188,7 @@ export class VenvPanel {
         try {
             // Project venvs
             if (this._projectId) {
-                const resp = await fetch(`/api/projects/${this._projectId}/venvs`);
+                const resp = await fetch(`api/projects/${this._projectId}/venvs`);
                 const projectVenvs = await resp.json();
                 loading.remove();
                 if (projectVenvs.length > 0) {
@@ -199,7 +199,7 @@ export class VenvPanel {
             }
 
             // Shared venvs
-            const resp = await fetch('/api/venvs');
+            const resp = await fetch('api/venvs');
             const sharedVenvs = await resp.json();
             if (this._body.contains(loading)) loading.remove();
             if (sharedVenvs.length > 0) {
@@ -252,7 +252,7 @@ export class VenvPanel {
             try {
                 let url;
                 if (scope === 'project' && this._projectId) {
-                    url = `/api/projects/${this._projectId}/venvs`;
+                    url = `api/projects/${this._projectId}/venvs`;
                 } else {
                     url = '/api/venvs';
                 }
@@ -321,9 +321,9 @@ export class VenvPanel {
                 try {
                     let url;
                     if (type === 'project' && this._projectId) {
-                        url = `/api/projects/${this._projectId}/venvs/${v.name}`;
+                        url = `api/projects/${this._projectId}/venvs/${v.name}`;
                     } else {
-                        url = `/api/venvs/${v.name}`;
+                        url = `api/venvs/${v.name}`;
                     }
                     await fetch(url, { method: 'DELETE' });
                     await this._refresh();
@@ -363,9 +363,9 @@ export class VenvPanel {
         try {
             let url;
             if (type === 'project' && this._projectId) {
-                url = `/api/projects/${this._projectId}/venvs/${venvName}/packages`;
+                url = `api/projects/${this._projectId}/venvs/${venvName}/packages`;
             } else {
-                url = `/api/venvs/${venvName}/packages`;
+                url = `api/venvs/${venvName}/packages`;
             }
             const resp = await fetch(url);
             const packages = await resp.json();
@@ -389,9 +389,9 @@ export class VenvPanel {
                 try {
                     let pkgUrl;
                     if (type === 'project' && this._projectId) {
-                        pkgUrl = `/api/projects/${this._projectId}/venvs/${venvName}/packages`;
+                        pkgUrl = `api/projects/${this._projectId}/venvs/${venvName}/packages`;
                     } else {
-                        pkgUrl = `/api/venvs/${venvName}/packages`;
+                        pkgUrl = `api/venvs/${venvName}/packages`;
                     }
                     await fetch(pkgUrl, {
                         method: 'POST',
