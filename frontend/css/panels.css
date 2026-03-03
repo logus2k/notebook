@@ -12,14 +12,24 @@
     color: var(--text-primary) !important;
     font-size: 13px !important;
     font-weight: 600 !important;
+    text-transform: none !important;
+    font-variant: normal !important;
 }
 
 .jsPanel .jsPanel-controlbar .jsPanel-btn {
     color: var(--text-secondary) !important;
+    background: var(--bg-secondary) !important;
 }
 
 .jsPanel .jsPanel-controlbar .jsPanel-btn:hover {
     color: var(--text-primary) !important;
+}
+
+.jsPanel-controlbar .jsPanel-btn.jsPanel-btn-md span:not(.material-icons),
+.jsPanel-controlbar .jsPanel-btn.jsPanel-btn-md svg:not(.svg-inline--fa) {
+    width: 1rem !important;
+    height: 1rem !important;
+    margin: 0px !important;
 }
 
 .jsPanel .jsPanel-content {
