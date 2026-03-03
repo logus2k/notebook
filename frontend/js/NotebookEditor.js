@@ -233,21 +233,25 @@ export class NotebookEditor {
 
     _setupDragDrop() {
         if (!this._wrapperEl) return;
+        this._dragScrollRAF = null;
 
         this._wrapperEl.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             this._updateDropIndicator(e.clientY);
+            this._updateDragScroll(e.clientY);
         });
 
         this._wrapperEl.addEventListener('dragleave', (e) => {
             if (!this._wrapperEl.contains(e.relatedTarget)) {
                 this._clearDropIndicator();
+                this._stopDragScroll();
             }
         });
 
         this._wrapperEl.addEventListener('drop', (e) => {
             e.preventDefault();
+            this._stopDragScroll();
             const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
             const toIndex = this._dropTargetIndex;
             this._clearDropIndicator();
@@ -268,9 +272,42 @@ export class NotebookEditor {
         });
     }
 
-    _updateDropIndicator(clientY) {
-        this._clearDropIndicator();
+    _updateDragScroll(clientY) {
+        const edgeZone = 60;
+        const maxSpeed = 12;
+        const rect = this._container.getBoundingClientRect();
+        const distTop = clientY - rect.top;
+        const distBottom = rect.bottom - clientY;
 
+        let speed = 0;
+        if (distTop < edgeZone) {
+            speed = -maxSpeed * (1 - distTop / edgeZone);
+        } else if (distBottom < edgeZone) {
+            speed = maxSpeed * (1 - distBottom / edgeZone);
+        }
+
+        if (speed === 0) {
+            this._stopDragScroll();
+            return;
+        }
+
+        if (this._dragScrollRAF) return; // already scrolling
+
+        const scroll = () => {
+            this._container.scrollTop += speed;
+            this._dragScrollRAF = requestAnimationFrame(scroll);
+        };
+        this._dragScrollRAF = requestAnimationFrame(scroll);
+    }
+
+    _stopDragScroll() {
+        if (this._dragScrollRAF) {
+            cancelAnimationFrame(this._dragScrollRAF);
+            this._dragScrollRAF = null;
+        }
+    }
+
+    _updateDropIndicator(clientY) {
         // Find the closest gap between cells based on cursor Y position
         let closestIndex = 0;
         let closestDist = Infinity;
@@ -290,6 +327,10 @@ export class NotebookEditor {
             }
         }
 
+        // Only update DOM if target changed
+        if (closestIndex === this._dropTargetIndex) return;
+
+        this._clearDropIndicator();
         this._dropTargetIndex = closestIndex;
 
         // Show indicator on the add-cell-container at that position

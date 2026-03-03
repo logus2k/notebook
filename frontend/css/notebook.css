@@ -25,7 +25,8 @@
 }
 
 .add-cell-container:hover,
-.add-cell-container:focus-within {
+.add-cell-container:focus-within,
+.add-cell-container.drop-target {
     opacity: 1;
 }
 
