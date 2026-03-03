@@ -56,6 +56,7 @@ class App {
             this._client,
             {
                 onSave: () => this._editor.save(),
+                onExport: () => this._editor.export(),
                 onRunAll: () => this._editor.runAll(),
                 onVenvPanelToggle: () => this._venvPanel.toggle(),
                 onProjectChange: (projectId) => this._onProjectChange(projectId),

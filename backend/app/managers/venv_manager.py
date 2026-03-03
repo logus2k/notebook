@@ -53,8 +53,14 @@ class VenvManager:
                           requirements: Optional[list[str]] = None) -> dict:
         self._validate_name(name)
         venv_path = self._resolve_venv_path(name, project_id)
+        python_path = os.path.join(venv_path, "bin", "python")
+
         if os.path.exists(venv_path):
-            raise FileExistsError(f"Venv already exists: {name}")
+            if os.path.exists(python_path):
+                raise FileExistsError(f"Venv already exists: {name}")
+            # Broken leftover from a failed creation — clean it up
+            shutil.rmtree(venv_path)
+
         os.makedirs(os.path.dirname(venv_path), exist_ok=True)
 
         proc = await asyncio.create_subprocess_exec(
@@ -64,6 +70,9 @@ class VenvManager:
         )
         stdout, stderr = await proc.communicate()
         if proc.returncode != 0:
+            # Clean up partial directory on failure
+            if os.path.exists(venv_path):
+                shutil.rmtree(venv_path)
             raise RuntimeError(f"Failed to create venv: {stderr.decode()}")
 
         # Install ipykernel so jupyter_client can use this venv

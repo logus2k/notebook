@@ -1,8 +1,8 @@
 .venv-panel {
     position: fixed;
-    right: -400px;
+    right: -800px;
     top: 0;
-    width: 400px;
+    width: 800px;
     height: 100vh;
     background: var(--bg-secondary);
     border-left: 1px solid var(--border-color);

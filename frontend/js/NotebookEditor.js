@@ -65,6 +65,19 @@ export class NotebookEditor {
         }
     }
 
+    export() {
+        if (!this._notebook) return;
+        const content = this._serializeNotebook();
+        const json = JSON.stringify(content, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = this._notebookPath || 'notebook.ipynb';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
     runAll() {
         for (let i = 0; i < this._cells.length; i++) {
             const cell = this._cells[i];

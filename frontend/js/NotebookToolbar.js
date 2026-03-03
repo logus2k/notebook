@@ -48,6 +48,12 @@ export class NotebookToolbar {
         importBtn.title = 'Import .ipynb file';
         navGroup.appendChild(importBtn);
 
+        const exportBtn = this._createButton('Export', () => {
+            if (this._callbacks.onExport) this._callbacks.onExport();
+        });
+        exportBtn.title = 'Export as .ipynb file';
+        navGroup.appendChild(exportBtn);
+
         this._container.appendChild(navGroup);
         this._container.appendChild(this._createSeparator());
 

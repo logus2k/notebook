@@ -25,7 +25,7 @@ export class VenvPanel {
         const header = document.createElement('div');
         header.className = 'venv-panel-header';
         const title = document.createElement('h3');
-        title.textContent = 'Virtual Environments';
+        title.textContent = 'Settings';
         const closeBtn = document.createElement('button');
         closeBtn.className = 'venv-panel-close';
         closeBtn.textContent = 'x';
@@ -254,7 +254,7 @@ export class VenvPanel {
                 if (scope === 'project' && this._projectId) {
                     url = `api/projects/${this._projectId}/venvs`;
                 } else {
-                    url = '/api/venvs';
+                    url = 'api/venvs';
                 }
                 const resp = await fetch(url, {
                     method: 'POST',
@@ -408,7 +408,48 @@ export class VenvPanel {
                     installBtn.textContent = 'Install';
                 }
             });
-            installForm.append(installInput, installBtn);
+            const reqFileBtn = document.createElement('button');
+            reqFileBtn.textContent = 'From file';
+            reqFileBtn.title = 'Install from requirements.txt';
+            reqFileBtn.addEventListener('click', () => {
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = '.txt';
+                fileInput.addEventListener('change', async () => {
+                    const file = fileInput.files[0];
+                    if (!file) return;
+                    const text = await file.text();
+                    const packages = text.split('\n')
+                        .map(l => l.replace(/#.*$/, '').trim())
+                        .filter(Boolean);
+                    if (!packages.length) return;
+                    reqFileBtn.disabled = true;
+                    reqFileBtn.textContent = 'Installing...';
+                    try {
+                        let pkgUrl;
+                        if (type === 'project' && this._projectId) {
+                            pkgUrl = `api/projects/${this._projectId}/venvs/${venvName}/packages`;
+                        } else {
+                            pkgUrl = `api/venvs/${venvName}/packages`;
+                        }
+                        await fetch(pkgUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ packages })
+                        });
+                        await this._showPackages(venvName, type, parentEl);
+                        await this._showPackages(venvName, type, parentEl);
+                    } catch (err) {
+                        alert(`Install error: ${err.message}`);
+                    } finally {
+                        reqFileBtn.disabled = false;
+                        reqFileBtn.textContent = 'From file';
+                    }
+                });
+                fileInput.click();
+            });
+
+            installForm.append(installInput, installBtn, reqFileBtn);
             detail.appendChild(installForm);
 
             // Package list
