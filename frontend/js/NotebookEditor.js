@@ -208,6 +208,7 @@ export class NotebookEditor {
             const refChild = this._wrapperEl.children[index * 2 + 1] || null;
             this._wrapperEl.insertBefore(cellEditor.element, refChild);
             this._wrapperEl.insertBefore(addBtn, cellEditor.element.nextSibling);
+            this._updateAddCellLast();
         }
 
         // Broadcast
@@ -230,6 +231,7 @@ export class NotebookEditor {
         }
 
         this._reindexCells();
+        this._updateAddCellLast();
         this._client.deleteCell(index);
 
         // If that was the last cell, insert a fresh empty code cell
@@ -241,6 +243,15 @@ export class NotebookEditor {
     _reindexCells() {
         for (let i = 0; i < this._cells.length; i++) {
             this._cells[i].index = i;
+        }
+    }
+
+    _updateAddCellLast() {
+        if (!this._wrapperEl) return;
+        const addBtns = this._wrapperEl.querySelectorAll('.add-cell-container');
+        addBtns.forEach(btn => btn.classList.remove('add-cell-last'));
+        if (addBtns.length > 0) {
+            addBtns[addBtns.length - 1].classList.add('add-cell-last');
         }
     }
 
