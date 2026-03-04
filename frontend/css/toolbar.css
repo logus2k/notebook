@@ -3,7 +3,7 @@
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    background: var(--bg-secondary);
+    background: #ffe39e;
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
 }
@@ -35,6 +35,11 @@
     font-size: 11px;
     font-weight: 600;
     color: #fff;
+}
+
+.toolbar-logo {
+    height: 22px;
+    width: auto;
 }
 
 .toolbar-icon-btn {

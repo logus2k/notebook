@@ -5,3 +5,12 @@ aiofiles
 jupyter_client
 ipykernel
 pyzmq
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn
+scipy
+plotly
+statsmodels
+pillow

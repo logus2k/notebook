@@ -154,7 +154,7 @@ class App {
             }
         } else {
             // Open the Welcome notebook by default
-            this._onNotebookChange('Welcome', 'Welcome.ipynb');
+            this._onNotebookChange('Examples', 'Welcome.ipynb');
         }
     }
 

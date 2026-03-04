@@ -56,7 +56,7 @@ class NotebookManager:
     def ensure_welcome_notebook(self) -> tuple[str, str]:
         """Create the Welcome project and notebook if they don't exist.
         Returns (project_id, notebook_name)."""
-        project_id = "Welcome"
+        project_id = "Examples"
         notebook_name = "Welcome.ipynb"
         project_path = os.path.join(PROJECTS_DIR, project_id)
         notebooks_dir = os.path.join(project_path, "notebooks")
@@ -100,13 +100,34 @@ class NotebookManager:
                     "id": str(uuid.uuid4())[:8],
                     "metadata": {},
                     "source": [
+                        "# Libraries available in the Default environment\n",
+                        "import numpy as np\n",
+                        "import pandas as pd\n",
+                        "import matplotlib.pyplot as plt\n",
+                        "import seaborn as sns\n",
+                        "import sklearn\n",
+                        "import scipy\n",
+                        "import plotly\n",
+                        "import statsmodels\n",
+                        "from PIL import Image\n",
+                        "\n",
+                        "print(f\"NumPy {np.__version__}, Pandas {pd.__version__}, \"\n",
+                        "      f\"Matplotlib {plt.matplotlib.__version__}, Seaborn {sns.__version__}\")"
+                    ],
+                    "outputs": [],
+                    "execution_count": None
+                },
+                {
+                    "cell_type": "code",
+                    "id": str(uuid.uuid4())[:8],
+                    "metadata": {},
+                    "source": [
+                        "# Quick example: Fibonacci with NumPy\n",
                         "import math\n",
                         "\n",
-                        "# Calculate the golden ratio\n",
                         "phi = (1 + math.sqrt(5)) / 2\n",
                         "print(f\"The golden ratio is {phi:.6f}\")\n",
                         "\n",
-                        "# Generate a Fibonacci sequence\n",
                         "fib = [0, 1]\n",
                         "for _ in range(8):\n",
                         "    fib.append(fib[-1] + fib[-2])\n",
