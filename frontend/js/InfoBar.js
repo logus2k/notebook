@@ -5,7 +5,7 @@ const ICONS = {
     stop:      `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><rect x="6" y="6" width="12" height="12" rx="1"/></svg>`,
     restart:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`,
     interrupt: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`,
-    clearAll:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`,
+    clearAll:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><line x1="4" y1="6" x2="13" y2="6"/><line x1="4" y1="11" x2="13" y2="11"/><line x1="4" y1="16" x2="13" y2="16"/><path d="M17 5l4 14"/><path d="M15 12l6 0"/></svg>`,
 };
 
 /**
