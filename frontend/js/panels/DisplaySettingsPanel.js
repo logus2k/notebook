@@ -64,8 +64,7 @@ export class DisplaySettingsPanel {
         slider.className = 'settings-slider';
 
         const getMaxWidth = () => {
-            const c = document.getElementById('notebook-container');
-            return c ? c.clientWidth - 80 : 1800;
+            return window.innerWidth - 80;
         };
 
         const applyWidth = (val) => {
@@ -77,7 +76,7 @@ export class DisplaySettingsPanel {
 
         slider.max = String(getMaxWidth());
         const saved = localStorage.getItem('notebook-cell-width');
-        const initial = saved ? Math.min(parseInt(saved, 10), getMaxWidth()) : 960;
+        const initial = saved ? parseInt(saved, 10) : 960;
         slider.value = String(initial);
         applyWidth(initial);
 
