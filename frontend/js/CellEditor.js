@@ -202,8 +202,12 @@ export class CellEditor {
             e.stopPropagation();
             const source = this._getSource();
             navigator.clipboard.writeText(source).then(() => {
-                copyBtn.title = 'Copied!';
-                setTimeout(() => { copyBtn.title = 'Copy cell content'; }, 1500);
+                const tip = document.createElement('span');
+                tip.className = 'cell-copy-toast';
+                tip.textContent = 'Copied!';
+                copyBtn.style.position = 'relative';
+                copyBtn.appendChild(tip);
+                setTimeout(() => tip.remove(), 1200);
             });
         });
 

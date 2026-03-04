@@ -157,6 +157,28 @@
     color: var(--accent-blue);
 }
 
+.cell-copy-toast {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 2px 8px;
+    font-size: 10px;
+    color: #fff;
+    background: var(--accent-green);
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: copyToastFade 1.2s ease forwards;
+}
+
+@keyframes copyToastFade {
+    0% { opacity: 0; transform: translateX(-50%) translateY(4px); }
+    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    70% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
 .cell-delete-btn {
     opacity: 0;
     display: flex;
