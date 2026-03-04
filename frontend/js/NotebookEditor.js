@@ -128,11 +128,17 @@ export class NotebookEditor {
             const cellEditor = this._createCellEditor(cellData, i);
             this._cells.push(cellEditor);
             this._wrapperEl.appendChild(cellEditor.element);
-            this._wrapperEl.appendChild(this._createAddCellButton(i + 1));
+            const addBtn = this._createAddCellButton(i + 1);
+            if (i === this._notebook.cells.length - 1) {
+                addBtn.classList.add('add-cell-last');
+            }
+            this._wrapperEl.appendChild(addBtn);
         }
 
         if (this._notebook.cells.length === 0) {
-            this._wrapperEl.appendChild(this._createAddCellButton(0));
+            const addBtn = this._createAddCellButton(0);
+            addBtn.classList.add('add-cell-last');
+            this._wrapperEl.appendChild(addBtn);
         }
 
         this._container.appendChild(this._wrapperEl);
@@ -154,7 +160,8 @@ export class NotebookEditor {
             onBlur: (idx) => this._onCellBlur(idx),
             onChange: (idx, source) => this._onCellChange(idx, source),
             onRun: (idx, code) => this._onCellRun(idx, code),
-            onDelete: (idx) => this._onCellDelete(idx)
+            onDelete: (idx) => this._onCellDelete(idx),
+            onAddCell: (idx, type) => this._addCell(idx, type)
         });
     }
 

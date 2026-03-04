@@ -16,12 +16,17 @@
 }
 
 .add-cell-container {
-    display: flex;
+    display: none;
     gap: 8px;
     justify-content: center;
     padding: 4px 0;
     opacity: 0;
     transition: opacity 0.2s;
+}
+
+.add-cell-container.add-cell-last {
+    display: flex;
+    opacity: 1;
 }
 
 .add-cell-container:hover,

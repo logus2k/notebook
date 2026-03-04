@@ -126,6 +126,24 @@ export class CellEditor {
         const spacer = document.createElement('span');
         spacer.className = 'cell-header-spacer';
 
+        const addCodeBtn = document.createElement('button');
+        addCodeBtn.className = 'cell-header-btn cell-add-code-btn';
+        addCodeBtn.textContent = '+ Code';
+        addCodeBtn.title = 'Insert code cell before';
+        addCodeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this._callbacks.onAddCell) this._callbacks.onAddCell(this._index, 'code');
+        });
+
+        const addMdBtn = document.createElement('button');
+        addMdBtn.className = 'cell-header-btn cell-add-md-btn';
+        addMdBtn.textContent = '+ Markdown';
+        addMdBtn.title = 'Insert markdown cell before';
+        addMdBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this._callbacks.onAddCell) this._callbacks.onAddCell(this._index, 'markdown');
+        });
+
         const lockIndicator = document.createElement('span');
         lockIndicator.className = 'cell-lock-indicator hidden';
         this._lockIndicatorEl = lockIndicator;
@@ -139,7 +157,10 @@ export class CellEditor {
             if (this._callbacks.onDelete) this._callbacks.onDelete(this._index);
         });
 
-        header.append(typeBadge, spacer, lockIndicator, deleteBtn);
+        const spacer2 = document.createElement('span');
+        spacer2.className = 'cell-header-spacer';
+
+        header.append(typeBadge, spacer, addCodeBtn, addMdBtn, spacer2, lockIndicator, deleteBtn);
 
         // Editor area
         const editorArea = document.createElement('div');

@@ -6,7 +6,7 @@
     border-radius: var(--radius);
     background: #fdfdfd;
     transition: border-color 0.15s;
-    box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+    box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
 }
 
 .cell:hover {
@@ -84,6 +84,38 @@
     gap: 4px;
     font-size: 11px;
     color: var(--accent-orange);
+}
+
+.cell-header-btn {
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.cell:hover .cell-header-btn {
+    opacity: 1;
+}
+
+.cell-add-code-btn:hover {
+    background: #d3e9ff;
+    color: #3366cc;
+    border-color: #a8ccee;
+}
+
+.cell-add-md-btn:hover {
+    background: #d5eecf;
+    color: #298829;
+    border-color: #a8d9a0;
 }
 
 .cell-delete-btn {
