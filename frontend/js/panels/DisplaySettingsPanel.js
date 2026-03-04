@@ -1,3 +1,5 @@
+import { CellEditor, editorThemes } from '../CellEditor.js';
+
 /**
  * DisplaySettingsPanel - jsPanel floating window for display settings.
  */
@@ -92,6 +94,30 @@ export class DisplaySettingsPanel {
 
         sliderRow.append(sliderLabel, sliderValue);
         container.append(sliderRow, slider);
+
+        // Editor theme selector
+        const themeRow = document.createElement('div');
+        themeRow.className = 'settings-toggle-row';
+
+        const themeLabel = document.createElement('label');
+        themeLabel.textContent = 'Editor Theme';
+
+        const themeSelect = document.createElement('select');
+        themeSelect.className = 'settings-theme-select';
+        const savedTheme = localStorage.getItem('notebook-editor-theme') || 'Tomorrow';
+        for (const name of Object.keys(editorThemes)) {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            if (name === savedTheme) opt.selected = true;
+            themeSelect.appendChild(opt);
+        }
+        themeSelect.addEventListener('change', () => {
+            CellEditor.setTheme(themeSelect.value);
+        });
+
+        themeRow.append(themeLabel, themeSelect);
+        container.appendChild(themeRow);
 
         // Display toggles
         const toggles = [

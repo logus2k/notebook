@@ -7,10 +7,11 @@ import { CellOutput } from './CellOutput.js';
 
 import {
     EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
-    EditorState,
+    EditorState, Compartment,
     defaultKeymap, indentWithTab, history, historyKeymap,
     syntaxHighlighting, defaultHighlightStyle,
-    python
+    python,
+    ayuLight, clouds, espresso, smoothy, tomorrow, oneDark
 } from '../vendor/codemirror/codemirror.bundle.js';
 
 const cmModules = {
@@ -19,6 +20,23 @@ const cmModules = {
     indentWithTab, history, historyKeymap,
     syntaxHighlighting, defaultHighlightStyle,
     python
+};
+
+/** Shared theme compartment for all editors. */
+const _themeCompartment = new Compartment();
+
+/** Track all live CellEditor instances for theme reconfiguration. */
+const _allEditors = new Set();
+
+/** Available editor themes keyed by name. */
+export const editorThemes = {
+    'Default': null,
+    'Ayu Light': ayuLight,
+    'Clouds': clouds,
+    'Espresso': espresso,
+    'Smoothy': smoothy,
+    'Tomorrow': tomorrow,
+    'One Dark': oneDark
 };
 
 function loadCodeMirror() {
@@ -53,6 +71,7 @@ export class CellEditor {
 
         this._output = new CellOutput();
         this._el = this._buildElement();
+        _allEditors.add(this);
 
         if (cellData.outputs && cellData.outputs.length > 0) {
             this._output.setOutputs(cellData.outputs);
@@ -195,6 +214,10 @@ export class CellEditor {
     async _initEditor() {
         const cm = await loadCodeMirror();
 
+        // Resolve initial theme from localStorage
+        const savedThemeName = localStorage.getItem('notebook-editor-theme') || 'Tomorrow';
+        const initialTheme = editorThemes[savedThemeName] || [];
+
         const extensions = [
             cm.lineNumbers(),
             cm.highlightActiveLine(),
@@ -218,7 +241,8 @@ export class CellEditor {
             cm.EditorView.theme({
                 '&': { height: 'auto' },
                 '.cm-scroller': { overflow: 'auto' }
-            })
+            }),
+            _themeCompartment.of(initialTheme)
         ];
 
         if (this._cellType === 'code') {
@@ -380,11 +404,28 @@ export class CellEditor {
     }
 
     destroy() {
+        _allEditors.delete(this);
         if (this._editorView) {
             this._editorView.destroy();
             this._editorView = null;
         }
         if (this._el.parentNode) this._el.parentNode.removeChild(this._el);
+    }
+
+    /**
+     * Apply a theme to all live editor instances.
+     * @param {string} themeName - Key from editorThemes
+     */
+    static setTheme(themeName) {
+        const theme = editorThemes[themeName] || [];
+        localStorage.setItem('notebook-editor-theme', themeName);
+        for (const cell of _allEditors) {
+            if (cell._editorView) {
+                cell._editorView.dispatch({
+                    effects: _themeCompartment.reconfigure(theme)
+                });
+            }
+        }
     }
 
     toJSON() {

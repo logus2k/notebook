@@ -255,8 +255,9 @@
 }
 
 .cell-editor .cm-editor .cm-content {
-    padding: 5px 3px 0px 1px;
+    padding: 5px 3px 0px 3px;
     caret-color: var(--text-primary);
+    background-color: #fff9ef14;
 }
 
 .cell-editor .cm-editor .cm-gutters {
