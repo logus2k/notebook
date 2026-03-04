@@ -98,6 +98,12 @@ export class CellEditor {
         });
         sidebar.appendChild(dragHandle);
 
+        // Sidebar execution count (code cells only)
+        const sidebarExecCount = document.createElement('span');
+        sidebarExecCount.className = 'cell-sidebar-exec-count';
+        this._sidebarExecCountEl = sidebarExecCount;
+        sidebar.appendChild(sidebarExecCount);
+
         // Header
         const header = document.createElement('div');
         header.className = 'cell-header';
@@ -287,9 +293,12 @@ export class CellEditor {
         if (!this._execCountEl) return;
         if (this._cellType === 'code') {
             const count = this._executionCount;
-            this._execCountEl.textContent = count != null ? `[${count}]` : '[ ]';
+            const label = count != null ? `[${count}]` : '[ ]';
+            this._execCountEl.textContent = label;
+            if (this._sidebarExecCountEl) this._sidebarExecCountEl.textContent = label;
         } else {
             this._execCountEl.textContent = '';
+            if (this._sidebarExecCountEl) this._sidebarExecCountEl.textContent = '';
         }
     }
 

@@ -168,6 +168,14 @@
     color: var(--text-primary);
 }
 
+.cell-sidebar-exec-count {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    padding-bottom: 4px;
+}
+
 .cell-drag-handle:active {
     cursor: grabbing;
 }
