@@ -6,7 +6,7 @@
     border-radius: 0;
     background: #fdfdfd;
     transition: border-color 0.15s, box-shadow 0.15s, border-radius 0.15s;
-    box-shadow: none;
+    box-shadow: 0 -4px 0 0 #fdfdfd, 0 4px 0 0 #fdfdfd;
 }
 
 #notebook-container:hover .cell {
@@ -199,7 +199,7 @@
 }
 
 .cell-sidebar .cell-run-btn:hover {
-    background: #000000b0;
+    background: #36823dcf;
     color: #3ddc3d;
     transform: scale(1.1);
     margin-right: 15px;
