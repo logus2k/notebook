@@ -216,7 +216,7 @@
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    padding-top: 3px;
+    padding-top: 1px;
     opacity: 0;
     transition: opacity 0.15s;
 }
@@ -316,6 +316,7 @@
     font-size: 10px;
     color: #999999;
     z-index: 1;
+    pointer-events: none;
     transition: opacity 0.15s;
 }
 
