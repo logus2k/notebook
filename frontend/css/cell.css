@@ -1,7 +1,7 @@
 .cell {
     position: relative;
-    margin: 4px 0;
-    margin-left: 36px;
+    margin: 4px 0px 4px 36px;
+    /* margin-left: 36px; */
     border: 1px solid transparent;
     border-radius: 0;
     background: #fdfdfd;
@@ -50,14 +50,6 @@
     background: transparent;
     border-radius: 0;
     transition: background 0.15s, border-radius 0.15s;
-}
-
-.cell:not(:hover) .cell-header {
-    background: linear-gradient(to right,
-        var(--bg-tertiary) calc(var(--gutter-width, 0px) - 1px),
-        #d0d0d8 calc(var(--gutter-width, 0px) - 1px),
-        #d0d0d8 var(--gutter-width, 0px),
-        transparent var(--gutter-width, 0px));
 }
 
 #notebook-container:hover .cell-header {
@@ -282,20 +274,37 @@
 }
 
 .cell-editor .cm-editor .cm-gutters {
-    background: var(--bg-tertiary);
-    border-right: 1px solid var(--border-color);
+    background: transparent;
+    border-right: 1px solid transparent;
     color: var(--text-muted);
     font-size: 11px;
     padding: 1px 5px 0px 15px;
     border-radius: 0px 0px 0px 6px;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+#notebook-container:hover .cell-editor .cm-editor .cm-gutters {
+    background: var(--bg-tertiary);
+    border-right: 1px solid var(--border-color);
 }
 
 .cell-editor .cm-editor .cm-lineNumbers .cm-gutterElement {
     text-align: right;
     padding: 0 4px 0 4px;
+    color: transparent;
+    transition: color 0.15s;
+}
+
+#notebook-container:hover .cell-editor .cm-editor .cm-lineNumbers .cm-gutterElement {
+    color: var(--text-muted);
 }
 
 .cell-editor .cm-editor .cm-activeLineGutter {
+    background: transparent;
+    transition: background 0.15s;
+}
+
+#notebook-container:hover .cell-editor .cm-editor .cm-activeLineGutter {
     background: var(--bg-hover);
 }
 
