@@ -440,6 +440,18 @@ export class CellEditor {
         } else {
             this._mdRenderedEl.textContent = this._getSource();
         }
+        // Render LaTeX math expressions
+        if (typeof renderMathInElement !== 'undefined') {
+            renderMathInElement(this._mdRenderedEl, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false },
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '\\[', right: '\\]', display: true },
+                ],
+                throwOnError: false,
+            });
+        }
         this._mdRenderedEl.classList.remove('hidden');
         this._editorAreaEl.classList.add('hidden');
         this._el.classList.add('markdown-rendered');

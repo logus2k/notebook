@@ -81,6 +81,7 @@ export class CellOutput {
 
     _renderResult(output) {
         const data = output.data || {};
+        if (data['text/latex']) return this._renderLatex(textValue(data['text/latex']));
         if (data['text/html']) return this._renderHTML(textValue(data['text/html']));
         if (data['image/png']) return this._renderImage(textValue(data['image/png']), 'image/png');
         if (data['image/svg+xml']) return this._renderSVG(textValue(data['image/svg+xml']));
@@ -96,7 +97,9 @@ export class CellOutput {
         const container = document.createElement('div');
         container.className = 'output-display';
 
-        if (data['image/png']) {
+        if (data['text/latex']) {
+            container.appendChild(this._renderLatex(textValue(data['text/latex'])));
+        } else if (data['image/png']) {
             container.appendChild(this._renderImage(textValue(data['image/png']), 'image/png'));
         } else if (data['image/jpeg']) {
             container.appendChild(this._renderImage(textValue(data['image/jpeg']), 'image/jpeg'));
@@ -143,6 +146,26 @@ export class CellOutput {
         const div = document.createElement('div');
         div.className = 'output-display';
         div.innerHTML = svgString;
+        return div;
+    }
+
+    _renderLatex(latexString) {
+        const div = document.createElement('div');
+        div.className = 'output-display-html';
+        if (typeof katex !== 'undefined') {
+            // Strip surrounding $/$$ delimiters if present
+            let tex = latexString.trim();
+            let displayMode = false;
+            if (tex.startsWith('$$') && tex.endsWith('$$')) {
+                tex = tex.slice(2, -2);
+                displayMode = true;
+            } else if (tex.startsWith('$') && tex.endsWith('$')) {
+                tex = tex.slice(1, -1);
+            }
+            katex.render(tex, div, { displayMode, throwOnError: false });
+        } else {
+            div.textContent = latexString;
+        }
         return div;
     }
 
