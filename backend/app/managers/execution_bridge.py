@@ -148,7 +148,10 @@ class ExecutionBridge:
                 cell_index = handler.cell_index
                 room = handler.room
 
-                if msg_type == "stream":
+                if msg_type == "execute_input":
+                    handler.execution_count = content.get("execution_count")
+
+                elif msg_type == "stream":
                     await self._sio.emit("cell:output", {
                         "cell_index": cell_index,
                         "output": {

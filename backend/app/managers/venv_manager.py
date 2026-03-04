@@ -143,14 +143,20 @@ class VenvManager:
         shutil.rmtree(venv_path)
         return {"name": name, "deleted": True}
 
-    async def list_packages(self, name: str,
-                            project_id: Optional[str] = None) -> list[dict]:
-        self._validate_name(name)
+    def _get_pip_path(self, name: str, project_id: Optional[str] = None) -> str:
+        if self.is_default(name):
+            return os.path.join(os.path.dirname(sys.executable), "pip")
         pip_path = os.path.join(
             self._resolve_venv_path(name, project_id), "bin", "pip"
         )
         if not os.path.exists(pip_path):
             raise FileNotFoundError(f"Venv not found: {name}")
+        return pip_path
+
+    async def list_packages(self, name: str,
+                            project_id: Optional[str] = None) -> list[dict]:
+        self._validate_name(name)
+        pip_path = self._get_pip_path(name, project_id)
 
         proc = await asyncio.create_subprocess_exec(
             pip_path, "list", "--format=json",
@@ -165,11 +171,7 @@ class VenvManager:
     async def install_packages(self, name: str, packages: list[str],
                                project_id: Optional[str] = None) -> dict:
         self._validate_name(name)
-        pip_path = os.path.join(
-            self._resolve_venv_path(name, project_id), "bin", "pip"
-        )
-        if not os.path.exists(pip_path):
-            raise FileNotFoundError(f"Venv not found: {name}")
+        pip_path = self._get_pip_path(name, project_id)
 
         proc = await asyncio.create_subprocess_exec(
             pip_path, "install", *packages,
@@ -178,17 +180,15 @@ class VenvManager:
         )
         stdout, stderr = await proc.communicate()
         if proc.returncode != 0:
-            raise RuntimeError(f"Failed to install packages: {stderr.decode()}")
+            raise RuntimeError(
+                f"pip install failed:\n{stderr.decode()}\n{stdout.decode()}"
+            )
         return {"installed": packages, "output": stdout.decode()}
 
     async def remove_packages(self, name: str, packages: list[str],
                               project_id: Optional[str] = None) -> dict:
         self._validate_name(name)
-        pip_path = os.path.join(
-            self._resolve_venv_path(name, project_id), "bin", "pip"
-        )
-        if not os.path.exists(pip_path):
-            raise FileNotFoundError(f"Venv not found: {name}")
+        pip_path = self._get_pip_path(name, project_id)
 
         proc = await asyncio.create_subprocess_exec(
             pip_path, "uninstall", "-y", *packages,

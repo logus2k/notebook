@@ -2,9 +2,9 @@ import { KernelClient } from './KernelClient.js';
 import { NotebookEditor } from './NotebookEditor.js';
 import { NotebookToolbar } from './NotebookToolbar.js';
 import { InfoBar } from './InfoBar.js';
-import { VenvPanel } from './VenvPanel.js';
 import { BrowserPanel } from './panels/BrowserPanel.js';
-import { VenvSelectPanel } from './panels/VenvSelectPanel.js';
+import { DisplaySettingsPanel } from './panels/DisplaySettingsPanel.js';
+import { EnvironmentPanel } from './panels/EnvironmentPanel.js';
 
 /**
  * App - Entry point. Wires together all components.
@@ -15,9 +15,9 @@ class App {
         this._editor = null;
         this._toolbar = null;
         this._infoBar = null;
-        this._venvPanel = null;
         this._browserPanel = null;
-        this._venvSelectPanel = null;
+        this._displaySettingsPanel = null;
+        this._environmentPanel = null;
         this._currentProject = null;
         this._currentNotebook = null;
         this._activeVenvRef = null; // { type, name, pythonVersion } or null
@@ -65,7 +65,7 @@ class App {
                 onImport: () => this._onImportNotebook(),
                 onSave: () => this._editor.save(),
                 onExport: () => this._editor.export(),
-                onSettingsToggle: () => this._venvPanel.toggle(),
+                onSettingsToggle: () => this._displaySettingsPanel.toggle(),
             }
         );
 
@@ -84,7 +84,7 @@ class App {
                     const activeKey = this._activeVenvRef
                         ? `${this._activeVenvRef.type}:${this._activeVenvRef.name}`
                         : null;
-                    this._venvSelectPanel.open(this._currentProject, activeKey);
+                    this._environmentPanel.open(activeKey);
                 },
             }
         );
@@ -94,19 +94,15 @@ class App {
             onSelect: (projectId, notebookName) => this._onNotebookChange(projectId, notebookName),
         });
 
-        this._venvSelectPanel = new VenvSelectPanel({
-            onVenvSelect: (venvRef) => this._onVenvSelect(venvRef),
-            onManageClick: () => this._venvPanel.open(),
-        });
+        // Initialize display settings panel (jsPanel)
+        this._displaySettingsPanel = new DisplaySettingsPanel();
 
-        // Initialize settings panel (slide-out, for venv management + display settings)
-        this._venvPanel = new VenvPanel(
-            document.getElementById('venv-panel'),
-            {
-                onVenvCreated: () => {},
-                onVenvDeleted: () => {},
-            }
-        );
+        // Initialize unified environment panel (select + manage in one window)
+        this._environmentPanel = new EnvironmentPanel({
+            onVenvSelect: (venvRef) => this._onVenvSelect(venvRef),
+            onVenvCreated: () => {},
+            onVenvDeleted: () => {},
+        });
 
         // Connect Socket.IO
         this._client.connect();
@@ -170,7 +166,7 @@ class App {
         this._infoBar.setNotebook(null);
         this._infoBar.setVenv(null, null);
 
-        this._venvPanel.setProjectId(projectId);
+        this._environmentPanel.setProjectId(projectId);
     }
 
     async _onNotebookChange(projectId, notebookName) {
@@ -184,7 +180,7 @@ class App {
 
         this._infoBar.setProject(projectId);
         this._infoBar.setNotebook(notebookName);
-        this._venvPanel.setProjectId(projectId);
+        this._environmentPanel.setProjectId(projectId);
 
         this._editor.openNotebook(projectId, notebookName, this._userName);
 

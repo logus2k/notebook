@@ -68,7 +68,7 @@ html, body {
     height: 100%;
     font-family: var(--font-sans);
     font-size: 14px;
-    background-color: #deff9400;
+    background-color: #ffdf7b08;
     background-image: url("../images/project-paper.png");
     color: var(--text-primary);
     overflow: hidden;

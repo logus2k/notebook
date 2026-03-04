@@ -102,6 +102,7 @@ export class CellEditor {
         const sidebarExecCount = document.createElement('span');
         sidebarExecCount.className = 'cell-sidebar-exec-count';
         this._sidebarExecCountEl = sidebarExecCount;
+        this._updateExecutionCount();
         sidebar.appendChild(sidebarExecCount);
 
         // Header
@@ -111,11 +112,6 @@ export class CellEditor {
         const typeBadge = document.createElement('span');
         typeBadge.className = `cell-type-badge ${this._cellType}`;
         typeBadge.textContent = this._cellType;
-
-        const execCount = document.createElement('span');
-        execCount.className = 'cell-execution-count';
-        this._execCountEl = execCount;
-        this._updateExecutionCount();
 
         const spacer = document.createElement('span');
         spacer.className = 'cell-header-spacer';
@@ -133,7 +129,7 @@ export class CellEditor {
             if (this._callbacks.onDelete) this._callbacks.onDelete(this._index);
         });
 
-        header.append(typeBadge, execCount, spacer, lockIndicator, deleteBtn);
+        header.append(typeBadge, spacer, lockIndicator, deleteBtn);
 
         // Editor area
         const editorArea = document.createElement('div');
@@ -290,15 +286,12 @@ export class CellEditor {
     }
 
     _updateExecutionCount() {
-        if (!this._execCountEl) return;
+        if (!this._sidebarExecCountEl) return;
         if (this._cellType === 'code') {
             const count = this._executionCount;
-            const label = count != null ? `[${count}]` : '[ ]';
-            this._execCountEl.textContent = label;
-            if (this._sidebarExecCountEl) this._sidebarExecCountEl.textContent = label;
+            this._sidebarExecCountEl.textContent = count != null ? `[${count}]` : '[ ]';
         } else {
-            this._execCountEl.textContent = '';
-            if (this._sidebarExecCountEl) this._sidebarExecCountEl.textContent = '';
+            this._sidebarExecCountEl.textContent = '';
         }
     }
 
