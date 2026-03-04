@@ -393,7 +393,7 @@
 }
 
 .cell-markdown-rendered {
-    padding: 0px 16px;
+    padding: 0px 16px 10px 16px;
     line-height: 1.6;
     color: var(--text-primary);
     margin-left: 35px;
