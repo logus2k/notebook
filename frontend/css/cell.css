@@ -324,11 +324,15 @@
     transition: background 0.15s;
 }
 
-#notebook-container:hover .cell-editor .cm-editor .cm-activeLineGutter {
+#notebook-container:hover .cell-editor .cm-editor.cm-focused .cm-activeLineGutter {
     background: var(--bg-hover);
 }
 
 .cell-editor .cm-editor .cm-activeLine {
+    background: transparent;
+}
+
+.cell-editor .cm-editor.cm-focused .cm-activeLine {
     background: rgba(108, 140, 255, 0.05);
 }
 
