@@ -335,7 +335,11 @@
     margin-left: 35px;
 }
 
-.cell-markdown-rendered h1,
+.cell-markdown-rendered h1 {
+    margin: 4px 0px 8px 0px;
+    color: var(--text-primary);
+}
+
 .cell-markdown-rendered h2,
 .cell-markdown-rendered h3 {
     margin: 12px 0 8px;
