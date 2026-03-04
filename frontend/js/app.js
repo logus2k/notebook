@@ -146,6 +146,22 @@ class App {
                 e.preventDefault();
                 this._editor.save();
             }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Home') {
+                e.preventDefault();
+                notebookContainer.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'End') {
+                e.preventDefault();
+                notebookContainer.scrollTo({ top: notebookContainer.scrollHeight, behavior: 'smooth' });
+            }
+            if (e.key === 'PageUp') {
+                e.preventDefault();
+                notebookContainer.scrollBy({ top: -notebookContainer.clientHeight, behavior: 'smooth' });
+            }
+            if (e.key === 'PageDown') {
+                e.preventDefault();
+                notebookContainer.scrollBy({ top: notebookContainer.clientHeight, behavior: 'smooth' });
+            }
         });
 
         // Check URL params for auto-open, or open Welcome notebook
