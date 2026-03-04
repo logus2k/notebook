@@ -249,6 +249,7 @@ export class CellEditor {
             this._executing = true;
             this._executeStart = performance.now();
             this._el.classList.add('executing');
+            this._data.outputs = [];
             this._output.showExecuting();
             if (this._callbacks.onRun) {
                 this._callbacks.onRun(this._index, this._getSource());

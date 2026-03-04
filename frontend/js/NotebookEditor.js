@@ -87,6 +87,14 @@ export class NotebookEditor {
         }
     }
 
+    clearAllOutputs() {
+        for (const cell of this._cells) {
+            if (cell.cellType === 'code') {
+                cell.clearOutput();
+            }
+        }
+    }
+
     // --- Rendering ---
 
     _onNotebookState(data) {

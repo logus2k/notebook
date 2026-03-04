@@ -212,7 +212,7 @@
 }
 
 .cell-editor .cm-editor .cm-content {
-    padding: 5px;
+    padding: 3px;
     caret-color: var(--text-primary);
 }
 

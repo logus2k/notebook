@@ -5,6 +5,7 @@ const ICONS = {
     stop:      `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><rect x="6" y="6" width="12" height="12" rx="1"/></svg>`,
     restart:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`,
     interrupt: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`,
+    clearAll:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`,
 };
 
 /**
@@ -15,7 +16,7 @@ export class InfoBar {
     /**
      * @param {HTMLElement} containerEl
      * @param {import('./KernelClient.js').KernelClient} kernelClient
-     * @param {object} callbacks - { onKernelClick, onRunAll, onStartKernel }
+     * @param {object} callbacks - { onKernelClick, onRunAll, onClearAllOutputs, onStartKernel }
      */
     constructor(containerEl, kernelClient, callbacks = {}) {
         this._container = containerEl;
@@ -66,6 +67,9 @@ export class InfoBar {
         restartBtn.classList.add('no-fill');
         controls.appendChild(restartBtn);
         controls.appendChild(this._iconButton(ICONS.interrupt, 'Interrupt kernel', () => this._client.interruptKernel()));
+        controls.appendChild(this._iconButton(ICONS.clearAll, 'Clear all outputs', () => {
+            if (this._callbacks.onClearAllOutputs) this._callbacks.onClearAllOutputs();
+        }));
 
         this._container.appendChild(controls);
 

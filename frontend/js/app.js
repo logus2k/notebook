@@ -75,6 +75,7 @@ class App {
             this._client,
             {
                 onRunAll: () => this._editor.runAll(),
+                onClearAllOutputs: () => this._editor.clearAllOutputs(),
                 onStartKernel: () => this._onStartKernel(),
                 onKernelClick: () => {
                     if (!this._currentProject) {
