@@ -148,11 +148,11 @@ class App {
             }
             if ((e.ctrlKey || e.metaKey) && e.key === 'Home') {
                 e.preventDefault();
-                notebookContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                notebookContainer.scrollTo({ top: 0 });
             }
             if ((e.ctrlKey || e.metaKey) && e.key === 'End') {
                 e.preventDefault();
-                notebookContainer.scrollTo({ top: notebookContainer.scrollHeight, behavior: 'smooth' });
+                notebookContainer.scrollTo({ top: notebookContainer.scrollHeight });
             }
             if (e.key === 'PageUp') {
                 e.preventDefault();
