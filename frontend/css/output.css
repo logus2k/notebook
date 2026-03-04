@@ -12,10 +12,10 @@
 .cell-output::before {
     content: 'output';
     position: absolute;
-    top: 4px;
-    right: 8px;
+    top: 6px;
+    right: 10px;
     font-size: 10px;
-    color: #202020;
+    color: #999999;
 }
 
 .cell-output:empty {
