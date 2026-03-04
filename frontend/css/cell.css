@@ -9,6 +9,18 @@
     box-shadow: 0 -4px 0 0 #fdfdfd, 0 4px 0 0 #fdfdfd;
 }
 
+.cell:first-child {
+    box-shadow: 0 4px 0 0 #fdfdfd;
+}
+
+.cell:last-child {
+    box-shadow: 0 -4px 0 0 #fdfdfd;
+}
+
+.cell:first-child:last-child {
+    box-shadow: none;
+}
+
 #notebook-container:hover .cell {
     border-color: var(--border-color);
     border-radius: var(--radius);

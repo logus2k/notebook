@@ -61,7 +61,7 @@ export class DisplaySettingsPanel {
 
         const slider = document.createElement('input');
         slider.type = 'range';
-        slider.min = '500';
+        slider.min = '350';
         slider.step = '10';
         slider.className = 'settings-slider';
 
