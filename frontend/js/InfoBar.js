@@ -1,13 +1,3 @@
-const S = 'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
-const ICONS = {
-    runAll:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><polygon points="5 3 15 12 5 21 5 3"/><line x1="19" y1="3" x2="19" y2="21"/></svg>`,
-    play:      `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
-    stop:      `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><rect x="6" y="6" width="12" height="12" rx="1"/></svg>`,
-    restart:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`,
-    interrupt: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`,
-    clearAll:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><line x1="4" y1="6" x2="13" y2="6"/><line x1="4" y1="11" x2="13" y2="11"/><line x1="4" y1="16" x2="13" y2="16"/><path d="M17 5l4 14"/><path d="M15 12l6 0"/></svg>`,
-};
-
 /**
  * InfoBar - Bar below toolbar showing project/notebook breadcrumb,
  * centered kernel controls, and clickable kernel/environment status.
@@ -56,18 +46,13 @@ export class InfoBar {
         const controls = document.createElement('div');
         controls.className = 'info-bar-controls';
 
-        controls.appendChild(this._iconButton(ICONS.runAll, 'Run All', () => {
+        controls.appendChild(this._textButton('Run All', () => {
             if (this._callbacks.onRunAll) this._callbacks.onRunAll();
         }));
-        controls.appendChild(this._iconButton(ICONS.play, 'Start kernel', () => {
-            if (this._callbacks.onStartKernel) this._callbacks.onStartKernel();
-        }));
-        controls.appendChild(this._iconButton(ICONS.stop, 'Stop kernel', () => this._client.stopKernel()));
-        const restartBtn = this._iconButton(ICONS.restart, 'Restart kernel', () => this._client.restartKernel());
-        restartBtn.classList.add('no-fill');
-        controls.appendChild(restartBtn);
-        controls.appendChild(this._iconButton(ICONS.interrupt, 'Interrupt kernel', () => this._client.interruptKernel()));
-        controls.appendChild(this._iconButton(ICONS.clearAll, 'Clear all outputs', () => {
+        controls.appendChild(this._textButton('Restart', () => this._client.restartKernel()));
+        controls.appendChild(this._textButton('Stop', () => this._client.stopKernel()));
+        controls.appendChild(this._textButton('Interrupt', () => this._client.interruptKernel()));
+        controls.appendChild(this._textButton('Clear All Outputs', () => {
             if (this._callbacks.onClearAllOutputs) this._callbacks.onClearAllOutputs();
         }));
 
@@ -144,11 +129,10 @@ export class InfoBar {
 
     // --- Helpers ---
 
-    _iconButton(svgHtml, title, onClick) {
+    _textButton(label, onClick) {
         const btn = document.createElement('button');
-        btn.className = 'info-bar-icon-btn';
-        btn.innerHTML = svgHtml;
-        btn.title = title;
+        btn.className = 'info-bar-text-btn';
+        btn.textContent = label;
         btn.addEventListener('click', onClick);
         return btn;
     }
