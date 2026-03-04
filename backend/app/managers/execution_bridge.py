@@ -2,7 +2,6 @@ import asyncio
 import logging
 from jupyter_client import KernelClient
 from app.managers.kernel_manager import KernelManagerService
-from app.managers.notebook_manager import extract_images_from_outputs
 
 logger = logging.getLogger(__name__)
 
@@ -163,29 +162,25 @@ class ExecutionBridge:
                     }, room=room)
 
                 elif msg_type == "display_data":
-                    output = {
-                        "output_type": "display_data",
-                        "data": content.get("data", {}),
-                        "metadata": content.get("metadata", {})
-                    }
-                    [output] = extract_images_from_outputs([output])
                     await self._sio.emit("cell:output", {
                         "cell_index": cell_index,
-                        "output": output
+                        "output": {
+                            "output_type": "display_data",
+                            "data": content.get("data", {}),
+                            "metadata": content.get("metadata", {})
+                        }
                     }, room=room)
 
                 elif msg_type == "execute_result":
                     handler.execution_count = content.get("execution_count")
-                    output = {
-                        "output_type": "execute_result",
-                        "data": content.get("data", {}),
-                        "metadata": content.get("metadata", {}),
-                        "execution_count": handler.execution_count
-                    }
-                    [output] = extract_images_from_outputs([output])
                     await self._sio.emit("cell:output", {
                         "cell_index": cell_index,
-                        "output": output
+                        "output": {
+                            "output_type": "execute_result",
+                            "data": content.get("data", {}),
+                            "metadata": content.get("metadata", {}),
+                            "execution_count": handler.execution_count
+                        }
                     }, room=room)
 
                 elif msg_type == "error":

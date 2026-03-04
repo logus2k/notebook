@@ -84,6 +84,9 @@ html, body {
     flex: 1;
     overflow-y: scroll;
     padding: 16px 24px;
+    max-width: calc(var(--notebook-max-width, 960px) + 48px);
+    margin: 0 auto;
+    width: 100%;
 }
 
 button {
@@ -213,16 +216,18 @@ html:has(.hide-bg-color) {
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
+    background: transparent;
+    margin: 20px 0;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--bg-hover);
+    background: #fbc872c7;
     border-radius: 4px;
+    cursor: pointer;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--text-muted);
+    background: #ffe39eed;
 }
 
 @keyframes fadeInOut {

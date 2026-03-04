@@ -2,103 +2,8 @@ import os
 import json
 import uuid
 import hashlib
-import base64
 from typing import Optional
 from app.config import PROJECTS_DIR
-
-
-class OutputImageStore:
-    """In-memory store for output images, keyed by content hash."""
-
-    def __init__(self):
-        self._images: dict[str, tuple[bytes, str]] = {}  # hash -> (bytes, mime_type)
-
-    def store(self, base64_data: str, mime_type: str) -> str:
-        """Store base64 image data, return image ID (content hash)."""
-        raw = base64_data.encode("ascii") if isinstance(base64_data, str) else base64_data
-        image_id = hashlib.sha256(raw).hexdigest()[:16]
-        if image_id not in self._images:
-            self._images[image_id] = (base64.b64decode(raw), mime_type)
-        return image_id
-
-    def get(self, image_id: str) -> Optional[tuple[bytes, str]]:
-        """Return (bytes, mime_type) or None."""
-        return self._images.get(image_id)
-
-    def get_base64(self, image_id: str) -> Optional[str]:
-        """Return original base64 string or None."""
-        entry = self._images.get(image_id)
-        if entry:
-            return base64.b64encode(entry[0]).decode("ascii")
-        return None
-
-
-# Singleton image store
-output_image_store = OutputImageStore()
-
-# Mime types we extract as binary
-IMAGE_MIME_TYPES = ("image/png", "image/jpeg", "image/gif", "image/webp")
-
-
-def extract_images_from_outputs(outputs: list) -> list:
-    """Replace base64 image data in outputs with /api/output-images/ URLs.
-    Returns a new list (does not mutate the original)."""
-    new_outputs = []
-    for output in outputs:
-        data = output.get("data")
-        if not data:
-            new_outputs.append(output)
-            continue
-        new_data = dict(data)
-        changed = False
-        for mime in IMAGE_MIME_TYPES:
-            if mime in new_data:
-                raw = new_data[mime]
-                # Handle arrays of strings (ipynb format)
-                if isinstance(raw, list):
-                    raw = "".join(raw)
-                if raw and not raw.startswith("/api/"):
-                    ext = mime.split("/")[1]
-                    image_id = output_image_store.store(raw, mime)
-                    new_data[mime] = f"/api/output-images/{image_id}.{ext}"
-                    changed = True
-        if changed:
-            new_output = dict(output)
-            new_output["data"] = new_data
-            new_outputs.append(new_output)
-        else:
-            new_outputs.append(output)
-    return new_outputs
-
-
-def restore_images_in_outputs(outputs: list) -> list:
-    """Replace /api/output-images/ URLs back to base64 for saving to disk."""
-    new_outputs = []
-    for output in outputs:
-        data = output.get("data")
-        if not data:
-            new_outputs.append(output)
-            continue
-        new_data = dict(data)
-        changed = False
-        for mime in IMAGE_MIME_TYPES:
-            if mime in new_data:
-                val = new_data[mime]
-                if isinstance(val, str) and val.startswith("/api/output-images/"):
-                    # Extract image_id from URL: /api/output-images/{id}.{ext}
-                    filename = val.rsplit("/", 1)[-1]
-                    image_id = filename.split(".")[0]
-                    b64 = output_image_store.get_base64(image_id)
-                    if b64:
-                        new_data[mime] = b64
-                        changed = True
-        if changed:
-            new_output = dict(output)
-            new_output["data"] = new_data
-            new_outputs.append(new_output)
-        else:
-            new_outputs.append(output)
-    return new_outputs
 
 
 class NotebookManager:
@@ -289,19 +194,14 @@ class NotebookManager:
     def prepare_for_wire(self, notebook: dict) -> dict:
         """Optimize notebook for sending over the wire:
         - Pre-join source arrays into strings
-        - Replace base64 image data with HTTP URLs
         """
         wire = dict(notebook)
         wire["cells"] = []
         for cell in notebook.get("cells", []):
             c = dict(cell)
-            # Pre-join source arrays
             src = c.get("source", "")
             if isinstance(src, list):
                 c["source"] = "".join(src)
-            # Extract images from outputs
-            if c.get("outputs"):
-                c["outputs"] = extract_images_from_outputs(c["outputs"])
             wire["cells"].append(c)
         return wire
 

@@ -128,9 +128,8 @@
     height: 24px;
     padding: 0 0 1.5px 3px;
     font-size: 14px;
-    background: #a6cb8a6b;
+    background: #93d67ec7;
     color: var(--accent-green);
-    border: 1px solid #99c291;
     border-radius: 50%;
     cursor: pointer;
     flex-shrink: 0;
@@ -145,10 +144,10 @@
 
 .cell-drag-handle {
     flex: 1;
-    width: 28px;
+    width: 20px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: right;
     cursor: grab;
     color: var(--text-muted);
     font-size: 16px;
@@ -212,7 +211,7 @@
 }
 
 .cell-editor .cm-editor .cm-content {
-    padding: 3px;
+    padding: 5px 3px 0px 1px;
     caret-color: var(--text-primary);
 }
 
@@ -221,7 +220,12 @@
     border-right: 1px solid var(--border-color);
     color: var(--text-muted);
     font-size: 11px;
-    min-width: 40px;
+    padding: 1px 5px 0px 15px;
+}
+
+.cell-editor .cm-editor .cm-lineNumbers .cm-gutterElement {
+    text-align: right;
+    padding: 0 4px 0 4px;
 }
 
 .cell-editor .cm-editor .cm-activeLineGutter {

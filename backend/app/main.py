@@ -12,9 +12,7 @@ from app.routers import notebooks, venvs
 from app.managers.kernel_manager import KernelManagerService
 from app.managers.execution_bridge import ExecutionBridge
 from app.managers.collaboration import CollaborationManager
-from app.managers.notebook_manager import (
-    NotebookManager, extract_images_from_outputs, restore_images_in_outputs
-)
+from app.managers.notebook_manager import NotebookManager
 from app.managers.venv_manager import VenvManager
 
 logging.basicConfig(level=logging.INFO)
@@ -177,10 +175,6 @@ async def on_notebook_save(sid, data):
         return
 
     try:
-        # Restore base64 image data from URLs before saving to disk
-        for cell in content.get("cells", []):
-            if cell.get("outputs"):
-                cell["outputs"] = restore_images_in_outputs(cell["outputs"])
         notebook_mgr.update_notebook(project_id, notebook_path, content)
         room_id = f"notebook:{project_id}:{notebook_path}"
         await sio.emit("notebook:saved", {"success": True}, room=room_id)
