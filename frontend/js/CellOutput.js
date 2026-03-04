@@ -133,9 +133,11 @@ export class CellOutput {
         return div;
     }
 
-    _renderImage(base64Data, mimeType) {
+    _renderImage(data, mimeType) {
         const img = document.createElement('img');
-        img.src = `data:${mimeType};base64,${base64Data}`;
+        img.src = data.startsWith('/api/')
+            ? data
+            : `data:${mimeType};base64,${data}`;
         return img;
     }
 

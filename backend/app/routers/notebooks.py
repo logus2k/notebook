@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import Optional
-from app.managers.notebook_manager import NotebookManager
+from app.managers.notebook_manager import NotebookManager, output_image_store
 
 router = APIRouter(prefix="/api", tags=["notebooks"])
 notebook_mgr = NotebookManager()
@@ -70,3 +71,18 @@ def delete_notebook(project_id: str, notebook_name: str):
         return notebook_mgr.delete_notebook(project_id, notebook_name)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/output-images/{image_file}")
+def get_output_image(image_file: str):
+    """Serve a cached output image by its content hash."""
+    image_id = image_file.split(".")[0]
+    entry = output_image_store.get(image_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Image not found")
+    image_bytes, mime_type = entry
+    return Response(
+        content=image_bytes,
+        media_type=mime_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )

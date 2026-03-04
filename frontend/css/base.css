@@ -82,7 +82,7 @@ html, body {
 
 #notebook-container {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: scroll;
     padding: 16px 24px;
 }
 
@@ -213,7 +213,7 @@ html:has(.hide-bg-color) {
 }
 
 ::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {

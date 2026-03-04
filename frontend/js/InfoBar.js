@@ -105,20 +105,45 @@ export class InfoBar {
     }
 
     _setKernelStatus(status) {
+        const prev = this._kernelStatus;
         this._kernelStatus = status;
         this._kernelDot.className = `kernel-status-dot ${status}`;
         this._updateKernelLabel();
+
+        // Show brief "Ready" flash when kernel finishes starting/restarting
+        if (status === 'idle' && (prev === 'starting' || prev === 'busy')) {
+            this._flashStatus('Ready');
+        }
     }
 
     _updateKernelLabel() {
+        const statusText = {
+            starting: 'Starting',
+            dead: 'Stopped',
+        };
+        const suffix = statusText[this._kernelStatus] || '';
+
         if (this._venvName) {
-            const pyVer = this._pythonVersion
-                ? ` (Python ${this._formatVersion(this._pythonVersion)})`
-                : '';
-            this._kernelLabel.textContent = this._venvName + pyVer;
+            const info = suffix
+                ? `(${suffix})`
+                : this._pythonVersion
+                    ? `(Python ${this._formatVersion(this._pythonVersion)})`
+                    : '';
+            this._kernelLabel.textContent = info
+                ? `${this._venvName} ${info}`
+                : this._venvName;
         } else {
-            this._kernelLabel.textContent = 'No Kernel';
+            this._kernelLabel.textContent = suffix ? `(${suffix})` : 'No Kernel';
         }
+    }
+
+    _flashStatus(text) {
+        if (this._flashTimer) clearTimeout(this._flashTimer);
+        this._kernelLabel.textContent = `${this._venvName || 'Kernel'} (${text})`;
+        this._flashTimer = setTimeout(() => {
+            this._flashTimer = null;
+            this._updateKernelLabel();
+        }, 2000);
     }
 
     /** Shorten "3.12.12" to "3.12" */

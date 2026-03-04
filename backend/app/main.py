@@ -12,7 +12,9 @@ from app.routers import notebooks, venvs
 from app.managers.kernel_manager import KernelManagerService
 from app.managers.execution_bridge import ExecutionBridge
 from app.managers.collaboration import CollaborationManager
-from app.managers.notebook_manager import NotebookManager
+from app.managers.notebook_manager import (
+    NotebookManager, extract_images_from_outputs, restore_images_in_outputs
+)
 from app.managers.venv_manager import VenvManager
 
 logging.basicConfig(level=logging.INFO)
@@ -132,9 +134,10 @@ async def on_notebook_open(sid, data):
 
     try:
         nb = notebook_mgr.get_notebook(project_id, notebook_path)
+        wire_nb = notebook_mgr.prepare_for_wire(nb)
         room_state = collab_mgr.get_room_state(project_id, notebook_path)
         await sio.emit("notebook:state", {
-            "notebook": nb,
+            "notebook": wire_nb,
             "locks": room_state["cell_locks"],
             "connected_users": room_state["clients"]
         }, to=sid)
@@ -174,6 +177,10 @@ async def on_notebook_save(sid, data):
         return
 
     try:
+        # Restore base64 image data from URLs before saving to disk
+        for cell in content.get("cells", []):
+            if cell.get("outputs"):
+                cell["outputs"] = restore_images_in_outputs(cell["outputs"])
         notebook_mgr.update_notebook(project_id, notebook_path, content)
         room_id = f"notebook:{project_id}:{notebook_path}"
         await sio.emit("notebook:saved", {"success": True}, room=room_id)
@@ -320,8 +327,23 @@ async def on_kernel_restart(sid, data):
         ctx = client_context.get(sid, {})
         room_id = f"notebook:{ctx.get('project_id', '')}:{ctx.get('notebook_path', '')}"
         await sio.emit("kernel:status", {"status": "starting"}, room=room_id)
-        await kernel_mgr.restart_kernel(session.session_id)
-        await sio.emit("kernel:status", {"status": "idle"}, room=room_id)
+        try:
+            result = await kernel_mgr.restart_kernel(session.session_id)
+            if result:
+                await sio.emit("kernel:status", {"status": "idle"}, room=room_id)
+            else:
+                await sio.emit("kernel:status", {"status": "dead"}, room=room_id)
+                await sio.emit("error", {
+                    "message": "Kernel restart failed",
+                    "code": "RESTART_FAILED"
+                }, room=room_id)
+        except Exception as e:
+            logger.error(f"Kernel restart error: {e}")
+            await sio.emit("kernel:status", {"status": "dead"}, room=room_id)
+            await sio.emit("error", {
+                "message": f"Kernel restart failed: {e}",
+                "code": "RESTART_FAILED"
+            }, room=room_id)
 
 
 @sio.on("kernel:interrupt")
