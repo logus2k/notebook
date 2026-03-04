@@ -268,6 +268,7 @@ export class CellEditor {
         } else if (this._cellType === 'markdown') {
             extensions.push(cm.markdown());
             extensions.push(syntaxHighlighting(markdownHighlightStyle));
+            extensions.push(cm.EditorView.lineWrapping);
         }
 
         this._editorView = new cm.EditorView({
@@ -424,6 +425,7 @@ export class CellEditor {
         }
         this._mdRenderedEl.classList.remove('hidden');
         this._editorAreaEl.classList.add('hidden');
+        this._el.classList.add('markdown-rendered');
         this._markdownRendered = true;
 
         this._mdRenderedEl.addEventListener('dblclick', () => {
@@ -435,6 +437,7 @@ export class CellEditor {
     _hideMarkdownRendered() {
         this._mdRenderedEl.classList.add('hidden');
         this._editorAreaEl.classList.remove('hidden');
+        this._el.classList.remove('markdown-rendered');
         this._markdownRendered = false;
     }
 

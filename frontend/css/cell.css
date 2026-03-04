@@ -26,7 +26,7 @@
     top: 5px;
     bottom: 5px;
     width: 3px;
-    background: #4a6eefc4;
+    background: #6096e5ad;
     border-radius: 4px;
 }
 
@@ -52,15 +52,23 @@
     transition: background 0.15s, border-radius 0.15s;
 }
 
+#notebook-container:hover .cell:not(.markdown-rendered) .cell-header {
+    background: linear-gradient(to right,
+        var(--bg-tertiary) calc(var(--gutter-width, 0px) - 1px),
+        #d0d0d8 calc(var(--gutter-width, 0px) - 1px),
+        #d0d0d8 var(--gutter-width, 0px),
+        transparent var(--gutter-width, 0px));
+}
+
 #notebook-container:hover .cell-header {
     border-radius: var(--radius) var(--radius) 0 0;
 }
 
-.cell:hover[data-cell-type="code"] .cell-header {
+#notebook-container .cell:hover[data-cell-type="code"] .cell-header {
     background: #c6e2ff69;
 }
 
-.cell:hover[data-cell-type="markdown"] .cell-header {
+#notebook-container .cell:hover[data-cell-type="markdown"] .cell-header {
     background: #b0eaac45;
 }
 

@@ -1,7 +1,7 @@
 .cell-output {
     position: relative;
     border-top: 1px dashed #999999;
-    padding: 8px 12px;
+    padding: 8px 15px;
     font-family: var(--font-mono);
     font-size: 13px;
     overflow-y: auto;

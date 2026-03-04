@@ -50,6 +50,14 @@ class App {
             }
         }
 
+        // Forward wheel events from page margins to notebook container
+        const notebookContainer = document.getElementById('notebook-container');
+        document.addEventListener('wheel', (e) => {
+            if (!notebookContainer.contains(e.target)) {
+                notebookContainer.scrollBy(0, e.deltaY);
+            }
+        }, { passive: true });
+
         // Initialize editor
         this._editor = new NotebookEditor(
             document.getElementById('notebook-container'),
