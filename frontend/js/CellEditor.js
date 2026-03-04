@@ -26,6 +26,9 @@ function loadCodeMirror() {
 }
 
 
+// Track the currently focused cell so we can blur it when another is focused
+let _currentlyFocusedCell = null;
+
 export class CellEditor {
     /**
      * @param {object} cellData - Cell data from .ipynb JSON
@@ -74,6 +77,13 @@ export class CellEditor {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.cellType = this._cellType;
+
+        // Click anywhere on the cell to mark it as focused
+        cell.addEventListener('mousedown', () => {
+            if (!this._focused) {
+                this._onFocus();
+            }
+        });
 
         // Sidebar
         const sidebar = document.createElement('div');
@@ -227,12 +237,19 @@ export class CellEditor {
     }
 
     _onFocus() {
+        if (_currentlyFocusedCell && _currentlyFocusedCell !== this) {
+            _currentlyFocusedCell._onBlur();
+        }
+        _currentlyFocusedCell = this;
         this._focused = true;
         this._el.classList.add('focused');
         if (this._callbacks.onFocus) this._callbacks.onFocus(this._index);
     }
 
     _onBlur() {
+        if (_currentlyFocusedCell === this) {
+            _currentlyFocusedCell = null;
+        }
         this._focused = false;
         this._el.classList.remove('focused');
         if (this._callbacks.onBlur) this._callbacks.onBlur(this._index);
