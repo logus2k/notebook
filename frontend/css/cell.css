@@ -15,10 +15,6 @@
     box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
 }
 
-.cell.focused {
-    border-color: var(--accent-blue);
-}
-
 .cell.focused::before {
     content: '';
     position: absolute;
@@ -264,7 +260,23 @@
     box-shadow: 0 0 4px rgba(46, 168, 46, 0.4);
 }
 
+.cell[data-cell-type="code"]::after {
+    content: 'python';
+    position: absolute;
+    top: 6px;
+    right: 15px;
+    font-size: 10px;
+    color: #999999;
+    z-index: 1;
+    transition: opacity 0.15s;
+}
+
+.cell[data-cell-type="code"]:hover::after {
+    opacity: 0;
+}
+
 .cell-editor {
+    position: relative;
     padding: 0;
     min-height: 36px;
 }
