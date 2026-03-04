@@ -9,17 +9,35 @@ import {
     EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
     EditorState, Compartment,
     defaultKeymap, indentWithTab, history, historyKeymap,
-    syntaxHighlighting, defaultHighlightStyle,
-    python,
+    syntaxHighlighting, defaultHighlightStyle, HighlightStyle,
+    tags,
+    python, markdown,
     ayuLight, clouds, espresso, smoothy, tomorrow, oneDark
 } from '../vendor/codemirror/codemirror.bundle.js';
+
+/** Highlight style for markdown tokens. */
+const markdownHighlightStyle = HighlightStyle.define([
+    { tag: tags.heading1, fontWeight: 'bold', fontSize: '1.4em', color: '#1a1a1a' },
+    { tag: tags.heading2, fontWeight: 'bold', fontSize: '1.2em', color: '#2a2a2a' },
+    { tag: tags.heading3, fontWeight: 'bold', fontSize: '1.1em', color: '#3a3a3a' },
+    { tag: tags.heading, fontWeight: 'bold', color: '#1a1a1a' },
+    { tag: tags.emphasis, fontStyle: 'italic', color: '#6a5acd' },
+    { tag: tags.strong, fontWeight: 'bold', color: '#d63384' },
+    { tag: tags.link, color: '#0969da', textDecoration: 'underline' },
+    { tag: tags.url, color: '#0969da' },
+    { tag: tags.monospace, fontFamily: 'var(--font-mono)', backgroundColor: '#f0f0f0', borderRadius: '3px', color: '#c7254e' },
+    { tag: tags.strikethrough, textDecoration: 'line-through', color: '#999' },
+    { tag: tags.quote, color: '#57606a', fontStyle: 'italic' },
+    { tag: tags.list, color: '#cf222e' },
+    { tag: tags.processingInstruction, color: '#888' },
+]);
 
 const cmModules = {
     EditorView, keymap, lineNumbers, highlightActiveLine,
     highlightActiveLineGutter, EditorState, defaultKeymap,
     indentWithTab, history, historyKeymap,
     syntaxHighlighting, defaultHighlightStyle,
-    python
+    python, markdown
 };
 
 /** Shared theme compartment for all editors. */
@@ -247,6 +265,9 @@ export class CellEditor {
 
         if (this._cellType === 'code') {
             extensions.push(cm.python());
+        } else if (this._cellType === 'markdown') {
+            extensions.push(cm.markdown());
+            extensions.push(syntaxHighlighting(markdownHighlightStyle));
         }
 
         this._editorView = new cm.EditorView({
