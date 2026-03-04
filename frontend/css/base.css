@@ -221,13 +221,14 @@ html:has(.hide-bg-color) {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #fbc872c7;
+    background: #6096e5ad;
     border-radius: 4px;
     cursor: pointer;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #ffe39eed;
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active {
+    background: #4a7bd0cc;
 }
 
 @keyframes fadeInOut {
