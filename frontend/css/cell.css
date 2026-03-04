@@ -448,19 +448,19 @@
     border-collapse: collapse;
     margin: 8px 0;
     width: auto;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .cell-markdown-rendered th,
 .cell-markdown-rendered td {
     border: 1px solid var(--border-color);
-    padding: 6px 12px;
+    padding: 4px 10px;
     text-align: left;
 }
 
 .cell-markdown-rendered th {
-    background: #2658dfba;
-    font-weight: 600;
+    background: #1f7ccec2;
+    font-weight: 500;
     color: #ffffff;
 }
 
