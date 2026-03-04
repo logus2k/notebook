@@ -2,10 +2,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
-    background: #ffe39e;
+    padding: 6px 12px;
+    background: #ffe39eed;
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
+    position: relative;
 }
 
 .toolbar-group {
@@ -22,6 +23,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
+    margin-right: 3px;
 }
 
 .user-avatar {
@@ -35,6 +37,20 @@
     font-size: 11px;
     font-weight: 600;
     color: #fff;
+}
+
+.toolbar-title {
+    font-size: 23px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-primary);
+    margin-left: 5px;
+}
+
+.toolbar-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .toolbar-logo {

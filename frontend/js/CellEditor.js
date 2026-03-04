@@ -120,7 +120,7 @@ export class CellEditor {
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'cell-delete-btn';
-        deleteBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M10 3h3v1h-1v9l-1 1H5l-1-1V4H3V3h3V2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1zM9 2H7v1h2V2zM5 4v9h6V4H5zm2 2h1v5H7V6zm3 0h-1v5h1V6z"/></svg>';
+        deleteBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#202020" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" fill="#f4a0a0"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
         deleteBtn.title = 'Delete cell';
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -273,10 +273,13 @@ export class CellEditor {
     }
 
     addOutput(output) {
+        if (!this._data.outputs) this._data.outputs = [];
+        this._data.outputs.push(output);
         this._output.addOutput(output);
     }
 
     clearOutput() {
+        this._data.outputs = [];
         this._output.clear();
     }
 
