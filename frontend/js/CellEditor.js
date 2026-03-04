@@ -204,7 +204,7 @@ export class CellEditor {
             navigator.clipboard.writeText(source).then(() => {
                 const tip = document.createElement('span');
                 tip.className = 'cell-copy-toast';
-                tip.textContent = 'Copied!';
+                tip.textContent = 'Copied';
                 copyBtn.style.position = 'relative';
                 copyBtn.appendChild(tip);
                 setTimeout(() => tip.remove(), 1200);
