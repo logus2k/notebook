@@ -132,6 +132,31 @@
     border-color: #a8d9a0;
 }
 
+.cell-copy-btn {
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.cell:hover .cell-copy-btn {
+    opacity: 1;
+}
+
+.cell-copy-btn:hover {
+    background: rgba(96, 150, 229, 0.1);
+    color: var(--accent-blue);
+}
+
 .cell-delete-btn {
     opacity: 0;
     display: flex;

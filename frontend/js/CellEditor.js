@@ -194,10 +194,23 @@ export class CellEditor {
             if (this._callbacks.onDelete) this._callbacks.onDelete(this._index);
         });
 
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'cell-copy-btn';
+        copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#202020" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" fill="#a8d8a0"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+        copyBtn.title = 'Copy cell content';
+        copyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const source = this._getSource();
+            navigator.clipboard.writeText(source).then(() => {
+                copyBtn.title = 'Copied!';
+                setTimeout(() => { copyBtn.title = 'Copy cell content'; }, 1500);
+            });
+        });
+
         const spacer2 = document.createElement('span');
         spacer2.className = 'cell-header-spacer';
 
-        header.append(typeBadge, spacer, addCodeBtn, addMdBtn, spacer2, lockIndicator, deleteBtn);
+        header.append(typeBadge, spacer, addCodeBtn, addMdBtn, spacer2, lockIndicator, copyBtn, deleteBtn);
 
         // Editor area
         const editorArea = document.createElement('div');
