@@ -9,15 +9,18 @@
     box-shadow: 0 -4px 0 0 #fdfdfd, 0 4px 0 0 #fdfdfd;
 }
 
-.cell:first-child {
+/* First cell: no shadow above */
+.notebook > .add-cell-container:first-child + .cell {
     box-shadow: 0 4px 0 0 #fdfdfd;
 }
 
-.cell:last-child {
+/* Last cell: no shadow below */
+.notebook > .cell:has(+ .add-cell-last) {
     box-shadow: 0 -4px 0 0 #fdfdfd;
 }
 
-.cell:first-child:last-child {
+/* Only one cell */
+.notebook > .add-cell-container:first-child + .cell:has(+ .add-cell-last) {
     box-shadow: none;
 }
 
