@@ -278,8 +278,22 @@ export class CellEditor {
             parent: this._editorAreaEl
         });
 
+        this._syncGutterWidth();
+
         if (this._cellType === 'markdown' && this._source.trim()) {
             this._showMarkdownRendered();
+        }
+    }
+
+    _syncGutterWidth() {
+        if (!this._editorView || this._gutterObserver) return;
+        const gutterEl = this._editorAreaEl.querySelector('.cm-gutters');
+        if (gutterEl) {
+            this._el.style.setProperty('--gutter-width', gutterEl.offsetWidth + 'px');
+            this._gutterObserver = new ResizeObserver(() => {
+                this._el.style.setProperty('--gutter-width', gutterEl.offsetWidth + 'px');
+            });
+            this._gutterObserver.observe(gutterEl);
         }
     }
 
@@ -426,6 +440,10 @@ export class CellEditor {
 
     destroy() {
         _allEditors.delete(this);
+        if (this._gutterObserver) {
+            this._gutterObserver.disconnect();
+            this._gutterObserver = null;
+        }
         if (this._editorView) {
             this._editorView.destroy();
             this._editorView = null;
