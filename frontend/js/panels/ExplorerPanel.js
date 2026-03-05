@@ -178,9 +178,17 @@ export class ExplorerPanel {
 
                 if (e.targetType === 'expander') return;
 
-                // Root nodes: toggle expand
-                if (key === 'root-projects' || key === 'root-envs') {
+                // Root nodes: toggle expand + show detail
+                if (key === 'root-projects') {
                     node.setExpanded(!node.isExpanded());
+                    node.setActive(true, { noEvents: true });
+                    this._showProjectsRootDetail();
+                    return false;
+                }
+                if (key === 'root-envs') {
+                    node.setExpanded(!node.isExpanded());
+                    node.setActive(true, { noEvents: true });
+                    this._showEnvsRootDetail();
                     return false;
                 }
 
@@ -216,22 +224,121 @@ export class ExplorerPanel {
 
     // --- Detail views ---
 
+    _showProjectsRootDetail() {
+        this._detailEl.innerHTML = '';
+
+        const header = this._createDetailHeader('Projects');
+        this._detailEl.appendChild(header);
+
+        const form = document.createElement('div');
+        form.className = 'explorer-create-form';
+
+        const label = document.createElement('label');
+        label.textContent = 'New Project';
+        form.appendChild(label);
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.placeholder = 'Project name';
+        form.appendChild(nameInput);
+
+        const errorEl = document.createElement('div');
+        errorEl.className = 'explorer-form-error';
+        form.appendChild(errorEl);
+
+        const createBtn = document.createElement('button');
+        createBtn.className = 'explorer-btn primary';
+        createBtn.textContent = 'Create Project';
+        createBtn.addEventListener('click', () => this._createProject(nameInput, createBtn, errorEl));
+        form.appendChild(createBtn);
+
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') createBtn.click();
+        });
+
+        this._detailEl.appendChild(form);
+        nameInput.focus();
+    }
+
+    _showEnvsRootDetail() {
+        this._detailEl.innerHTML = '';
+
+        const header = this._createDetailHeader('Environments');
+        this._detailEl.appendChild(header);
+
+        const form = document.createElement('div');
+        form.className = 'explorer-create-form';
+
+        const nameLabel = document.createElement('label');
+        nameLabel.textContent = 'New Environment';
+        form.appendChild(nameLabel);
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.placeholder = 'Environment name (e.g. ml-env)';
+        form.appendChild(nameInput);
+
+        const reqLabel = document.createElement('label');
+        reqLabel.textContent = 'Requirements (optional, one per line)';
+        form.appendChild(reqLabel);
+
+        const reqInput = document.createElement('textarea');
+        reqInput.placeholder = 'numpy\npandas\nmatplotlib';
+        reqInput.rows = 4;
+        form.appendChild(reqInput);
+
+        const errorEl = document.createElement('div');
+        errorEl.className = 'explorer-form-error';
+        form.appendChild(errorEl);
+
+        const createBtn = document.createElement('button');
+        createBtn.className = 'explorer-btn primary';
+        createBtn.textContent = 'Create Environment';
+        createBtn.addEventListener('click', () => this._createEnv(nameInput, reqInput, createBtn, errorEl));
+        form.appendChild(createBtn);
+
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') createBtn.click();
+        });
+
+        this._detailEl.appendChild(form);
+        nameInput.focus();
+    }
+
     _showProjectDetail(projectId) {
         this._detailEl.innerHTML = '';
 
         const header = this._createDetailHeader(`📁 ${projectId}`);
         this._detailEl.appendChild(header);
 
-        const actions = document.createElement('div');
-        actions.className = 'explorer-detail-actions';
+        const form = document.createElement('div');
+        form.className = 'explorer-create-form';
 
-        const newNbBtn = document.createElement('button');
-        newNbBtn.className = 'explorer-btn primary';
-        newNbBtn.textContent = '+ New Notebook';
-        newNbBtn.addEventListener('click', () => this._createNotebook(projectId));
-        actions.appendChild(newNbBtn);
+        const label = document.createElement('label');
+        label.textContent = 'New Notebook';
+        form.appendChild(label);
 
-        this._detailEl.appendChild(actions);
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.placeholder = 'Notebook name (without .ipynb)';
+        form.appendChild(nameInput);
+
+        const errorEl = document.createElement('div');
+        errorEl.className = 'explorer-form-error';
+        form.appendChild(errorEl);
+
+        const createBtn = document.createElement('button');
+        createBtn.className = 'explorer-btn primary';
+        createBtn.textContent = 'Create Notebook';
+        createBtn.addEventListener('click', () => this._createNotebook(projectId, nameInput, createBtn, errorEl));
+        form.appendChild(createBtn);
+
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') createBtn.click();
+        });
+
+        this._detailEl.appendChild(form);
+        nameInput.focus();
     }
 
     async _showNotebookDetail(projectId, notebookName) {
@@ -512,14 +619,17 @@ export class ExplorerPanel {
 
     // --- Create actions ---
 
-    async _createProject() {
-        const name = prompt('Project name:');
-        if (!name || !name.trim()) return;
+    async _createProject(nameInput, createBtn, errorEl) {
+        const name = nameInput.value.trim();
+        if (!name) { nameInput.focus(); return; }
+        errorEl.textContent = '';
+        createBtn.disabled = true;
+        createBtn.textContent = 'Creating...';
         try {
             const resp = await fetch('api/projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ project_id: name.trim() })
+                body: JSON.stringify({ project_id: name })
             });
             if (!resp.ok) {
                 const err = await resp.json();
@@ -529,33 +639,44 @@ export class ExplorerPanel {
             const projectsRoot = this._tree.findKey('root-projects');
             if (projectsRoot) {
                 projectsRoot.addChildren([{
-                    title: name.trim(),
-                    key: `project:${name.trim()}`,
+                    title: name,
+                    key: `project:${name}`,
                     icon: 'fa-solid fa-folder',
                     folder: true,
                     lazy: true,
                 }]);
                 projectsRoot.setExpanded(true);
             }
+            nameInput.value = '';
+            // Show the new project's detail
+            this._showProjectDetail(name);
+            const newNode = this._tree.findKey(`project:${name}`);
+            if (newNode) newNode.setActive(true, { noEvents: true });
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            errorEl.textContent = err.message;
+        } finally {
+            createBtn.disabled = false;
+            createBtn.textContent = 'Create Project';
         }
     }
 
-    async _createNotebook(projectId) {
-        const name = prompt('Notebook name (without .ipynb):');
-        if (!name || !name.trim()) return;
+    async _createNotebook(projectId, nameInput, createBtn, errorEl) {
+        const name = nameInput.value.trim();
+        if (!name) { nameInput.focus(); return; }
+        errorEl.textContent = '';
+        createBtn.disabled = true;
+        createBtn.textContent = 'Creating...';
         try {
             const resp = await fetch(`api/projects/${encodeURIComponent(projectId)}/notebooks`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name.trim() })
+                body: JSON.stringify({ name })
             });
             if (!resp.ok) {
                 const err = await resp.json();
                 throw new Error(err.detail || 'Failed to create notebook');
             }
-            const nbName = name.trim().endsWith('.ipynb') ? name.trim() : name.trim() + '.ipynb';
+            const nbName = name.endsWith('.ipynb') ? name : name + '.ipynb';
             // Add to tree under project
             const projectNode = this._tree.findKey(`project:${projectId}`);
             if (projectNode) {
@@ -572,23 +693,28 @@ export class ExplorerPanel {
             }
             this.close();
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            errorEl.textContent = err.message;
+        } finally {
+            createBtn.disabled = false;
+            createBtn.textContent = 'Create Notebook';
         }
     }
 
-    async _createEnv() {
-        const name = prompt('Environment name:');
-        if (!name || !name.trim()) return;
-        const reqStr = prompt('Requirements (comma-separated, optional):');
-        const requirements = reqStr
-            ? reqStr.split(',').map(s => s.trim()).filter(Boolean)
+    async _createEnv(nameInput, reqInput, createBtn, errorEl) {
+        const name = nameInput.value.trim();
+        if (!name) { nameInput.focus(); return; }
+        errorEl.textContent = '';
+        const requirements = reqInput.value.trim()
+            ? reqInput.value.trim().split('\n').map(s => s.trim()).filter(Boolean)
             : null;
 
+        createBtn.disabled = true;
+        createBtn.textContent = 'Creating...';
         try {
             const resp = await fetch('api/venvs', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name.trim(), requirements })
+                body: JSON.stringify({ name, requirements })
             });
             if (!resp.ok) {
                 const err = await resp.json();
@@ -598,15 +724,24 @@ export class ExplorerPanel {
             const envsRoot = this._tree.findKey('root-envs');
             if (envsRoot) {
                 envsRoot.addChildren([{
-                    title: name.trim(),
-                    key: `env:${name.trim()}`,
+                    title: name,
+                    key: `env:${name}`,
                     icon: 'fa-solid fa-cube',
                     data: { pythonVersion: null },
                 }]);
                 envsRoot.setExpanded(true);
             }
+            nameInput.value = '';
+            reqInput.value = '';
+            // Show the new env's detail
+            this._showEnvDetail(name, null);
+            const newNode = this._tree.findKey(`env:${name}`);
+            if (newNode) newNode.setActive(true, { noEvents: true });
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            errorEl.textContent = err.message;
+        } finally {
+            createBtn.disabled = false;
+            createBtn.textContent = 'Create Environment';
         }
     }
 

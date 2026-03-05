@@ -100,6 +100,66 @@
     margin-bottom: 8px;
 }
 
+/* Inline create forms */
+.explorer-create-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.explorer-create-form label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.explorer-create-form input {
+    padding: 6px 8px;
+    font-size: 13px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.explorer-create-form input:focus {
+    border-color: var(--accent-blue);
+    outline: none;
+}
+
+.explorer-create-form textarea {
+    padding: 6px 8px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    resize: vertical;
+    min-height: 60px;
+}
+
+.explorer-create-form textarea:focus {
+    border-color: var(--accent-blue);
+    outline: none;
+}
+
+.explorer-create-form .explorer-btn {
+    align-self: flex-start;
+    margin-top: 2px;
+}
+
+.explorer-form-error {
+    font-size: 12px;
+    color: var(--accent-red);
+    min-height: 0;
+}
+
+.explorer-form-error:empty {
+    display: none;
+}
+
 /* --- Wunderbaum tree styling (adapted from docbro) --- */
 
 #explorerTree {
