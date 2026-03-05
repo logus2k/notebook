@@ -18,6 +18,11 @@ export class NotebookEditor {
         this._wrapperEl = null;
         this._debounceTimers = {};
 
+        // Multi-cell selection state
+        this._selectedIndices = new Set();
+        this._anchorIndex = null;
+        this._clipboard = null; // { cells: [...cellJSON], isCut: bool }
+
         this._setupClientListeners();
     }
 
@@ -150,6 +155,7 @@ export class NotebookEditor {
             cell.destroy();
         }
         this._cells = [];
+        this._selectedIndices.clear();
         this._container.innerHTML = '';
         this._wrapperEl = null;
     }
@@ -161,7 +167,14 @@ export class NotebookEditor {
             onChange: (idx, source) => this._onCellChange(idx, source),
             onRun: (idx, code) => this._onCellRun(idx, code),
             onDelete: (idx) => this._onCellDelete(idx),
-            onAddCell: (idx, type) => this._addCell(idx, type)
+            onAddCell: (idx, type) => this._addCell(idx, type),
+            onCellKeydown: (idx, e) => this._onCellKeydown(idx, e),
+            onCellMousedown: (idx, e) => this._onCellMousedown(idx, e),
+            onCellClick: (idx, e) => this._onCellClick(idx, e),
+            onCellDragStart: (idx, e) => this._onCellDragStart(idx, e),
+            onCellDragEnd: (idx) => this._onCellDragEnd(idx),
+            onEditorFocus: (idx) => this._client.lockCell(idx),
+            onEditorBlur: (idx) => this._client.unlockCell(idx)
         });
     }
 
@@ -258,11 +271,11 @@ export class NotebookEditor {
     // --- Cell callbacks ---
 
     _onCellFocus(index) {
-        this._client.lockCell(index);
+        // Lock/unlock now handled by onEditorFocus/onEditorBlur
     }
 
     _onCellBlur(index) {
-        this._client.unlockCell(index);
+        // Lock/unlock now handled by onEditorFocus/onEditorBlur
     }
 
     _onCellChange(index, source) {
@@ -298,23 +311,54 @@ export class NotebookEditor {
         this._wrapperEl.addEventListener('drop', (e) => {
             e.preventDefault();
             this._stopDragScroll();
-            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+            const raw = e.dataTransfer.getData('text/plain');
             const toIndex = this._dropTargetIndex;
             this._clearDropIndicator();
 
-            if (isNaN(fromIndex) || toIndex == null) return;
-            // Adjust target: if dragging down, the target shifts after removal
-            const adjustedTo = toIndex > fromIndex ? toIndex - 1 : toIndex;
-            if (adjustedTo === fromIndex) return;
+            if (!raw || toIndex == null) return;
 
-            const [cell] = this._cells.splice(fromIndex, 1);
-            this._cells.splice(adjustedTo, 0, cell);
+            // Parse dragged indices (comma-separated)
+            const draggedIndices = raw.split(',').map(Number).filter(n => !isNaN(n));
+            if (draggedIndices.length === 0) return;
+
+            const sorted = [...draggedIndices].sort((a, b) => a - b);
+
+            // Check if dropping into the same position (no-op)
+            const first = sorted[0];
+            const last = sorted[sorted.length - 1];
+            if (toIndex >= first && toIndex <= last + 1) return;
+
+            // Extract dragged cells (reverse order to preserve indices)
+            const draggedCells = sorted.map(i => this._cells[i]);
+            for (let i = sorted.length - 1; i >= 0; i--) {
+                this._cells.splice(sorted[i], 1);
+            }
+
+            // Calculate insertion point after removal
+            let insertAt = toIndex;
+            for (const idx of sorted) {
+                if (idx < toIndex) insertAt--;
+            }
+
+            // Insert dragged cells at new position
+            this._cells.splice(insertAt, 0, ...draggedCells);
             this._reindexCells();
 
             this._notebook.cells = this._cells.map(c => c.toJSON());
             this._render();
 
-            this._client.moveCell(fromIndex, adjustedTo);
+            // Broadcast moves — send each cell's movement
+            for (let i = 0; i < sorted.length; i++) {
+                this._client.moveCell(sorted[i], insertAt + i);
+            }
+
+            // Restore selection at new positions
+            this._selectedIndices.clear();
+            for (let i = 0; i < draggedCells.length; i++) {
+                this._selectedIndices.add(insertAt + i);
+            }
+            this._anchorIndex = insertAt;
+            this._updateSelectionVisuals();
         });
     }
 
@@ -394,6 +438,364 @@ export class NotebookEditor {
         for (const el of this._wrapperEl.querySelectorAll('.drop-target')) {
             el.classList.remove('drop-target');
         }
+    }
+
+    // --- Selection ---
+
+    _selectCell(index) {
+        this._clearSelection();
+        this._selectedIndices.add(index);
+        this._anchorIndex = index;
+        this._updateSelectionVisuals();
+    }
+
+    _extendSelectionTo(index) {
+        if (this._anchorIndex === null) this._anchorIndex = index;
+        this._selectedIndices.clear();
+        const lo = Math.min(this._anchorIndex, index);
+        const hi = Math.max(this._anchorIndex, index);
+        for (let i = lo; i <= hi; i++) this._selectedIndices.add(i);
+        this._updateSelectionVisuals();
+    }
+
+    _clearSelection() {
+        this._selectedIndices.clear();
+        this._updateSelectionVisuals();
+    }
+
+    _updateSelectionVisuals() {
+        const multi = this._selectedIndices.size > 1;
+        for (let i = 0; i < this._cells.length; i++) {
+            const isSelected = this._selectedIndices.has(i);
+            this._cells[i].element.classList.toggle('selected', isSelected);
+            // Make selected cells draggable from anywhere (not just drag handle)
+            this._cells[i].element.draggable = isSelected && multi;
+        }
+    }
+
+    // --- Drag handling for selection ---
+
+    _onCellDragStart(index, e) {
+        // If dragged cell is part of selection, drag all selected cells
+        let indices;
+        if (this._selectedIndices.has(index) && this._selectedIndices.size > 1) {
+            indices = [...this._selectedIndices].sort((a, b) => a - b);
+        } else {
+            // Dragging an unselected cell — select just that one
+            this._selectCell(index);
+            indices = [index];
+        }
+
+        e.dataTransfer.setData('text/plain', indices.join(','));
+        e.dataTransfer.effectAllowed = 'move';
+
+        // Mark all dragged cells visually
+        for (const idx of indices) {
+            this._cells[idx].element.classList.add('dragging');
+        }
+    }
+
+    _onCellDragEnd(index) {
+        for (const cell of this._cells) {
+            cell.element.classList.remove('dragging');
+        }
+    }
+
+    // --- Mouse handling for selection ---
+
+    _onCellMousedown(index, e) {
+        // Shift+click always extends cell selection, regardless of click target
+        if (e.shiftKey) {
+            e.preventDefault();
+            this._extendSelectionTo(index);
+            this._cells[index].focusCell();
+            return;
+        }
+
+        // Ctrl+click toggles individual cell in selection (sparse selection)
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            if (this._selectedIndices.has(index)) {
+                this._selectedIndices.delete(index);
+                if (this._selectedIndices.size === 0) {
+                    this._selectedIndices.add(index); // keep at least one selected
+                }
+            } else {
+                this._selectedIndices.add(index);
+            }
+            this._anchorIndex = index;
+            this._updateSelectionVisuals();
+            this._cells[index].focusCell();
+            return;
+        }
+
+        // Clicking inside the editor area — let CodeMirror handle focus,
+        // but still update cell-level selection
+        const editorArea = this._cells[index]?.element.querySelector('.cell-editor');
+        if (editorArea && editorArea.contains(e.target)) {
+            this._selectCell(index);
+            return;
+        }
+
+        // Don't interfere with drag handle — selection is handled by dragstart
+        const sidebar = this._cells[index]?.element.querySelector('.cell-sidebar');
+        if (sidebar && sidebar.contains(e.target)) return;
+
+        // Don't interfere with header buttons (delete, copy, +Code, +Markdown)
+        if (e.target.closest('.cell-delete-btn, .cell-copy-btn, .cell-header-btn')) return;
+
+        // Clicking an already-selected cell in multi-selection: DON'T focus here
+        // (calling element.focus() during mousedown prevents browser drag initiation)
+        // The click handler will focus after mouseup if no drag occurred.
+        if (this._selectedIndices.has(index) && this._selectedIndices.size > 1) {
+            return;
+        }
+
+        // Plain click selects one cell in command mode
+        this._selectCell(index);
+        this._cells[index].focusCell();
+    }
+
+    // --- Click handler (fires after mouseup, NOT after drag) ---
+
+    _onCellClick(index, e) {
+        // Skip clicks inside editor or sidebar
+        const editorArea = this._cells[index]?.element.querySelector('.cell-editor');
+        if (editorArea && editorArea.contains(e.target)) return;
+        const sidebar = this._cells[index]?.element.querySelector('.cell-sidebar');
+        if (sidebar && sidebar.contains(e.target)) return;
+
+        // After a non-drag click on a multi-selected cell, reduce to single selection
+        if (this._selectedIndices.has(index) && this._selectedIndices.size > 1 && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+            this._selectCell(index);
+            this._cells[index].focusCell();
+        }
+    }
+
+    // --- Command-mode keyboard handler ---
+
+    _onCellKeydown(index, e) {
+        const key = e.key;
+
+        if (key === 'ArrowUp' || key === 'ArrowDown') {
+            e.preventDefault();
+            const dir = key === 'ArrowUp' ? -1 : 1;
+            if (e.altKey) {
+                this._moveSelectedCells(dir);
+            } else if (e.shiftKey) {
+                this._extendSelection(index, dir);
+            } else {
+                this._navigateToCell(index + dir);
+            }
+            return;
+        }
+
+        if (key === 'Enter') {
+            e.preventDefault();
+            this._clearSelection();
+            const cell = this._cells[index];
+            if (cell) {
+                if (cell.cellType === 'markdown' && cell._markdownRendered) {
+                    cell._hideMarkdownRendered();
+                }
+                cell.focusEditor();
+            }
+            return;
+        }
+
+        if (key === 'Delete' || key === 'Backspace') {
+            e.preventDefault();
+            this._deleteSelectedCells();
+            return;
+        }
+
+        // Ctrl/Cmd+C/X/V
+        const mod = e.ctrlKey || e.metaKey;
+        if (mod && key === 'c') {
+            e.preventDefault();
+            this._copySelectedCells(false);
+            return;
+        }
+        if (mod && key === 'x') {
+            e.preventDefault();
+            this._copySelectedCells(true);
+            return;
+        }
+        if (mod && key === 'v') {
+            e.preventDefault();
+            this._pasteCells();
+            return;
+        }
+    }
+
+    // --- Cell operations ---
+
+    _navigateToCell(targetIndex) {
+        if (targetIndex < 0 || targetIndex >= this._cells.length) return;
+        this._selectCell(targetIndex);
+        this._cells[targetIndex].focusCell();
+        this._cells[targetIndex].element.scrollIntoView({ block: 'nearest' });
+    }
+
+    _extendSelection(currentIndex, dir) {
+        // Find the leading edge of current selection in the direction of extension
+        const sorted = [...this._selectedIndices].sort((a, b) => a - b);
+        const edge = dir > 0 ? sorted[sorted.length - 1] : sorted[0];
+        const next = edge + dir;
+        if (next < 0 || next >= this._cells.length) return;
+        this._extendSelectionTo(next);
+        this._cells[next].focusCell();
+        this._cells[next].element.scrollIntoView({ block: 'nearest' });
+    }
+
+    _moveSelectedCells(dir) {
+        if (this._selectedIndices.size === 0) return;
+        const sorted = [...this._selectedIndices].sort((a, b) => a - b);
+
+        // Must be a contiguous block
+        for (let i = 1; i < sorted.length; i++) {
+            if (sorted[i] !== sorted[i - 1] + 1) return;
+        }
+
+        const first = sorted[0];
+        const last = sorted[sorted.length - 1];
+
+        if (dir < 0 && first === 0) return;
+        if (dir > 0 && last === this._cells.length - 1) return;
+
+        // Swap the adjacent cell with the block
+        if (dir < 0) {
+            // Move the cell above the block to after the block
+            const adj = first - 1;
+            const [cell] = this._cells.splice(adj, 1);
+            this._cells.splice(last, 0, cell);
+            this._client.moveCell(adj, last);
+        } else {
+            // Move the cell below the block to before the block
+            const adj = last + 1;
+            const [cell] = this._cells.splice(adj, 1);
+            this._cells.splice(first, 0, cell);
+            this._client.moveCell(adj, first);
+        }
+
+        this._reindexCells();
+        this._notebook.cells = this._cells.map(c => c.toJSON());
+        this._render();
+
+        // Restore selection at new positions
+        this._selectedIndices.clear();
+        for (const idx of sorted) {
+            this._selectedIndices.add(idx + dir);
+        }
+        this._anchorIndex = (this._anchorIndex !== null) ? this._anchorIndex + dir : null;
+        this._updateSelectionVisuals();
+
+        const focusIdx = dir < 0 ? first + dir : last + dir;
+        if (this._cells[focusIdx]) {
+            this._cells[focusIdx].focusCell();
+            this._cells[focusIdx].element.scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    _copySelectedCells(isCut) {
+        if (this._selectedIndices.size === 0) return;
+        const sorted = [...this._selectedIndices].sort((a, b) => a - b);
+        this._clipboard = {
+            cells: sorted.map(i => this._cells[i].toJSON()),
+            isCut
+        };
+        if (isCut) {
+            this._deleteSelectedCells();
+        }
+    }
+
+    _pasteCells() {
+        if (!this._clipboard || this._clipboard.cells.length === 0) return;
+
+        // Insert after last selected cell, or at end if no selection
+        let insertAt;
+        if (this._selectedIndices.size > 0) {
+            insertAt = Math.max(...this._selectedIndices) + 1;
+        } else {
+            insertAt = this._cells.length;
+        }
+
+        const newIndices = [];
+        for (let i = 0; i < this._clipboard.cells.length; i++) {
+            const cellJSON = this._clipboard.cells[i];
+            const cellId = Math.random().toString(36).substring(2, 10);
+            const cellData = {
+                cell_type: cellJSON.cell_type,
+                id: cellId,
+                metadata: {},
+                source: cellJSON.source,
+                outputs: [],
+                execution_count: null
+            };
+
+            const idx = insertAt + i;
+            const cellEditor = this._createCellEditor(cellData, idx);
+            this._cells.splice(idx, 0, cellEditor);
+
+            // Broadcast
+            this._client.addCell(idx, cellData.cell_type, cellId);
+            // Set source after creation
+            const src = Array.isArray(cellJSON.source) ? cellJSON.source.join('') : (cellJSON.source || '');
+            if (src) {
+                setTimeout(() => this._client.updateCell(idx, src), 50);
+            }
+
+            newIndices.push(idx);
+        }
+
+        this._reindexCells();
+        this._notebook.cells = this._cells.map(c => c.toJSON());
+        this._render();
+
+        // Select the pasted cells
+        this._selectedIndices.clear();
+        for (const idx of newIndices) this._selectedIndices.add(idx);
+        this._anchorIndex = newIndices[0];
+        this._updateSelectionVisuals();
+
+        if (this._cells[newIndices[0]]) {
+            this._cells[newIndices[0]].focusCell();
+        }
+    }
+
+    _deleteSelectedCells() {
+        if (this._selectedIndices.size === 0) return;
+        const sorted = [...this._selectedIndices].sort((a, b) => b - a); // reverse order
+
+        const nearestAfter = Math.min(...this._selectedIndices);
+
+        for (const idx of sorted) {
+            const cell = this._cells[idx];
+            cell.destroy();
+            this._cells.splice(idx, 1);
+
+            if (this._wrapperEl) {
+                const addBtnEl = this._wrapperEl.children[idx * 2 + 1];
+                if (addBtnEl) addBtnEl.remove();
+            }
+
+            this._client.deleteCell(idx);
+        }
+
+        this._reindexCells();
+        this._updateAddCellLast();
+        this._clearSelection();
+
+        // If all cells deleted, add a fresh one
+        if (this._cells.length === 0) {
+            this._addCell(0, 'code');
+            return;
+        }
+
+        // Focus nearest remaining cell
+        const focusIdx = Math.min(nearestAfter, this._cells.length - 1);
+        this._selectCell(focusIdx);
+        this._cells[focusIdx].focusCell();
     }
 
     // --- Remote events ---

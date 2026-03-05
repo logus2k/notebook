@@ -1,5 +1,7 @@
 services:
   notebook:
+    image: logus2k/noted
+    container_name: noted
     build: .
     ports:
       - "8123:8123"

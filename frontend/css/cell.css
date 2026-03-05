@@ -33,7 +33,8 @@
     box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
 }
 
-.cell.focused::before {
+.cell.focused::before,
+.cell.selected::before {
     content: '';
     position: absolute;
     left: -10px;
@@ -42,6 +43,10 @@
     width: 3px;
     background: #6096e5ad;
     border-radius: 4px;
+}
+
+.cell.selected:focus {
+    outline: none;
 }
 
 .cell.locked-by-other {
@@ -92,7 +97,6 @@
     border-radius: 3px;
     font-size: 11px;
     min-width: 65px;
-    text-align: center;
     opacity: 0;
     transition: opacity 0.15s;
 }
@@ -313,7 +317,13 @@
 }
 
 .add-cell-container.drop-target {
+    display: block;
     position: relative;
+    padding: 2px 0;
+}
+
+.add-cell-container.drop-target .add-cell-button {
+    display: none;
 }
 
 .add-cell-container.drop-target::before {
@@ -348,7 +358,6 @@
 .cell-editor {
     position: relative;
     padding: 0;
-    min-height: 36px;
 }
 
 .cell-editor .cm-editor {

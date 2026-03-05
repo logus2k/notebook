@@ -109,16 +109,48 @@ export class CellEditor {
     get source() { return this._getSource(); }
     get cellId() { return this._data.id; }
     get output() { return this._output; }
+    get isEditorFocused() { return !!this._editorView?.hasFocus; }
+
+    focusCell() { this._el.focus(); }
+    focusEditor() { this._editorView?.focus(); }
 
     _buildElement() {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.cellType = this._cellType;
+        cell.tabIndex = -1;
 
-        // Click anywhere on the cell to mark it as focused
-        cell.addEventListener('mousedown', () => {
-            if (!this._focused) {
+        // Click anywhere on the cell — delegate to notebook for selection
+        cell.addEventListener('mousedown', (e) => {
+            if (this._callbacks.onCellMousedown) {
+                this._callbacks.onCellMousedown(this._index, e);
+            } else if (!this._focused) {
                 this._onFocus();
+            }
+        });
+
+        // Click (fires after mouseup, but NOT after drag) — for deferred focus
+        cell.addEventListener('click', (e) => {
+            if (this._callbacks.onCellClick) {
+                this._callbacks.onCellClick(this._index, e);
+            }
+        });
+
+        // Command-mode keydown: only fires when cell has focus but editor does not
+        cell.addEventListener('keydown', (e) => {
+            if (this.isEditorFocused) return;
+            if (this._callbacks.onCellKeydown) this._callbacks.onCellKeydown(this._index, e);
+        });
+
+        // Cell-level drag (for multi-selection; cell.draggable is toggled by NotebookEditor)
+        cell.addEventListener('dragstart', (e) => {
+            if (this._callbacks.onCellDragStart) {
+                this._callbacks.onCellDragStart(this._index, e);
+            }
+        });
+        cell.addEventListener('dragend', () => {
+            if (this._callbacks.onCellDragEnd) {
+                this._callbacks.onCellDragEnd(this._index);
             }
         });
 
@@ -136,12 +168,20 @@ export class CellEditor {
         dragHandle.title = 'Drag to reorder';
         dragHandle.draggable = true;
         dragHandle.addEventListener('dragstart', (e) => {
-            e.dataTransfer.setData('text/plain', String(this._index));
-            e.dataTransfer.effectAllowed = 'move';
-            cell.classList.add('dragging');
+            if (this._callbacks.onCellDragStart) {
+                this._callbacks.onCellDragStart(this._index, e);
+            } else {
+                e.dataTransfer.setData('text/plain', String(this._index));
+                e.dataTransfer.effectAllowed = 'move';
+                cell.classList.add('dragging');
+            }
         });
         dragHandle.addEventListener('dragend', () => {
-            cell.classList.remove('dragging');
+            if (this._callbacks.onCellDragEnd) {
+                this._callbacks.onCellDragEnd(this._index);
+            } else {
+                cell.classList.remove('dragging');
+            }
         });
         sidebar.appendChild(dragHandle);
 
@@ -267,6 +307,7 @@ export class CellEditor {
                         this._showMarkdownRendered();
                     }
                     this._editorView.contentDOM.blur();
+                    this._el.focus(); // enter command mode
                     return true;
                 }},
                 ...cm.defaultKeymap,
@@ -276,8 +317,13 @@ export class CellEditor {
             cm.EditorView.updateListener.of((update) => {
                 if (update.docChanged) this._onContentChanged();
                 if (update.focusChanged) {
-                    if (update.view.hasFocus) this._onFocus();
-                    else this._onBlur();
+                    if (update.view.hasFocus) {
+                        this._onFocus();
+                        if (this._callbacks.onEditorFocus) this._callbacks.onEditorFocus(this._index);
+                    } else {
+                        this._onBlur();
+                        if (this._callbacks.onEditorBlur) this._callbacks.onEditorBlur(this._index);
+                    }
                 }
             }),
             cm.EditorView.theme({
