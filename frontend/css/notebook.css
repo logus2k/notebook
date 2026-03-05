@@ -80,17 +80,16 @@
     transition: background 0.15s, color 0.15s;
 }
 
-.add-cell-button:hover {
-    color: #000000;
-    border-color: var(--text-muted);
-}
-
 .add-cell-code:hover {
-    background: #d3e9ff;
+    background: #c6e2ff;
+    color: #3366cc;
+    border-color: #a8ccee;
 }
 
 .add-cell-markdown:hover {
-    background: #d5eecf;
+    background: #d2eecd;
+    color: #3a7a3a;
+    border-color: #a8d9a0;
 }
 
 .project-browser {

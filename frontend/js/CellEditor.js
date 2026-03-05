@@ -211,7 +211,7 @@ export class CellEditor {
 
         const addCodeBtn = document.createElement('button');
         addCodeBtn.className = 'cell-header-btn cell-add-code-btn';
-        addCodeBtn.textContent = '+ Code';
+        addCodeBtn.textContent = '+ code';
         addCodeBtn.title = 'Insert code cell before';
         addCodeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -220,7 +220,7 @@ export class CellEditor {
 
         const addMdBtn = document.createElement('button');
         addMdBtn.className = 'cell-header-btn cell-add-md-btn';
-        addMdBtn.textContent = '+ Markdown';
+        addMdBtn.textContent = '+ markdown';
         addMdBtn.title = 'Insert markdown cell before';
         addMdBtn.addEventListener('click', (e) => {
             e.stopPropagation();
