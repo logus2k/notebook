@@ -1,7 +1,24 @@
 .notebook {
+    position: relative;
     max-width: var(--notebook-max-width, 960px);
     margin: 0 auto;
     padding-bottom: 40px;
+}
+
+.notebook::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 36px;
+    right: 0;
+    bottom: 72px;
+    box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 2px 6px 2px;
+    pointer-events: none;
+    transition: opacity 0.15s;
+}
+
+#notebook-container:hover .notebook::after {
+    opacity: 0;
 }
 
 .notebook-empty {

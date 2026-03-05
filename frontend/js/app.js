@@ -140,7 +140,7 @@ class App {
             console.error('Server error:', data.message, data.code);
         });
 
-        // Keyboard shortcuts
+        // Keyboard shortcuts (capture phase so they fire before CodeMirror)
         document.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
@@ -148,21 +148,25 @@ class App {
             }
             if ((e.ctrlKey || e.metaKey) && e.key === 'Home') {
                 e.preventDefault();
+                e.stopPropagation();
                 notebookContainer.scrollTo({ top: 0 });
             }
             if ((e.ctrlKey || e.metaKey) && e.key === 'End') {
                 e.preventDefault();
+                e.stopPropagation();
                 notebookContainer.scrollTo({ top: notebookContainer.scrollHeight });
             }
             if (e.key === 'PageUp') {
                 e.preventDefault();
-                notebookContainer.scrollBy({ top: -notebookContainer.clientHeight, behavior: 'smooth' });
+                e.stopPropagation();
+                notebookContainer.scrollBy(0, -notebookContainer.clientHeight);
             }
             if (e.key === 'PageDown') {
                 e.preventDefault();
-                notebookContainer.scrollBy({ top: notebookContainer.clientHeight, behavior: 'smooth' });
+                e.stopPropagation();
+                notebookContainer.scrollBy(0, notebookContainer.clientHeight);
             }
-        });
+        }, true);
 
         // Check URL params for auto-open, or open Welcome notebook
         const params = new URLSearchParams(window.location.search);
