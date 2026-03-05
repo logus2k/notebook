@@ -5,21 +5,35 @@
 }
 
 .explorer-tree-pane {
-    width: 260px;
-    min-width: 200px;
-    border-right: 1px solid var(--border-color);
     overflow-y: auto;
     overflow-x: hidden;
+    min-width: 0;
     background: var(--bg-secondary);
     padding: 6px 0;
 }
 
 .explorer-detail-pane {
-    flex: 1;
-    min-width: 0;
     overflow-y: auto;
+    min-width: 0;
     padding: 14px 16px;
     background: var(--bg-primary);
+}
+
+/* Split.js gutter */
+.explorer-layout > .gutter {
+    background-repeat: no-repeat;
+    background-position: 50%;
+    cursor: col-resize;
+    background-color: transparent;
+}
+
+.explorer-layout > .gutter:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+.explorer-layout > .gutter.gutter-horizontal {
+    width: 6px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="30"><path d="M2 5v20M4 5v20" stroke="%23999" stroke-width="1"/></svg>');
 }
 
 .explorer-detail-empty {
@@ -170,6 +184,7 @@
 #explorerTree .wb-list-container {
     outline: none;
     cursor: pointer;
+    overflow-x: hidden !important;
 }
 
 #explorerTree .wunderbaum {
@@ -178,37 +193,44 @@
     background: transparent;
 }
 
-/* Folder icons */
-#explorerTree .wunderbaum i.fa-folder,
-#explorerTree .wunderbaum .fa-folder {
-    color: #eec541 !important;
-    -webkit-text-stroke: 1px #666666;
-    paint-order: stroke fill;
+/* Icon badge styling (pill shape like cell-type-badge) */
+#explorerTree .wunderbaum span.wb-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 16px;
+    border-radius: 3px;
+    font-size: 10px;
 }
 
-#explorerTree .wunderbaum i.fa-folder-open,
+/* Folder icons */
+#explorerTree .wunderbaum .fa-folder,
 #explorerTree .wunderbaum .fa-folder-open {
-    color: #eec541 !important;
-    -webkit-text-stroke: 1px #666666;
-    paint-order: stroke fill;
+    color: #b8860b !important;
+    background: #fdf3d7;
 }
 
 /* File icons */
 #explorerTree .wunderbaum .fa-file-code {
-    color: #6b8fcc !important;
+    color: #5675e3 !important;
+    background: #e8edfb;
 }
 
 /* Cube icons (environments) */
 #explorerTree .wunderbaum .fa-cube {
-    color: #7aba7a !important;
+    color: #298829 !important;
+    background: #e6f4e6;
 }
 
 #explorerTree .wunderbaum .fa-cubes {
-    color: #7aba7a !important;
+    color: #298829 !important;
+    background: #e6f4e6;
 }
 
 #explorerTree .wunderbaum .fa-diagram-project {
     color: #cc9b5a !important;
+    background: #faf0e4;
 }
 
 /* Node styling */
