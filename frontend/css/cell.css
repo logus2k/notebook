@@ -146,13 +146,13 @@
 }
 
 .cell-add-code-btn:hover {
-    background: #d3e9ff;
+    background: #c8e6c0;
     color: #3366cc;
     border-color: #a8ccee;
 }
 
 .cell-add-md-btn:hover {
-    background: #d5eecf;
+    background: #c8e6c0;
     color: #298829;
     border-color: #a8d9a0;
 }
@@ -178,7 +178,7 @@
 }
 
 .cell-clear-btn:hover {
-    background: rgba(240, 208, 128, 0.2);
+    background: #c8e6c0;
     color: var(--accent-yellow);
 }
 
@@ -207,7 +207,7 @@
 }
 
 .cell-copy-btn:hover {
-    background: rgba(96, 150, 229, 0.1);
+    background: #c8e6c0;
     color: var(--accent-blue);
 }
 
@@ -256,7 +256,7 @@
 }
 
 .cell-delete-btn:hover {
-    background: rgba(224, 69, 69, 0.1);
+    background: #c8e6c0;
     color: var(--accent-red);
 }
 
@@ -318,7 +318,7 @@
 }
 
 .cell-drag-handle:hover {
-    background: var(--bg-hover);
+    background: #c8e6c0;
     color: #a0c4f0;
 }
 

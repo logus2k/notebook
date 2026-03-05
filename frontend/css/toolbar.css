@@ -73,7 +73,7 @@
 }
 
 .toolbar-icon-btn:hover {
-    background: var(--bg-hover);
+    background: #c8e6c0;
     color: var(--text-primary);
 }
 
@@ -93,6 +93,6 @@
 }
 
 .toolbar-settings-btn:hover {
-    background: var(--bg-hover);
+    background: #c8e6c0;
     color: var(--text-primary);
 }

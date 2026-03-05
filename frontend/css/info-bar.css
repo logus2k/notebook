@@ -88,7 +88,7 @@
 }
 
 .info-bar-icon-btn:hover {
-    background: var(--bg-hover);
+    background: #c8e6c0;
     opacity: 0.7;
 }
 
@@ -110,7 +110,7 @@
 }
 
 .info-bar-text-btn:hover {
-    background: var(--bg-hover);
+    background: #c8e6c0;
     color: #202020;
 }
 
@@ -135,7 +135,7 @@
 }
 
 .info-bar-kernel:hover {
-    background: var(--bg-hover);
+    background: #c8e6c0;
     color: var(--text-primary);
 }
 
