@@ -51,6 +51,7 @@
 }
 
 .cell-header {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -115,6 +116,21 @@
     gap: 4px;
     font-size: 11px;
     color: var(--accent-orange);
+}
+
+.cell-add-code-btn,
+.cell-add-md-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.cell-add-code-btn {
+    right: calc(50% + 2px);
+}
+
+.cell-add-md-btn {
+    left: calc(50% + 2px);
 }
 
 .cell-header-btn {
