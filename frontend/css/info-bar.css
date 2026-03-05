@@ -95,6 +95,7 @@
 .info-bar-text-btn {
     display: flex;
     align-items: center;
+    gap: 4px;
     height: 22px;
     padding: 0 6px;
     background: transparent;
@@ -111,6 +112,11 @@
 .info-bar-text-btn:hover {
     background: var(--bg-hover);
     color: #202020;
+}
+
+@media (max-width: 860px) {
+    .info-bar-btn-label { display: none; }
+    .info-bar-text-btn { padding: 0 4px; }
 }
 
 /* Clickable kernel/environment status */

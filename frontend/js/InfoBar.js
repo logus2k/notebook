@@ -1,3 +1,12 @@
+const S = 'stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
+const CTRL_ICONS = {
+    runAll:    `<svg width="12" height="12" viewBox="0 0 24 24" fill="#555" ${S}><polygon points="6,3 20,12 6,21"/></svg>`,
+    restart:   `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" ${S}><path d="M1 4v6h6"/><path d="M3.5 15a9 9 0 105-8.2L1 10"/></svg>`,
+    stop:      `<svg width="12" height="12" viewBox="0 0 24 24" fill="#555" ${S}><rect x="4" y="4" width="16" height="16" rx="2"/></svg>`,
+    interrupt: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" ${S}><rect x="5" y="3" width="4" height="18" rx="1" fill="#555"/><rect x="15" y="3" width="4" height="18" rx="1" fill="#555"/></svg>`,
+    clearAll:  `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" ${S}><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/><path d="M18 3l3 3-3 3" stroke-width="2.2"/></svg>`,
+};
+
 /**
  * InfoBar - Bar below toolbar showing project/notebook breadcrumb,
  * centered kernel controls, and clickable kernel/environment status.
@@ -46,13 +55,13 @@ export class InfoBar {
         const controls = document.createElement('div');
         controls.className = 'info-bar-controls';
 
-        controls.appendChild(this._textButton('Run All', () => {
+        controls.appendChild(this._textButton(CTRL_ICONS.runAll, 'Run All', () => {
             if (this._callbacks.onRunAll) this._callbacks.onRunAll();
         }));
-        controls.appendChild(this._textButton('Restart', () => this._client.restartKernel()));
-        controls.appendChild(this._textButton('Stop', () => this._client.stopKernel()));
-        controls.appendChild(this._textButton('Interrupt', () => this._client.interruptKernel()));
-        controls.appendChild(this._textButton('Clear All Outputs', () => {
+        controls.appendChild(this._textButton(CTRL_ICONS.restart, 'Restart', () => this._client.restartKernel()));
+        controls.appendChild(this._textButton(CTRL_ICONS.stop, 'Stop', () => this._client.stopKernel()));
+        controls.appendChild(this._textButton(CTRL_ICONS.interrupt, 'Interrupt', () => this._client.interruptKernel()));
+        controls.appendChild(this._textButton(CTRL_ICONS.clearAll, 'Clear All Outputs', () => {
             if (this._callbacks.onClearAllOutputs) this._callbacks.onClearAllOutputs();
         }));
 
@@ -154,10 +163,11 @@ export class InfoBar {
 
     // --- Helpers ---
 
-    _textButton(label, onClick) {
+    _textButton(icon, label, onClick) {
         const btn = document.createElement('button');
         btn.className = 'info-bar-text-btn';
-        btn.textContent = label;
+        btn.innerHTML = icon + `<span class="info-bar-btn-label">${label}</span>`;
+        btn.title = label;
         btn.addEventListener('click', onClick);
         return btn;
     }
