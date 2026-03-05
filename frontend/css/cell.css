@@ -81,6 +81,7 @@
 
 #notebook-container .cell:hover[data-cell-type="markdown"] .cell-header {
     background: #b0eaac45;
+    border-bottom: 0.5px solid #cecece;
 }
 
 .cell-type-badge {
