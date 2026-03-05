@@ -1,10 +1,10 @@
 const S = 'stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
 const CTRL_ICONS = {
     runAll:    `<svg width="12" height="12" viewBox="0 0 24 24" fill="#555" ${S}><polygon points="6,3 20,12 6,21"/></svg>`,
-    restart:   `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" ${S}><path d="M1 4v6h6"/><path d="M3.5 15a9 9 0 105-8.2L1 10"/></svg>`,
+    restart:   `<svg width="12" height="12" viewBox="0 2 24 24" fill="none" ${S}><polygon points="5,4 5,10 11,10" fill="#555"/><path d="M3.5 16a9 9 0 1 0 6-10" stroke-width="2.8"/></svg>`,
     stop:      `<svg width="12" height="12" viewBox="0 0 24 24" fill="#555" ${S}><rect x="4" y="4" width="16" height="16" rx="2"/></svg>`,
     interrupt: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" ${S}><rect x="5" y="3" width="4" height="18" rx="1" fill="#555"/><rect x="15" y="3" width="4" height="18" rx="1" fill="#555"/></svg>`,
-    clearAll:  `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" ${S}><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/><path d="M18 3l3 3-3 3" stroke-width="2.2"/></svg>`,
+    clearAll:  `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ${S}><path d="M4 7h16" stroke-width="2.2"/><path d="M4 12h16" stroke-width="2.2"/><path d="M4 17h16" stroke-width="2.2"/><path d="M18 3l3 3-3 3" stroke-width="2.2"/></svg>`,
 };
 
 /**

@@ -268,10 +268,28 @@ export class CellEditor {
             this.clearOutput();
         });
 
+        const runAboveBtn = document.createElement('button');
+        runAboveBtn.className = 'cell-header-btn cell-run-above-btn';
+        runAboveBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#202020" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="1,4 1,20 13,12" fill="#f0d0a0"/><line x1="20" y1="20" x2="20" y2="9"/><polygon points="16,12 20,5 24,12" fill="#202020"/></svg>';
+        runAboveBtn.title = 'Execute all cells above';
+        runAboveBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this._callbacks.onRunAbove) this._callbacks.onRunAbove(this._index);
+        });
+
+        const runBelowBtn = document.createElement('button');
+        runBelowBtn.className = 'cell-header-btn cell-run-below-btn';
+        runBelowBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#202020" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="1,4 1,20 13,12" fill="#f0d0a0"/><line x1="20" y1="4" x2="20" y2="15"/><polygon points="16,12 20,19 24,12" fill="#202020"/></svg>';
+        runBelowBtn.title = 'Execute this cell and all below';
+        runBelowBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this._callbacks.onRunBelow) this._callbacks.onRunBelow(this._index);
+        });
+
         // Right segment
         const headerRight = document.createElement('div');
         headerRight.className = 'cell-header-right';
-        headerRight.append(lockIndicator, copyBtn, clearBtn, deleteBtn);
+        headerRight.append(lockIndicator, runAboveBtn, runBelowBtn, copyBtn, clearBtn, deleteBtn);
 
         header.append(headerLeft, headerCenter, headerRight);
 

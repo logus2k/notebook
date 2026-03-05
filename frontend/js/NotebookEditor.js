@@ -118,6 +118,22 @@ export class NotebookEditor {
         }
     }
 
+    runAbove(index) {
+        for (let i = 0; i < index; i++) {
+            if (this._cells[i].cellType === 'code') {
+                this._cells[i]._onRun();
+            }
+        }
+    }
+
+    runBelow(index) {
+        for (let i = index; i < this._cells.length; i++) {
+            if (this._cells[i].cellType === 'code') {
+                this._cells[i]._onRun();
+            }
+        }
+    }
+
     clearAllOutputs() {
         for (const cell of this._cells) {
             if (cell.cellType === 'code') {
@@ -194,6 +210,8 @@ export class NotebookEditor {
             onRun: (idx, code) => this._onCellRun(idx, code),
             onDelete: (idx) => this._onCellDelete(idx),
             onAddCell: (idx, type) => this._addCell(idx, type),
+            onRunAbove: (idx) => this.runAbove(idx),
+            onRunBelow: (idx) => this.runBelow(idx),
             onCellKeydown: (idx, e) => this._onCellKeydown(idx, e),
             onCellMousedown: (idx, e) => this._onCellMousedown(idx, e),
             onCellClick: (idx, e) => this._onCellClick(idx, e),
