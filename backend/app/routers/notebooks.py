@@ -46,6 +46,14 @@ def get_notebook(project_id: str, notebook_name: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.get("/projects/{project_id}/notebooks/{notebook_name}/summary")
+def notebook_summary(project_id: str, notebook_name: str):
+    try:
+        return notebook_mgr.notebook_summary(project_id, notebook_name)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.post("/projects/{project_id}/notebooks")
 def create_notebook(project_id: str, req: CreateNotebookRequest):
     try:

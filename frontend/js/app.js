@@ -2,9 +2,8 @@ import { KernelClient } from './KernelClient.js';
 import { NotebookEditor } from './NotebookEditor.js';
 import { NotebookToolbar } from './NotebookToolbar.js';
 import { InfoBar } from './InfoBar.js';
-import { BrowserPanel } from './panels/BrowserPanel.js';
+import { ExplorerPanel } from './panels/ExplorerPanel.js';
 import { DisplaySettingsPanel } from './panels/DisplaySettingsPanel.js';
-import { EnvironmentPanel } from './panels/EnvironmentPanel.js';
 
 /**
  * App - Entry point. Wires together all components.
@@ -15,9 +14,8 @@ class App {
         this._editor = null;
         this._toolbar = null;
         this._infoBar = null;
-        this._browserPanel = null;
+        this._explorerPanel = null;
         this._displaySettingsPanel = null;
-        this._environmentPanel = null;
         this._currentProject = null;
         this._currentNotebook = null;
         this._activeVenv = null; // { name, pythonVersion } or null
@@ -69,7 +67,7 @@ class App {
             document.getElementById('toolbar'),
             this._client,
             {
-                onBrowse: () => this._browserPanel.open(),
+                onBrowse: () => this._explorerPanel.open(),
                 onImport: () => this._onImportNotebook(),
                 onSave: () => this._editor.save(),
                 onExport: () => this._editor.export(),
@@ -86,29 +84,21 @@ class App {
                 onClearAllOutputs: () => this._editor.clearAllOutputs(),
                 onStartKernel: () => this._onStartKernel(),
                 onKernelClick: () => {
-                    if (!this._currentProject) {
-                        alert('Select a project first');
-                        return;
-                    }
-                    this._environmentPanel.open(
+                    this._explorerPanel.setActiveVenv(
                         this._activeVenv ? this._activeVenv.name : null
                     );
+                    this._explorerPanel.open();
                 },
             }
         );
 
-        // Initialize jsPanel-based selection panels
-        this._browserPanel = new BrowserPanel({
-            onSelect: (projectId, notebookName) => this._onNotebookChange(projectId, notebookName),
-        });
-
         // Initialize display settings panel (jsPanel)
         this._displaySettingsPanel = new DisplaySettingsPanel();
 
-        // Initialize unified environment panel (select + manage in one window)
-        this._environmentPanel = new EnvironmentPanel({
+        // Initialize unified explorer panel (projects + environments)
+        this._explorerPanel = new ExplorerPanel({
+            onNotebookSelect: (projectId, notebookName) => this._onNotebookChange(projectId, notebookName),
             onVenvSelect: (venv) => this._onVenvSelect(venv),
-            onVenvCreated: () => {},
             onVenvDeleted: (deletedName) => this._onVenvDeleted(deletedName),
         });
 

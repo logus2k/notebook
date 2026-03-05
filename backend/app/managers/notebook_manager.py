@@ -160,7 +160,6 @@ class NotebookManager:
             raise ValueError("Invalid project ID")
         project_path = os.path.join(PROJECTS_DIR, project_id)
         os.makedirs(os.path.join(project_path, "notebooks"), exist_ok=True)
-        os.makedirs(os.path.join(project_path, "venvs"), exist_ok=True)
         return {"id": project_id}
 
     def list_notebooks(self, project_id: str) -> list[dict]:
@@ -178,6 +177,44 @@ class NotebookManager:
                     "modified": stat.st_mtime
                 })
         return notebooks
+
+    def notebook_summary(self, project_id: str, notebook_name: str) -> dict:
+        notebook_name = self._validate_notebook_name(notebook_name)
+        filepath = self._notebook_path(project_id, notebook_name)
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"Notebook not found: {notebook_name}")
+        stat = os.stat(filepath)
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                nb = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return {"name": notebook_name, "size": stat.st_size,
+                    "modified": stat.st_mtime, "error": "Could not parse notebook"}
+        cells = nb.get("cells", [])
+        code_cells = sum(1 for c in cells if c.get("cell_type") == "code")
+        md_cells = sum(1 for c in cells if c.get("cell_type") == "markdown")
+        metadata = nb.get("metadata", {})
+        # Extract first markdown cell as description preview
+        description = ""
+        for c in cells:
+            if c.get("cell_type") == "markdown":
+                src = c.get("source", "")
+                if isinstance(src, list):
+                    src = "".join(src)
+                description = src[:300]
+                break
+        return {
+            "name": notebook_name,
+            "size": stat.st_size,
+            "modified": stat.st_mtime,
+            "cells_total": len(cells),
+            "code_cells": code_cells,
+            "markdown_cells": md_cells,
+            "kernel": metadata.get("kernelspec", {}).get("display_name", ""),
+            "language": metadata.get("language_info", {}).get("name", ""),
+            "language_version": metadata.get("language_info", {}).get("version", ""),
+            "description": description,
+        }
 
     def get_notebook(self, project_id: str, notebook_name: str) -> dict:
         notebook_name = self._validate_notebook_name(notebook_name)
