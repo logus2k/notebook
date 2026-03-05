@@ -375,7 +375,7 @@
     font-family: var(--font-mono);
     white-space: nowrap;
     padding-bottom: 4px;
-    margin-right: 10px;
+    margin-right: 13px;
     opacity: 0;
     transition: opacity 0.15s;
 }
