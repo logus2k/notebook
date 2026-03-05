@@ -105,6 +105,7 @@
 
 #notebook-container .cell:hover[data-cell-type="code"] .cell-header {
     background: #c6e2ff69;
+    border-bottom: 0.5px solid #cecece;
 }
 
 #notebook-container .cell:hover[data-cell-type="markdown"] .cell-header {
@@ -462,6 +463,11 @@
 #notebook-container:hover .cell-editor .cm-editor .cm-gutters {
     background: var(--bg-tertiary);
     border-right: 1px solid var(--border-color);
+}
+
+#notebook-container:hover .cell:has(.cell-output:not(:empty)) .cell-editor .cm-editor .cm-gutters {
+    border-radius: 0;
+    border-bottom: 1px dashed #999999;
 }
 
 .cell-editor .cm-editor .cm-lineNumbers .cm-gutterElement {

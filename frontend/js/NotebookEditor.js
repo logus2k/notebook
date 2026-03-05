@@ -23,6 +23,10 @@ export class NotebookEditor {
         this._anchorIndex = null;
         this._clipboard = null; // { cells: [...cellJSON], isCut: bool }
 
+        // Notebook-level undo stack (snapshots)
+        this._undoStack = [];
+        this._maxUndoSize = 20;
+
         this._setupClientListeners();
         this._setupContainerListeners();
     }
@@ -245,7 +249,9 @@ export class NotebookEditor {
 
     // --- Local cell operations ---
 
-    _addCell(index, cellType = 'code') {
+    _addCell(index, cellType = 'code', { skipUndo = false } = {}) {
+        if (!skipUndo) this._pushUndo();
+
         const cellId = Math.random().toString(36).substring(2, 10);
         const cellData = {
             cell_type: cellType,
@@ -276,8 +282,9 @@ export class NotebookEditor {
     }
 
     _onCellDelete(index) {
-        const isLastCell = this._cells.length <= 1;
+        this._pushUndo();
 
+        const isLastCell = this._cells.length <= 1;
         const cell = this._cells[index];
         cell.destroy();
         this._cells.splice(index, 1);
@@ -296,7 +303,9 @@ export class NotebookEditor {
 
         // If that was the last cell, insert a fresh empty code cell
         if (isLastCell) {
-            this._addCell(0, 'code');
+            this._addCell(0, 'code', { skipUndo: true });
+            this._selectCell(0);
+            this._cells[0].focusCell();
         }
     }
 
@@ -374,6 +383,8 @@ export class NotebookEditor {
             const first = sorted[0];
             const last = sorted[sorted.length - 1];
             if (toIndex >= first && toIndex <= last + 1) return;
+
+            this._pushUndo();
 
             // Extract dragged cells (reverse order to preserve indices)
             const draggedCells = sorted.map(i => this._cells[i]);
@@ -673,6 +684,11 @@ export class NotebookEditor {
             this._pasteCells();
             return;
         }
+        if (mod && key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            this._undo();
+            return;
+        }
     }
 
     // --- Cell operations ---
@@ -709,6 +725,8 @@ export class NotebookEditor {
 
         if (dir < 0 && first === 0) return;
         if (dir > 0 && last === this._cells.length - 1) return;
+
+        this._pushUndo();
 
         // Swap the adjacent cell with the block
         if (dir < 0) {
@@ -758,6 +776,7 @@ export class NotebookEditor {
 
     _pasteCells() {
         if (!this._clipboard || this._clipboard.cells.length === 0) return;
+        this._pushUndo();
 
         // Insert after last selected cell, or at end if no selection
         let insertAt;
@@ -797,6 +816,7 @@ export class NotebookEditor {
 
         this._reindexCells();
         this._notebook.cells = this._cells.map(c => c.toJSON());
+
         this._render();
 
         // Select the pasted cells
@@ -812,8 +832,9 @@ export class NotebookEditor {
 
     _deleteSelectedCells() {
         if (this._selectedIndices.size === 0) return;
-        const sorted = [...this._selectedIndices].sort((a, b) => b - a); // reverse order
+        this._pushUndo();
 
+        const sorted = [...this._selectedIndices].sort((a, b) => b - a); // reverse order
         const nearestAfter = Math.min(...this._selectedIndices);
 
         for (const idx of sorted) {
@@ -835,14 +856,51 @@ export class NotebookEditor {
 
         // If all cells deleted, add a fresh one
         if (this._cells.length === 0) {
-            this._addCell(0, 'code');
-            return;
+            this._addCell(0, 'code', { skipUndo: true });
         }
 
         // Focus nearest remaining cell
         const focusIdx = Math.min(nearestAfter, this._cells.length - 1);
         this._selectCell(focusIdx);
         this._cells[focusIdx].focusCell();
+    }
+
+    // --- Undo ---
+
+    _pushUndo() {
+        this._undoStack.push(this._cells.map(c => c.toJSON()));
+        if (this._undoStack.length > this._maxUndoSize) {
+            this._undoStack.shift();
+        }
+    }
+
+    _undo() {
+        if (this._undoStack.length === 0) return;
+        const snapshot = this._undoStack.pop();
+
+        // Sync with server: remove all current cells, then re-add from snapshot
+        for (let i = this._cells.length - 1; i >= 0; i--) {
+            this._client.deleteCell(i);
+        }
+
+        this._notebook.cells = snapshot;
+        this._cells = [];
+        this._render();
+
+        for (let i = 0; i < snapshot.length; i++) {
+            const cell = snapshot[i];
+            this._client.addCell(i, cell.cell_type, cell.id);
+            const src = Array.isArray(cell.source) ? cell.source.join('') : (cell.source || '');
+            if (src) {
+                const idx = i;
+                setTimeout(() => this._client.updateCell(idx, src), 50);
+            }
+        }
+
+        if (this._cells.length > 0) {
+            this._selectCell(0);
+            this._cells[0].focusCell();
+        }
     }
 
     // --- Remote events ---

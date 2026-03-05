@@ -111,7 +111,7 @@ export class CellEditor {
     get output() { return this._output; }
     get isEditorFocused() { return !!this._editorView?.hasFocus; }
 
-    focusCell() { this._el.focus(); }
+    focusCell() { this._el.focus({ preventScroll: true }); }
     focusEditor() { this._editorView?.focus(); }
 
     _buildElement() {
