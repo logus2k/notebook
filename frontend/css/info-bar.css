@@ -149,18 +149,15 @@
 
 .kernel-status-dot.idle {
     background: var(--accent-green);
-    box-shadow: 0 0 4px var(--accent-green);
 }
 
 .kernel-status-dot.busy {
     background: var(--accent-yellow);
-    box-shadow: 0 0 4px var(--accent-yellow);
     animation: pulse 1s infinite;
 }
 
 .kernel-status-dot.dead {
     background: var(--accent-red);
-    box-shadow: 0 0 4px var(--accent-red);
 }
 
 .kernel-status-dot.standby {
