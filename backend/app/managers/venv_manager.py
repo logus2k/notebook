@@ -121,7 +121,12 @@ class VenvManager:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
-        await proc.communicate()
+        stdout, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            shutil.rmtree(venv_path)
+            raise RuntimeError(
+                f"Failed to install ipykernel: {stderr.decode()}"
+            )
 
         if requirements:
             await self.install_packages(name, requirements, project_id)

@@ -298,60 +298,15 @@
     animation: spin 0.8s linear infinite;
 }
 
-/* Settings panel styles (used by DisplaySettingsPanel inside jsPanel) */
-.settings-slider-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 6px;
+/* Pulsing animation for in-progress buttons (create, install) */
+.venv-create-form button.primary:disabled,
+.package-install-actions button.primary:disabled {
+    animation: btnPulse 1.5s ease-in-out infinite;
+    cursor: wait;
 }
 
-.settings-slider-row label {
-    font-size: 12px;
-    color: var(--text-secondary);
+@keyframes btnPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
-.settings-slider-value {
-    font-size: 12px;
-    font-family: var(--font-mono);
-    color: var(--text-muted);
-}
-
-.settings-slider {
-    width: 100%;
-    accent-color: var(--accent-blue);
-    padding: 0;
-    border: none;
-    background: transparent;
-    margin: 0;
-    cursor: pointer;
-}
-
-.settings-toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 4px 0;
-}
-
-.settings-toggle-row label {
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-
-.settings-toggle {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--accent-blue);
-    cursor: pointer;
-}
-
-.settings-theme-select {
-    font-size: 12px;
-    padding: 2px 6px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background: var(--bg-secondary, #fff);
-    color: var(--text-primary);
-    cursor: pointer;
-}

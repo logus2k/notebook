@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 class KernelSession:
     session_id: str
     kernel_manager: JupyterKernelManager
+    python_path: str
     venv_path: str
     project_id: str
     notebook_path: str
@@ -83,6 +84,7 @@ class KernelManagerService:
         session = KernelSession(
             session_id=session_id,
             kernel_manager=km,
+            python_path=python_path,
             venv_path=os.path.dirname(os.path.dirname(python_path)),
             project_id=project_id,
             notebook_path=notebook_path,
@@ -131,10 +133,9 @@ class KernelManagerService:
         session = self._kernels.get(session_id)
         if not session:
             return None
-        python_path = os.path.join(session.venv_path, "bin", "python")
         await self.stop_kernel(session_id)
         return await self.start_kernel(
-            session_id, python_path,
+            session_id, session.python_path,
             session.project_id, session.notebook_path,
             session.client_sid
         )

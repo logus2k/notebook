@@ -110,7 +110,7 @@ class App {
         this._environmentPanel = new EnvironmentPanel({
             onVenvSelect: (venvRef) => this._onVenvSelect(venvRef),
             onVenvCreated: () => {},
-            onVenvDeleted: () => {},
+            onVenvDeleted: (deletedRef) => this._onVenvDeleted(deletedRef),
         });
 
         // Connect Socket.IO
@@ -282,6 +282,23 @@ class App {
                     `notebook-venv:${this._currentProject}:${this._currentNotebook}`
                 );
             }
+        }
+    }
+
+    _onVenvDeleted(deletedRef) {
+        if (!deletedRef || !this._activeVenvRef) return;
+        const activeKey = `${this._activeVenvRef.type}:${this._activeVenvRef.name}`;
+        const deletedKey = `${deletedRef.type}:${deletedRef.name}`;
+        if (activeKey === deletedKey) {
+            this._client.stopKernel();
+            this._activeVenvRef = null;
+            this._infoBar.setVenv(null);
+            if (this._currentProject && this._currentNotebook) {
+                localStorage.removeItem(
+                    `notebook-venv:${this._currentProject}:${this._currentNotebook}`
+                );
+            }
+            this._autoSelectVenv();
         }
     }
 

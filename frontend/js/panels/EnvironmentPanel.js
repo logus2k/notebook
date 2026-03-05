@@ -215,7 +215,7 @@ export class EnvironmentPanel {
                         : `api/venvs/${venv.name}`;
                     await fetch(url, { method: 'DELETE' });
                     await this._refresh();
-                    if (this._callbacks.onVenvDeleted) this._callbacks.onVenvDeleted();
+                    if (this._callbacks.onVenvDeleted) this._callbacks.onVenvDeleted({ type, name: venv.name });
                 } catch (err) {
                     alert(`Error: ${err.message}`);
                 }
@@ -255,10 +255,10 @@ export class EnvironmentPanel {
         const typeLabel = document.createElement('label');
         typeLabel.textContent = 'Scope';
         const typeSelect = document.createElement('select');
-        typeSelect.innerHTML = `
-            <option value="project">Project</option>
-            <option value="shared">Shared</option>
-        `;
+        const hasProject = !!this._projectId;
+        typeSelect.innerHTML = hasProject
+            ? '<option value="project">Project</option><option value="shared">Shared</option>'
+            : '<option value="project" disabled>Project (no project open)</option><option value="shared" selected>Shared</option>';
 
         const createBtn = document.createElement('button');
         createBtn.className = 'primary';
