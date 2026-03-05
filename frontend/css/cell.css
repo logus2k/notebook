@@ -9,19 +9,22 @@
     box-shadow: 0 -4px 0 0 #fdfdfd, 0 4px 0 0 #fdfdfd;
 }
 
-/* First cell: no shadow above */
+/* First cell: no shadow above, round top corners */
 .notebook > .add-cell-container:first-child + .cell {
     box-shadow: 0 4px 0 0 #fdfdfd;
+    border-radius: 3px 3px 0 0;
 }
 
-/* Last cell: no shadow below */
+/* Last cell: no shadow below, round bottom corners */
 .notebook > .cell:has(+ .add-cell-last) {
     box-shadow: 0 -4px 0 0 #fdfdfd;
+    border-radius: 0 0 3px 3px;
 }
 
-/* Only one cell */
+/* Only one cell: all corners rounded */
 .notebook > .add-cell-container:first-child + .cell:has(+ .add-cell-last) {
     box-shadow: none;
+    border-radius: 3px;
 }
 
 #notebook-container:hover .cell {
@@ -51,7 +54,6 @@
 }
 
 .cell-header {
-    position: relative;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -89,6 +91,8 @@
     padding: 1px 6px;
     border-radius: 3px;
     font-size: 11px;
+    min-width: 65px;
+    text-align: center;
     opacity: 0;
     transition: opacity 0.15s;
 }
@@ -116,21 +120,6 @@
     gap: 4px;
     font-size: 11px;
     color: var(--accent-orange);
-}
-
-.cell-add-code-btn,
-.cell-add-md-btn {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.cell-add-code-btn {
-    right: calc(50% + 2px);
-}
-
-.cell-add-md-btn {
-    left: calc(50% + 2px);
 }
 
 .cell-header-btn {
