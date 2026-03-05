@@ -157,6 +157,35 @@
     border-color: #a8d9a0;
 }
 
+.cell-clear-btn {
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.cell:hover .cell-clear-btn {
+    opacity: 1;
+}
+
+.cell-clear-btn:hover {
+    background: rgba(240, 208, 128, 0.2);
+    color: var(--accent-yellow);
+}
+
+.cell[data-cell-type="markdown"] .cell-clear-btn {
+    display: none;
+}
+
 .cell-copy-btn {
     opacity: 0;
     display: flex;

@@ -568,7 +568,7 @@ export class NotebookEditor {
         if (sidebar && sidebar.contains(e.target)) return;
 
         // Don't interfere with header buttons (delete, copy, +Code, +Markdown)
-        if (e.target.closest('.cell-delete-btn, .cell-copy-btn, .cell-header-btn')) return;
+        if (e.target.closest('.cell-delete-btn, .cell-copy-btn, .cell-clear-btn, .cell-header-btn')) return;
 
         // Clicking an already-selected cell in multi-selection: DON'T focus here
         // (calling element.focus() during mousedown prevents browser drag initiation)

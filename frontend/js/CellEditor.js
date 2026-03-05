@@ -251,10 +251,19 @@ export class CellEditor {
             });
         });
 
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'cell-clear-btn';
+        clearBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#202020" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 4 5 5-11 11H5l-2.5-2.5a1.5 1.5 0 010-2L15.5 4z" fill="#f0d080"/><path d="M5 20.5L2.5 18"/><path d="M4 22h17"/></svg>';
+        clearBtn.title = 'Clear cell output';
+        clearBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.clearOutput();
+        });
+
         const spacer2 = document.createElement('span');
         spacer2.className = 'cell-header-spacer';
 
-        header.append(typeBadge, spacer, addCodeBtn, addMdBtn, spacer2, lockIndicator, copyBtn, deleteBtn);
+        header.append(typeBadge, spacer, addCodeBtn, addMdBtn, spacer2, lockIndicator, copyBtn, clearBtn, deleteBtn);
 
         // Editor area
         const editorArea = document.createElement('div');
