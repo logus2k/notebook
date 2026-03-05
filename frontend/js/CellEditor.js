@@ -200,8 +200,14 @@ export class CellEditor {
         typeBadge.className = `cell-type-badge ${this._cellType}`;
         typeBadge.textContent = this._cellType;
 
-        const spacer = document.createElement('span');
-        spacer.className = 'cell-header-spacer';
+        // Left segment
+        const headerLeft = document.createElement('div');
+        headerLeft.className = 'cell-header-left';
+        headerLeft.appendChild(typeBadge);
+
+        // Center segment
+        const headerCenter = document.createElement('div');
+        headerCenter.className = 'cell-header-center';
 
         const addCodeBtn = document.createElement('button');
         addCodeBtn.className = 'cell-header-btn cell-add-code-btn';
@@ -220,6 +226,8 @@ export class CellEditor {
             e.stopPropagation();
             if (this._callbacks.onAddCell) this._callbacks.onAddCell(this._index, 'markdown');
         });
+
+        headerCenter.append(addCodeBtn, addMdBtn);
 
         const lockIndicator = document.createElement('span');
         lockIndicator.className = 'cell-lock-indicator hidden';
@@ -260,10 +268,12 @@ export class CellEditor {
             this.clearOutput();
         });
 
-        const spacer2 = document.createElement('span');
-        spacer2.className = 'cell-header-spacer';
+        // Right segment
+        const headerRight = document.createElement('div');
+        headerRight.className = 'cell-header-right';
+        headerRight.append(lockIndicator, copyBtn, clearBtn, deleteBtn);
 
-        header.append(typeBadge, spacer, addCodeBtn, addMdBtn, spacer2, lockIndicator, copyBtn, clearBtn, deleteBtn);
+        header.append(headerLeft, headerCenter, headerRight);
 
         // Editor area
         const editorArea = document.createElement('div');

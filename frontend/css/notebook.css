@@ -36,15 +36,24 @@
 
 .add-cell-container {
     display: none;
-    gap: 8px;
-    justify-content: center;
-    padding: 4px 0;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    padding: 4px 5px;
+    margin-left: 36px;
     opacity: 0;
     transition: opacity 0.2s;
 }
 
-.add-cell-container.add-cell-last {
+.add-cell-container .add-cell-buttons {
     display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    grid-column: 2;
+}
+
+.add-cell-container.add-cell-last {
+    display: grid;
     opacity: 0;
 }
 
@@ -62,12 +71,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2px 12px;
+    padding: 2px 8px;
     background: var(--bg-secondary);
-    border: 1px dashed var(--border-color);
+    border: 1px solid transparent;
     color: var(--text-secondary);
     font-size: 11px;
-    border-radius: var(--radius);
+    border-radius: 4px;
     transition: background 0.15s, color 0.15s;
 }
 

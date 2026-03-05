@@ -218,7 +218,10 @@ export class NotebookEditor {
         mdBtn.textContent = '+ Markdown';
         mdBtn.addEventListener('click', () => this._addCell(insertIndex, 'markdown'));
 
-        container.append(codeBtn, mdBtn);
+        const center = document.createElement('div');
+        center.className = 'add-cell-buttons';
+        center.append(codeBtn, mdBtn);
+        container.append(center);
         return container;
     }
 
