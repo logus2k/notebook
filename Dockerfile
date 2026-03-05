@@ -16,7 +16,7 @@ COPY backend/ backend/
 COPY frontend/ frontend/
 
 # Ensure data directories exist
-RUN mkdir -p data/projects data/shared_venvs
+RUN mkdir -p data/projects data/environments
 
 EXPOSE 8123
 

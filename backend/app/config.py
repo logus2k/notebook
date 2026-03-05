@@ -1,4 +1,5 @@
 import os
+import sys
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -10,7 +11,7 @@ KERNEL_IDLE_TIMEOUT_SECONDS = 600
 CELL_LOCK_TTL_SECONDS = 60
 HEARTBEAT_INTERVAL_SECONDS = 30
 
-SYSTEM_PYTHON = "/usr/bin/python3"
+SYSTEM_PYTHON = sys.executable
 
 os.makedirs(PROJECTS_DIR, exist_ok=True)
 os.makedirs(ENVIRONMENTS_DIR, exist_ok=True)
