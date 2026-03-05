@@ -364,8 +364,9 @@
 }
 
 .cell-drag-handle:hover {
-    background: #c8e6c0;
-    color: #a0c4f0;
+    background: #c6e2ff;
+    color: #2787fd;
+    border: 1px solid #005ed126;
 }
 
 .cell-sidebar-exec-count {
