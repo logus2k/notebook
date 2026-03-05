@@ -358,12 +358,14 @@
 .cell-editor {
     position: relative;
     padding: 0;
+    overflow: hidden;
 }
 
 .cell-editor .cm-editor {
     background: transparent;
     font-family: var(--font-mono);
     font-size: 13px;
+    overflow: hidden;
 }
 
 .cell-editor .cm-editor .cm-content {
@@ -428,6 +430,7 @@
     line-height: 1.6;
     color: var(--text-primary);
     margin-left: 35px;
+    user-select: text;
 }
 
 .cell-markdown-rendered h1 {

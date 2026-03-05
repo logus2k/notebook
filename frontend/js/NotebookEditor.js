@@ -24,11 +24,37 @@ export class NotebookEditor {
         this._clipboard = null; // { cells: [...cellJSON], isCut: bool }
 
         this._setupClientListeners();
+        this._setupContainerListeners();
     }
 
     get cells() { return this._cells; }
     get projectId() { return this._projectId; }
     get notebookPath() { return this._notebookPath; }
+
+    _setupContainerListeners() {
+        // Clicking empty space in the notebook container should not start
+        // text selection or move focus into a CodeMirror editor.
+        this._container.addEventListener('mousedown', (e) => {
+            if (!e.target.closest('.cell') && !e.target.closest('.add-cell-container')
+                && !e.target.closest('.welcome-screen') && !e.target.closest('.project-browser')) {
+                e.preventDefault();
+                const active = document.activeElement;
+                if (active && active.closest('.cell')) active.blur();
+            }
+        });
+
+        // Clicking page margins (outside the notebook container entirely)
+        // should also not transfer focus into a CodeMirror editor.
+        document.addEventListener('mousedown', (e) => {
+            if (!this._container.contains(e.target)
+                && !e.target.closest('#toolbar') && !e.target.closest('#info-bar')
+                && !e.target.closest('.jsPanel')) {
+                e.preventDefault();
+                const active = document.activeElement;
+                if (active && active.closest('.cell')) active.blur();
+            }
+        });
+    }
 
     _setupClientListeners() {
         this._client.on('notebook:state', (data) => this._onNotebookState(data));
