@@ -262,6 +262,13 @@ export class CellEditor {
             cm.keymap.of([
                 { key: 'Shift-Enter', run: () => { this._onRun(); return true; } },
                 { key: 'Ctrl-Enter', run: () => { this._onRun(); return true; } },
+                { key: 'Escape', run: () => {
+                    if (this._cellType === 'markdown') {
+                        this._showMarkdownRendered();
+                    }
+                    this._editorView.contentDOM.blur();
+                    return true;
+                }},
                 ...cm.defaultKeymap,
                 ...cm.historyKeymap,
                 cm.indentWithTab
