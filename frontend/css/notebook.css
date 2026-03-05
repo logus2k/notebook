@@ -43,6 +43,10 @@
 
 .add-cell-container.add-cell-last {
     display: flex;
+    opacity: 0;
+}
+
+#notebook-container:hover .add-cell-container.add-cell-last {
     opacity: 1;
 }
 
