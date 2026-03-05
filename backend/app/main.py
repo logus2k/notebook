@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from app.config import FRONTEND_DIR
+from app.config import FRONTEND_DIR, SYSTEM_PYTHON
 from app.routers import notebooks, venvs
 from app.managers.kernel_manager import KernelManagerService
 from app.managers.execution_bridge import ExecutionBridge
@@ -275,19 +275,15 @@ async def on_cell_execute(sid, data):
 @sio.on("kernel:start")
 async def on_kernel_start(sid, data):
     ctx = client_context.get(sid, {})
-    venv_ref = data.get("venv_ref", {})
-    venv_type = venv_ref.get("type", "project")
-    venv_name = venv_ref.get("name", "default")
+    venv_name = data.get("venv_name")
 
     try:
-        project_id = ctx.get("project_id")
-        if venv_type == "default":
+        if venv_name:
             python_path = venv_mgr.get_python_path(venv_name)
-        elif venv_type == "project":
-            python_path = venv_mgr.get_python_path(venv_name, project_id)
         else:
-            python_path = venv_mgr.get_python_path(venv_name)
+            python_path = SYSTEM_PYTHON
 
+        project_id = ctx.get("project_id")
         session_id = f"{sid}_{uuid.uuid4().hex[:8]}"
         await kernel_mgr.start_kernel(
             session_id, python_path,

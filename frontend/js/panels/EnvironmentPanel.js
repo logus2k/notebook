@@ -1,27 +1,22 @@
 /**
  * EnvironmentPanel - Unified jsPanel for selecting and managing virtual environments.
- * Combines environment selection (clicking to activate) with management (packages, create, delete).
+ * All environments live in a single flat directory.
  */
 export class EnvironmentPanel {
     /**
-     * @param {object} callbacks - { onVenvSelect(venvRef), onVenvCreated(), onVenvDeleted() }
+     * @param {object} callbacks - { onVenvSelect(venv), onVenvCreated(), onVenvDeleted(name) }
      */
     constructor(callbacks = {}) {
         this._callbacks = callbacks;
         this._panel = null;
-        this._projectId = null;
-        this._activeVenv = null; // "type:name" string
-    }
-
-    setProjectId(projectId) {
-        this._projectId = projectId;
+        this._activeVenvName = null;
     }
 
     /**
-     * @param {string|null} activeVenv - "type:name" key of the currently active venv
+     * @param {string|null} activeVenvName - name of the currently active venv
      */
-    open(activeVenv) {
-        this._activeVenv = activeVenv || this._activeVenv;
+    open(activeVenvName) {
+        this._activeVenvName = activeVenvName || this._activeVenvName;
 
         if (this._panel) {
             this._panel.front();
@@ -68,32 +63,9 @@ export class EnvironmentPanel {
         content.appendChild(loading);
 
         try {
-            let projectVenvs = [];
-            let sharedVenvs = [];
-            let defaultEnv = null;
-
-            const fetches = [fetch('api/venvs')];
-            if (this._projectId) {
-                fetches.unshift(fetch(`api/projects/${this._projectId}/venvs`));
-            }
-            const responses = await Promise.all(fetches);
-
-            let allShared;
-            if (this._projectId) {
-                projectVenvs = await responses[0].json();
-                allShared = await responses[1].json();
-            } else {
-                allShared = await responses[0].json();
-            }
-
-            // Separate default from shared
-            for (const v of allShared) {
-                if (v.type === 'default') {
-                    defaultEnv = v;
-                } else {
-                    sharedVenvs.push(v);
-                }
-            }
+            const resp = await fetch('api/venvs');
+            if (!resp.ok) throw new Error('Failed to load environments');
+            const venvs = await resp.json();
 
             loading.remove();
 
@@ -101,31 +73,8 @@ export class EnvironmentPanel {
             const listSection = document.createElement('div');
             listSection.style.padding = '0';
 
-            // Default environment
-            if (defaultEnv) {
-                listSection.appendChild(this._buildVenvItem(defaultEnv, 'default'));
-            }
-
-            // Project environments
-            if (projectVenvs.length > 0) {
-                const header = document.createElement('div');
-                header.className = 'panel-section-header';
-                header.textContent = 'Project';
-                listSection.appendChild(header);
-                for (const v of projectVenvs) {
-                    listSection.appendChild(this._buildVenvItem(v, 'project'));
-                }
-            }
-
-            // Shared environments
-            if (sharedVenvs.length > 0) {
-                const header = document.createElement('div');
-                header.className = 'panel-section-header';
-                header.textContent = 'Shared';
-                listSection.appendChild(header);
-                for (const v of sharedVenvs) {
-                    listSection.appendChild(this._buildVenvItem(v, 'shared'));
-                }
+            for (const v of venvs) {
+                listSection.appendChild(this._buildVenvItem(v));
             }
 
             content.appendChild(listSection);
@@ -151,9 +100,8 @@ export class EnvironmentPanel {
         }
     }
 
-    _buildVenvItem(venv, type) {
-        const ref = `${type}:${venv.name}`;
-        const isActive = this._activeVenv === ref;
+    _buildVenvItem(venv) {
+        const isActive = this._activeVenvName === venv.name;
 
         const item = document.createElement('div');
         item.className = 'env-item' + (isActive ? ' active' : '');
@@ -163,7 +111,7 @@ export class EnvironmentPanel {
         const mainRow = document.createElement('div');
         mainRow.className = 'env-item-main';
         mainRow.addEventListener('click', () => this._onSelect({
-            type, name: venv.name, pythonVersion: venv.python_version || null
+            name: venv.name, pythonVersion: venv.python_version || null
         }));
 
         const info = document.createElement('div');
@@ -199,40 +147,34 @@ export class EnvironmentPanel {
         pkgBtn.textContent = 'Packages';
         pkgBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            this._togglePackages(venv.name, type, venv.readonly, item);
+            this._togglePackages(venv.name, item);
         });
         actions.appendChild(pkgBtn);
 
-        if (!venv.readonly) {
-            const delBtn = document.createElement('button');
-            delBtn.textContent = 'Delete';
-            delBtn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                if (!confirm(`Delete environment "${venv.name}"?`)) return;
-                try {
-                    const url = (type === 'project' && this._projectId)
-                        ? `api/projects/${this._projectId}/venvs/${venv.name}`
-                        : `api/venvs/${venv.name}`;
-                    await fetch(url, { method: 'DELETE' });
-                    await this._refresh();
-                    if (this._callbacks.onVenvDeleted) this._callbacks.onVenvDeleted({ type, name: venv.name });
-                } catch (err) {
-                    alert(`Error: ${err.message}`);
-                }
-            });
-            actions.appendChild(delBtn);
-        }
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (!confirm(`Delete environment "${venv.name}"?`)) return;
+            try {
+                await fetch(`api/venvs/${venv.name}`, { method: 'DELETE' });
+                await this._refresh();
+                if (this._callbacks.onVenvDeleted) this._callbacks.onVenvDeleted(venv.name);
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        });
+        actions.appendChild(delBtn);
 
         mainRow.appendChild(actions);
         item.appendChild(mainRow);
         return item;
     }
 
-    _onSelect(venvRef) {
-        const ref = `${venvRef.type}:${venvRef.name}`;
-        this._activeVenv = ref;
+    _onSelect(venv) {
+        this._activeVenvName = venv.name;
         if (this._callbacks.onVenvSelect) {
-            this._callbacks.onVenvSelect(venvRef);
+            this._callbacks.onVenvSelect(venv);
         }
         this._refresh(); // Re-render to update active indicator
     }
@@ -252,14 +194,6 @@ export class EnvironmentPanel {
         const reqInput = document.createElement('textarea');
         reqInput.placeholder = 'numpy\npandas\nmatplotlib';
 
-        const typeLabel = document.createElement('label');
-        typeLabel.textContent = 'Scope';
-        const typeSelect = document.createElement('select');
-        const hasProject = !!this._projectId;
-        typeSelect.innerHTML = hasProject
-            ? '<option value="project">Project</option><option value="shared">Shared</option>'
-            : '<option value="project" disabled>Project (no project open)</option><option value="shared" selected>Shared</option>';
-
         const createBtn = document.createElement('button');
         createBtn.className = 'primary';
         createBtn.textContent = 'Create Environment';
@@ -269,16 +203,12 @@ export class EnvironmentPanel {
             const requirements = reqInput.value.trim()
                 ? reqInput.value.trim().split('\n').map(l => l.trim()).filter(Boolean)
                 : null;
-            const scope = typeSelect.value;
 
             createBtn.disabled = true;
             createBtn.textContent = 'Creating...';
 
             try {
-                const url = (scope === 'project' && this._projectId)
-                    ? `api/projects/${this._projectId}/venvs`
-                    : 'api/venvs';
-                const resp = await fetch(url, {
+                const resp = await fetch('api/venvs', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, requirements })
@@ -299,13 +229,13 @@ export class EnvironmentPanel {
             }
         });
 
-        form.append(nameLabel, nameInput, reqLabel, reqInput, typeLabel, typeSelect, createBtn);
+        form.append(nameLabel, nameInput, reqLabel, reqInput, createBtn);
         return form;
     }
 
     // --- Package Management ---
 
-    async _togglePackages(venvName, type, readonly, parentEl) {
+    async _togglePackages(venvName, parentEl) {
         const existing = parentEl.querySelector('.package-detail');
         if (existing) {
             existing.remove();
@@ -316,10 +246,10 @@ export class EnvironmentPanel {
         detail.className = 'package-detail';
         parentEl.appendChild(detail);
 
-        await this._renderPackages(detail, venvName, type, readonly);
+        await this._renderPackages(detail, venvName);
     }
 
-    async _renderPackages(detail, venvName, type, readonly) {
+    async _renderPackages(detail, venvName) {
         detail.innerHTML = '';
 
         const loading = document.createElement('div');
@@ -328,10 +258,7 @@ export class EnvironmentPanel {
         detail.appendChild(loading);
 
         try {
-            const url = (type === 'project' && this._projectId)
-                ? `api/projects/${this._projectId}/venvs/${venvName}/packages`
-                : `api/venvs/${venvName}/packages`;
-            const resp = await fetch(url);
+            const resp = await fetch(`api/venvs/${venvName}/packages`);
             if (!resp.ok) {
                 const err = await resp.json();
                 throw new Error(err.detail || 'Failed to load packages');
@@ -360,7 +287,7 @@ export class EnvironmentPanel {
             const installBtn = document.createElement('button');
             installBtn.className = 'primary';
             installBtn.textContent = 'Install';
-            installBtn.addEventListener('click', () => this._doInstall(textarea, installBtn, logArea, detail, venvName, type, readonly));
+            installBtn.addEventListener('click', () => this._doInstall(textarea, installBtn, logArea, detail, venvName));
 
             const uploadBtn = document.createElement('button');
             uploadBtn.textContent = 'Upload requirements.txt';
@@ -389,9 +316,8 @@ export class EnvironmentPanel {
             detail.appendChild(logArea);
 
             // Filter input (shown when >10 packages)
-            let filterInput = null;
             if (packages.length > 10) {
-                filterInput = document.createElement('input');
+                const filterInput = document.createElement('input');
                 filterInput.type = 'text';
                 filterInput.className = 'package-filter-input';
                 filterInput.placeholder = 'Filter packages...';
@@ -408,7 +334,7 @@ export class EnvironmentPanel {
             // Package list
             const list = document.createElement('ul');
             list.className = 'package-list';
-            this._populatePackageList(list, packages, venvName, type, readonly, detail);
+            this._populatePackageList(list, packages, venvName, detail);
             detail.appendChild(list);
 
         } catch (err) {
@@ -416,7 +342,7 @@ export class EnvironmentPanel {
         }
     }
 
-    _populatePackageList(list, packages, venvName, type, readonly, detail) {
+    _populatePackageList(list, packages, venvName, detail) {
         list.innerHTML = '';
         for (const pkg of packages) {
             const li = document.createElement('li');
@@ -432,31 +358,26 @@ export class EnvironmentPanel {
 
             li.append(name, version);
 
-            if (!readonly) {
-                const removeBtn = document.createElement('button');
-                removeBtn.className = 'package-remove-btn';
-                removeBtn.textContent = '\u00d7';
-                removeBtn.title = `Uninstall ${pkg.name}`;
-                removeBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    if (!confirm(`Uninstall ${pkg.name}?`)) return;
-                    try {
-                        const url = (type === 'project' && this._projectId)
-                            ? `api/projects/${this._projectId}/venvs/${venvName}/packages`
-                            : `api/venvs/${venvName}/packages`;
-                        const resp = await fetch(url, {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ packages: [pkg.name] })
-                        });
-                        if (!resp.ok) throw new Error('Failed to uninstall');
-                        await this._renderPackages(detail, venvName, type, readonly);
-                    } catch (err) {
-                        alert(`Uninstall error: ${err.message}`);
-                    }
-                });
-                li.appendChild(removeBtn);
-            }
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'package-remove-btn';
+            removeBtn.textContent = '\u00d7';
+            removeBtn.title = `Uninstall ${pkg.name}`;
+            removeBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (!confirm(`Uninstall ${pkg.name}?`)) return;
+                try {
+                    const resp = await fetch(`api/venvs/${venvName}/packages`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ packages: [pkg.name] })
+                    });
+                    if (!resp.ok) throw new Error('Failed to uninstall');
+                    await this._renderPackages(detail, venvName);
+                } catch (err) {
+                    alert(`Uninstall error: ${err.message}`);
+                }
+            });
+            li.appendChild(removeBtn);
 
             list.appendChild(li);
         }
@@ -475,7 +396,7 @@ export class EnvironmentPanel {
         return tokens;
     }
 
-    async _doInstall(textarea, installBtn, logArea, detail, venvName, type, readonly) {
+    async _doInstall(textarea, installBtn, logArea, detail, venvName) {
         const tokens = this._parseInstallInput(textarea.value);
         if (!tokens.length) return;
 
@@ -485,10 +406,7 @@ export class EnvironmentPanel {
         logArea.textContent = `> pip install ${tokens.join(' ')}\n\nInstalling...`;
 
         try {
-            const url = (type === 'project' && this._projectId)
-                ? `api/projects/${this._projectId}/venvs/${venvName}/packages`
-                : `api/venvs/${venvName}/packages`;
-            const resp = await fetch(url, {
+            const resp = await fetch(`api/venvs/${venvName}/packages`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ packages: tokens })
@@ -502,7 +420,7 @@ export class EnvironmentPanel {
                 logArea.className = 'package-install-log visible';
                 logArea.textContent = `> pip install ${tokens.join(' ')}\n\n${result.output || 'Done'}`;
                 textarea.value = '';
-                await this._renderPackages(detail, venvName, type, readonly);
+                await this._renderPackages(detail, venvName);
             }
         } catch (err) {
             logArea.className = 'package-install-log visible error';

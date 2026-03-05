@@ -131,8 +131,8 @@ export class KernelClient {
 
     // --- Kernel ---
 
-    startKernel(venvRef) {
-        this._socket.emit('kernel:start', { venv_ref: venvRef });
+    startKernel(venvName) {
+        this._socket.emit('kernel:start', { venv_name: venvName || null });
     }
 
     stopKernel() {

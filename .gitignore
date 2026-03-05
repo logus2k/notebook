@@ -1,4 +1,4 @@
 .venv_note/
 __pycache__/
 
-data/projects/*/venvs/
+data/environments/

@@ -3,41 +3,19 @@ import sys
 import json
 import asyncio
 import shutil
-import platform
 from typing import Optional
-from app.config import PROJECTS_DIR, SHARED_VENVS_DIR
-
-DEFAULT_ENV_NAME = "Default"
+from app.config import ENVIRONMENTS_DIR
 
 
 class VenvManager:
-    """Manages Python virtual environments and their packages."""
-
-    def _project_venvs_dir(self, project_id: str) -> str:
-        return os.path.join(PROJECTS_DIR, project_id, "venvs")
-
-    def _resolve_venv_path(self, name: str, project_id: Optional[str] = None) -> str:
-        if project_id:
-            return os.path.join(self._project_venvs_dir(project_id), name)
-        return os.path.join(SHARED_VENVS_DIR, name)
-
-    @staticmethod
-    def is_default(name: str) -> bool:
-        return name == DEFAULT_ENV_NAME
-
-    def _default_env_entry(self) -> dict:
-        return {
-            "name": DEFAULT_ENV_NAME,
-            "path": None,
-            "python": sys.executable,
-            "python_version": platform.python_version(),
-            "type": "default",
-            "readonly": True,
-        }
+    """Manages Python virtual environments in a single flat directory."""
 
     def _validate_name(self, name: str):
         if ".." in name or "/" in name or "\\" in name or not name:
-            raise ValueError("Invalid venv name")
+            raise ValueError("Invalid environment name")
+
+    def _venv_path(self, name: str) -> str:
+        return os.path.join(ENVIRONMENTS_DIR, name)
 
     def _get_python_version(self, venv_path: str) -> Optional[str]:
         """Read Python version from pyvenv.cfg."""
@@ -54,53 +32,39 @@ class VenvManager:
             pass
         return None
 
-    def get_python_path(self, name: str, project_id: Optional[str] = None) -> str:
-        if self.is_default(name):
-            return sys.executable
-        venv_path = self._resolve_venv_path(name, project_id)
+    def get_python_path(self, name: str) -> str:
+        venv_path = self._venv_path(name)
         python_path = os.path.join(venv_path, "bin", "python")
         if not os.path.exists(python_path):
-            raise FileNotFoundError(f"Venv not found: {name}")
+            raise FileNotFoundError(f"Environment not found: {name}")
         return python_path
 
-    def list_venvs(self, project_id: Optional[str] = None,
-                   include_default: bool = False) -> list[dict]:
-        if project_id:
-            base_dir = self._project_venvs_dir(project_id)
-        else:
-            base_dir = SHARED_VENVS_DIR
-        venvs = []
-        if include_default:
-            venvs.append(self._default_env_entry())
-        if not os.path.exists(base_dir):
-            return venvs
-        for name in sorted(os.listdir(base_dir)):
-            venv_path = os.path.join(base_dir, name)
+    def list_envs(self) -> list[dict]:
+        envs = []
+        if not os.path.exists(ENVIRONMENTS_DIR):
+            return envs
+        for name in sorted(os.listdir(ENVIRONMENTS_DIR)):
+            venv_path = os.path.join(ENVIRONMENTS_DIR, name)
             python_path = os.path.join(venv_path, "bin", "python")
             if os.path.isdir(venv_path) and os.path.exists(python_path):
                 version = self._get_python_version(venv_path)
-                venvs.append({
+                envs.append({
                     "name": name,
-                    "path": venv_path,
-                    "python": python_path,
                     "python_version": version,
-                    "type": "project" if project_id else "shared"
                 })
-        return venvs
+        return envs
 
-    async def create_venv(self, name: str, project_id: Optional[str] = None,
-                          requirements: Optional[list[str]] = None) -> dict:
+    async def create_env(self, name: str,
+                         requirements: Optional[list[str]] = None) -> dict:
         self._validate_name(name)
-        venv_path = self._resolve_venv_path(name, project_id)
+        venv_path = self._venv_path(name)
         python_path = os.path.join(venv_path, "bin", "python")
 
         if os.path.exists(venv_path):
             if os.path.exists(python_path):
-                raise FileExistsError(f"Venv already exists: {name}")
-            # Broken leftover from a failed creation — clean it up
+                raise FileExistsError(f"Environment already exists: {name}")
+            # Broken leftover from a failed creation
             shutil.rmtree(venv_path)
-
-        os.makedirs(os.path.dirname(venv_path), exist_ok=True)
 
         proc = await asyncio.create_subprocess_exec(
             sys.executable, "-m", "venv", venv_path,
@@ -109,12 +73,11 @@ class VenvManager:
         )
         stdout, stderr = await proc.communicate()
         if proc.returncode != 0:
-            # Clean up partial directory on failure
             if os.path.exists(venv_path):
                 shutil.rmtree(venv_path)
-            raise RuntimeError(f"Failed to create venv: {stderr.decode()}")
+            raise RuntimeError(f"Failed to create environment: {stderr.decode()}")
 
-        # Install ipykernel so jupyter_client can use this venv
+        # Install ipykernel so jupyter_client can use this env
         pip_path = os.path.join(venv_path, "bin", "pip")
         proc = await asyncio.create_subprocess_exec(
             pip_path, "install", "ipykernel",
@@ -129,39 +92,27 @@ class VenvManager:
             )
 
         if requirements:
-            await self.install_packages(name, requirements, project_id)
+            await self.install_packages(name, requirements)
 
-        return {
-            "name": name,
-            "path": venv_path,
-            "type": "project" if project_id else "shared",
-            "created": True
-        }
+        return {"name": name, "created": True}
 
-    async def delete_venv(self, name: str, project_id: Optional[str] = None) -> dict:
-        if self.is_default(name):
-            raise ValueError("Cannot delete the Default environment")
+    async def delete_env(self, name: str) -> dict:
         self._validate_name(name)
-        venv_path = self._resolve_venv_path(name, project_id)
+        venv_path = self._venv_path(name)
         if not os.path.exists(venv_path):
-            raise FileNotFoundError(f"Venv not found: {name}")
+            raise FileNotFoundError(f"Environment not found: {name}")
         shutil.rmtree(venv_path)
         return {"name": name, "deleted": True}
 
-    def _get_pip_path(self, name: str, project_id: Optional[str] = None) -> str:
-        if self.is_default(name):
-            return os.path.join(os.path.dirname(sys.executable), "pip")
-        pip_path = os.path.join(
-            self._resolve_venv_path(name, project_id), "bin", "pip"
-        )
+    def _get_pip_path(self, name: str) -> str:
+        pip_path = os.path.join(self._venv_path(name), "bin", "pip")
         if not os.path.exists(pip_path):
-            raise FileNotFoundError(f"Venv not found: {name}")
+            raise FileNotFoundError(f"Environment not found: {name}")
         return pip_path
 
-    async def list_packages(self, name: str,
-                            project_id: Optional[str] = None) -> list[dict]:
+    async def list_packages(self, name: str) -> list[dict]:
         self._validate_name(name)
-        pip_path = self._get_pip_path(name, project_id)
+        pip_path = self._get_pip_path(name)
 
         proc = await asyncio.create_subprocess_exec(
             pip_path, "list", "--format=json",
@@ -173,10 +124,9 @@ class VenvManager:
             raise RuntimeError(f"Failed to list packages: {stderr.decode()}")
         return json.loads(stdout.decode())
 
-    async def install_packages(self, name: str, packages: list[str],
-                               project_id: Optional[str] = None) -> dict:
+    async def install_packages(self, name: str, packages: list[str]) -> dict:
         self._validate_name(name)
-        pip_path = self._get_pip_path(name, project_id)
+        pip_path = self._get_pip_path(name)
 
         proc = await asyncio.create_subprocess_exec(
             pip_path, "install", *packages,
@@ -190,10 +140,9 @@ class VenvManager:
             )
         return {"installed": packages, "output": stdout.decode()}
 
-    async def remove_packages(self, name: str, packages: list[str],
-                              project_id: Optional[str] = None) -> dict:
+    async def remove_packages(self, name: str, packages: list[str]) -> dict:
         self._validate_name(name)
-        pip_path = self._get_pip_path(name, project_id)
+        pip_path = self._get_pip_path(name)
 
         proc = await asyncio.create_subprocess_exec(
             pip_path, "uninstall", "-y", *packages,

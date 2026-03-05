@@ -20,7 +20,7 @@ class App {
         this._environmentPanel = null;
         this._currentProject = null;
         this._currentNotebook = null;
-        this._activeVenvRef = null; // { type, name, pythonVersion } or null
+        this._activeVenv = null; // { name, pythonVersion } or null
         this._userName = this._generateUserName();
     }
 
@@ -90,10 +90,9 @@ class App {
                         alert('Select a project first');
                         return;
                     }
-                    const activeKey = this._activeVenvRef
-                        ? `${this._activeVenvRef.type}:${this._activeVenvRef.name}`
-                        : null;
-                    this._environmentPanel.open(activeKey);
+                    this._environmentPanel.open(
+                        this._activeVenv ? this._activeVenv.name : null
+                    );
                 },
             }
         );
@@ -108,9 +107,9 @@ class App {
 
         // Initialize unified environment panel (select + manage in one window)
         this._environmentPanel = new EnvironmentPanel({
-            onVenvSelect: (venvRef) => this._onVenvSelect(venvRef),
+            onVenvSelect: (venv) => this._onVenvSelect(venv),
             onVenvCreated: () => {},
-            onVenvDeleted: (deletedRef) => this._onVenvDeleted(deletedRef),
+            onVenvDeleted: (deletedName) => this._onVenvDeleted(deletedName),
         });
 
         // Connect Socket.IO
@@ -126,8 +125,8 @@ class App {
                     this._userName
                 );
                 // Re-start kernel if a venv was selected
-                if (this._activeVenvRef) {
-                    this._client.startKernel(this._activeVenvRef);
+                if (this._activeVenv) {
+                    this._client.startKernel(this._activeVenv.name);
                 }
             }
         });
@@ -189,13 +188,11 @@ class App {
         }
         this._currentProject = projectId;
         this._currentNotebook = null;
-        this._activeVenvRef = null;
+        this._activeVenv = null;
 
         this._infoBar.setProject(projectId);
         this._infoBar.setNotebook(null);
         this._infoBar.setVenv(null, null);
-
-        this._environmentPanel.setProjectId(projectId);
     }
 
     async _onNotebookChange(projectId, notebookName) {
@@ -209,19 +206,18 @@ class App {
 
         this._infoBar.setProject(projectId);
         this._infoBar.setNotebook(notebookName);
-        this._environmentPanel.setProjectId(projectId);
 
         this._editor.openNotebook(projectId, notebookName, this._userName);
 
-        // Restore persisted venv for this notebook (type:name or type:name:pythonVersion)
+        // Restore persisted venv for this notebook (name:pythonVersion)
         const savedVenv = localStorage.getItem(`notebook-venv:${projectId}:${notebookName}`);
         if (savedVenv) {
             const parts = savedVenv.split(':');
-            const [type, name] = parts;
-            const pythonVersion = parts[2] || null;
-            this._activeVenvRef = { type, name, pythonVersion };
+            const name = parts[0];
+            const pythonVersion = parts[1] || null;
+            this._activeVenv = { name, pythonVersion };
             this._infoBar.setVenv(name, pythonVersion);
-            this._client.startKernel(this._activeVenvRef);
+            this._client.startKernel(name);
         } else {
             // Auto-select the first available venv
             await this._autoSelectVenv();
@@ -236,36 +232,27 @@ class App {
 
     async _autoSelectVenv() {
         try {
-            // Fetch shared/default venvs — Default is always first
             const resp = await fetch('api/venvs');
             if (!resp.ok) return;
             const venvs = await resp.json();
-            // Prefer the Default env
-            const defaultEnv = venvs.find(v => v.type === 'default');
-            if (defaultEnv) {
-                const venvRef = { type: 'default', name: defaultEnv.name, pythonVersion: defaultEnv.python_version || null };
-                this._onVenvSelect(venvRef);
-                return;
-            }
-            // Fallback to first available
             if (venvs.length > 0) {
                 const v = venvs[0];
-                this._onVenvSelect({ type: v.type, name: v.name, pythonVersion: v.python_version || null });
+                this._onVenvSelect({ name: v.name, pythonVersion: v.python_version || null });
             }
         } catch (err) {
             console.warn('Auto-select venv failed:', err);
         }
     }
 
-    _onVenvSelect(venvRef) {
-        this._activeVenvRef = venvRef;
-        if (venvRef) {
-            this._infoBar.setVenv(venvRef.name, venvRef.pythonVersion);
-            // Persist for this notebook (type:name:pythonVersion)
+    _onVenvSelect(venv) {
+        this._activeVenv = venv;
+        if (venv) {
+            this._infoBar.setVenv(venv.name, venv.pythonVersion);
+            // Persist for this notebook (name:pythonVersion)
             if (this._currentProject && this._currentNotebook) {
-                const val = venvRef.pythonVersion
-                    ? `${venvRef.type}:${venvRef.name}:${venvRef.pythonVersion}`
-                    : `${venvRef.type}:${venvRef.name}`;
+                const val = venv.pythonVersion
+                    ? `${venv.name}:${venv.pythonVersion}`
+                    : venv.name;
                 localStorage.setItem(
                     `notebook-venv:${this._currentProject}:${this._currentNotebook}`,
                     val
@@ -273,7 +260,7 @@ class App {
             }
             // Auto-start the kernel with the selected venv (only if a notebook is open)
             if (this._currentNotebook) {
-                this._client.startKernel(venvRef);
+                this._client.startKernel(venv.name);
             }
         } else {
             this._infoBar.setVenv(null);
@@ -285,13 +272,11 @@ class App {
         }
     }
 
-    _onVenvDeleted(deletedRef) {
-        if (!deletedRef || !this._activeVenvRef) return;
-        const activeKey = `${this._activeVenvRef.type}:${this._activeVenvRef.name}`;
-        const deletedKey = `${deletedRef.type}:${deletedRef.name}`;
-        if (activeKey === deletedKey) {
+    _onVenvDeleted(deletedName) {
+        if (!deletedName || !this._activeVenv) return;
+        if (this._activeVenv.name === deletedName) {
             this._client.stopKernel();
-            this._activeVenvRef = null;
+            this._activeVenv = null;
             this._infoBar.setVenv(null);
             if (this._currentProject && this._currentNotebook) {
                 localStorage.removeItem(
@@ -339,11 +324,11 @@ class App {
     }
 
     _onStartKernel() {
-        if (!this._activeVenvRef) {
+        if (!this._activeVenv) {
             alert('Select a virtual environment first (click the environment area in the info bar)');
             return;
         }
-        this._client.startKernel(this._activeVenvRef);
+        this._client.startKernel(this._activeVenv.name);
     }
 
     _generateUserName() {
