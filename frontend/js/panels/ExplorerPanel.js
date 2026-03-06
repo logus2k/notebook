@@ -43,7 +43,7 @@ export class ExplorerPanel {
             border: '1px solid var(--border-color)',
             boxShadow: 3,
             position: 'center',
-            panelSize: { width: 900, height: 624 },
+            panelSize: { width: 900, height: 574 },
             headerControls: { minimize: 'remove', smallify: 'remove', normalize: 'remove', maximize: 'remove' },
             onclosed: () => {
                 this._panel = null;
@@ -103,7 +103,7 @@ export class ExplorerPanel {
 
         // Initialize resizable splitter
         Split([left, right], {
-            sizes: [30, 70],
+            sizes: [36, 64],
             minSize: [150, 200],
             gutterSize: 6,
             cursor: 'col-resize',
