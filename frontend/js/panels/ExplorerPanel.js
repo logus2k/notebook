@@ -29,20 +29,18 @@ export class ExplorerPanel {
      * @param {object} opts
      *   opts.currentProject, opts.currentNotebook - for notebook navigation
      *   opts.navigateToVenv - venv name to navigate to and select
+     *   opts.navigateToEnvs - navigate to the Environments root node
      */
     open(opts = {}) {
-        const { currentProject = null, currentNotebook = null, navigateToVenv = null } = opts;
+        const { currentProject = null, currentNotebook = null, navigateToVenv = null, navigateToEnvs = false } = opts;
         this._currentProject = currentProject;
         this._currentNotebook = currentNotebook;
         this._navigateToVenvName = navigateToVenv;
+        this._navigateToEnvs = navigateToEnvs;
 
         if (this._panel) {
             this._panel.front();
-            if (navigateToVenv) {
-                this._navigateToVenv(navigateToVenv);
-            } else {
-                this._navigateToCurrentNotebook();
-            }
+            this._applyNavigation();
             return;
         }
 
@@ -265,10 +263,26 @@ export class ExplorerPanel {
             }
         });
 
+        this._applyNavigation();
+    }
+
+    _applyNavigation() {
         if (this._navigateToVenvName) {
             this._navigateToVenv(this._navigateToVenvName);
+        } else if (this._navigateToEnvs) {
+            this._navigateToEnvsRoot();
         } else {
             this._navigateToCurrentNotebook();
+        }
+    }
+
+    _navigateToEnvsRoot() {
+        if (!this._tree) return;
+        const envsRoot = this._tree.findKey('root-envs');
+        if (envsRoot) {
+            if (!envsRoot.isExpanded()) envsRoot.setExpanded(true);
+            envsRoot.setActive(true, { noEvents: true });
+            this._showEnvsRootDetail();
         }
     }
 

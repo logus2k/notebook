@@ -82,7 +82,7 @@ export class InfoBar {
 
         this._kernelLabel = document.createElement('span');
         this._kernelLabel.className = 'info-bar-label';
-        this._kernelLabel.textContent = 'No Kernel';
+        this._kernelLabel.textContent = 'Select kernel';
 
         this._kernelItem.append(this._kernelDot, this._kernelLabel);
         rightWrap.appendChild(this._kernelItem);
@@ -142,7 +142,7 @@ export class InfoBar {
                 ? `${this._venvName} ${info}`
                 : this._venvName;
         } else {
-            this._kernelLabel.textContent = suffix ? `(${suffix})` : 'No Kernel';
+            this._kernelLabel.textContent = 'Select kernel';
         }
     }
 

@@ -91,6 +91,7 @@ class App {
                         currentProject: this._currentProject,
                         currentNotebook: this._currentNotebook,
                         navigateToVenv: this._activeVenv ? this._activeVenv.name : null,
+                        navigateToEnvs: !this._activeVenv,
                     });
                 },
             }
@@ -203,29 +204,36 @@ class App {
 
         this._editor.openNotebook(projectId, notebookName, this._userName);
 
-        // Restore persisted venv for this notebook (name:pythonVersion)
+        // Restore persisted venv for this notebook, validating against API
         const savedVenv = localStorage.getItem(`notebook-venv:${projectId}:${notebookName}`);
+        let restored = false;
         if (savedVenv) {
             const parts = savedVenv.split(':');
             const name = parts[0];
-            let pythonVersion = parts[1] || null;
-            // If version wasn't persisted, fetch it from the API
-            if (!pythonVersion) {
-                try {
-                    const resp = await fetch('api/venvs');
-                    if (resp.ok) {
-                        const venvs = await resp.json();
-                        const match = venvs.find(v => v.name === name);
-                        if (match) pythonVersion = match.python_version || null;
+            try {
+                const resp = await fetch('api/venvs');
+                if (resp.ok) {
+                    const venvs = await resp.json();
+                    const match = venvs.find(v => v.name === name);
+                    if (match) {
+                        const pythonVersion = match.python_version || null;
+                        this._activeVenv = { name, pythonVersion };
+                        this._infoBar.setVenv(name, pythonVersion);
+                        this._client.startKernel(name);
+                        restored = true;
                     }
-                } catch { /* ignore */ }
+                }
+            } catch { /* ignore */ }
+            if (!restored) {
+                // Stale or invalid — remove it
+                localStorage.removeItem(`notebook-venv:${projectId}:${notebookName}`);
             }
-            this._activeVenv = { name, pythonVersion };
-            this._infoBar.setVenv(name, pythonVersion);
-            this._client.startKernel(name);
-        } else {
-            // Auto-select the first available venv
-            await this._autoSelectVenv();
+        }
+        if (!restored) {
+            // No saved venv for this notebook — clear any previous state
+            this._activeVenv = null;
+            this._infoBar.setVenv(null);
+            this._client.stopKernel();
         }
 
         // Update URL
@@ -233,20 +241,6 @@ class App {
         url.searchParams.set('project', projectId);
         url.searchParams.set('notebook', notebookName);
         window.history.replaceState({}, '', url);
-    }
-
-    async _autoSelectVenv() {
-        try {
-            const resp = await fetch('api/venvs');
-            if (!resp.ok) return;
-            const venvs = await resp.json();
-            if (venvs.length > 0) {
-                const v = venvs[0];
-                this._onVenvSelect({ name: v.name, pythonVersion: v.python_version || null });
-            }
-        } catch (err) {
-            console.warn('Auto-select venv failed:', err);
-        }
     }
 
     _onVenvSelect(venv) {
@@ -288,7 +282,6 @@ class App {
                     `notebook-venv:${this._currentProject}:${this._currentNotebook}`
                 );
             }
-            this._autoSelectVenv();
         }
     }
 
