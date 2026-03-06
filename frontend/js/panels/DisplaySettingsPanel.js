@@ -16,7 +16,7 @@ export class DisplaySettingsPanel {
 
         this._panel = jsPanel.create({
             id: 'display-settings-panel',
-            headerTitle: 'Display',
+            headerTitle: 'Settings',
             theme: 'none',
             borderRadius: '8px',
             border: '1px solid var(--border-color)',
