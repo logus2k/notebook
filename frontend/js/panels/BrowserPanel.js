@@ -24,7 +24,7 @@ export class BrowserPanel {
             id: 'browser-panel',
             headerTitle: 'Projects',
             theme: 'none',
-            borderRadius: '8px',
+            borderRadius: '5px',
             border: '1px solid var(--border-color)',
             boxShadow: 3,
             position: { my: 'left-top', at: 'left-top', offsetX: 60, offsetY: 100 },

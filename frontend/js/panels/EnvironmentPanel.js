@@ -28,7 +28,7 @@ export class EnvironmentPanel {
             id: 'environment-panel',
             headerTitle: 'Environments',
             theme: 'none',
-            borderRadius: '8px',
+            borderRadius: '5px',
             border: '1px solid var(--border-color)',
             boxShadow: 3,
             position: 'center',

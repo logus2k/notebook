@@ -52,7 +52,7 @@ export class ExplorerPanel {
             id: 'explorer-panel',
             headerTitle: 'Workspace',
             theme: 'none',
-            borderRadius: '8px',
+            borderRadius: '5px',
             border: '1px solid var(--border-color)',
             boxShadow: 3,
             position: 'center',
@@ -118,7 +118,7 @@ export class ExplorerPanel {
 
         // Initialize resizable splitter
         Split([left, right], {
-            sizes: [45, 55],
+            sizes: [30, 70],
             minSize: [150, 200],
             gutterSize: 6,
             cursor: 'col-resize',
@@ -246,68 +246,30 @@ export class ExplorerPanel {
                 }
                 return [];
             },
+            activate: (e) => {
+                const key = e.node.key || '';
+                this._showDetailForNode(e.node);
+                // Auto-load notebook on activation (click or keyboard)
+                if (key.startsWith('notebook:') && this._autoLoad && this._callbacks.onNotebookSelect) {
+                    const parts = key.replace('notebook:', '').split(':');
+                    this._callbacks.onNotebookSelect(parts[0], parts.slice(1).join(':'));
+                }
+            },
             click: (e) => {
                 const node = e.node;
                 const key = node.key || '';
 
                 if (e.targetType === 'expander') return;
 
-                // Root nodes: toggle expand + show detail
-                if (key === 'root-projects') {
+                // Toggle expand for branch nodes on click
+                if (key === 'root-projects' || key === 'root-envs' ||
+                    key.startsWith('project:') || key.startsWith('runtime:')) {
                     node.setExpanded(!node.isExpanded());
-                    node.setActive(true, { noEvents: true });
-                    this._showProjectsRootDetail();
-                    return false;
-                }
-                if (key === 'root-envs') {
-                    node.setExpanded(!node.isExpanded());
-                    node.setActive(true, { noEvents: true });
-                    this._showEnvsRootDetail();
-                    return false;
                 }
 
-                // Project node: toggle expand (lazy-loads notebooks)
-                if (key.startsWith('project:')) {
-                    node.setExpanded(!node.isExpanded());
-                    const projectId = key.replace('project:', '');
-                    this._showProjectDetail(projectId);
-                    node.setActive(true, { noEvents: true });
-                    return false;
-                }
-
-                // Notebook node: select it
-                if (key.startsWith('notebook:')) {
-                    const parts = key.replace('notebook:', '').split(':');
-                    const projectId = parts[0];
-                    const notebookName = parts.slice(1).join(':');
-                    node.setActive(true, { noEvents: true });
-                    this._showNotebookDetail(projectId, notebookName);
-                    if (this._autoLoad && this._callbacks.onNotebookSelect) {
-                        this._callbacks.onNotebookSelect(projectId, notebookName);
-                    }
-                    return false;
-                }
-
-                // Runtime node: toggle expand + show create form
-                if (key.startsWith('runtime:')) {
-                    node.setExpanded(!node.isExpanded());
-                    node.setActive(true, { noEvents: true });
-                    const rtId = key.substring(8); // after "runtime:"
-                    this._showRuntimeDetail(rtId, this._getDisplayName(rtId));
-                    return false;
-                }
-
-                // Environment node: show detail
-                if (key.startsWith('env:')) {
-                    // key = "env:{runtimeId}:{name}"
-                    const rest = key.substring(4); // after "env:"
-                    const lastColon = rest.lastIndexOf(':');
-                    const runtimeId = rest.substring(0, lastColon);
-                    const envName = rest.substring(lastColon + 1);
-                    node.setActive(true, { noEvents: true });
-                    this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
-                    return false;
-                }
+                // Activate the node (triggers activate event which updates detail)
+                node.setActive(true);
+                return false;
             }
         });
 
@@ -370,6 +332,31 @@ export class ExplorerPanel {
         if (nbNode) {
             nbNode.setActive(true, { noEvents: true });
             this._showNotebookDetail(this._currentProject, this._currentNotebook);
+        }
+    }
+
+    // --- Detail routing ---
+
+    _showDetailForNode(node) {
+        const key = node.key || '';
+        if (key === 'root-projects') {
+            this._showProjectsRootDetail();
+        } else if (key === 'root-envs') {
+            this._showEnvsRootDetail();
+        } else if (key.startsWith('project:')) {
+            this._showProjectDetail(key.replace('project:', ''));
+        } else if (key.startsWith('notebook:')) {
+            const parts = key.replace('notebook:', '').split(':');
+            this._showNotebookDetail(parts[0], parts.slice(1).join(':'));
+        } else if (key.startsWith('runtime:')) {
+            const rtId = key.substring(8);
+            this._showRuntimeDetail(rtId, this._getDisplayName(rtId));
+        } else if (key.startsWith('env:')) {
+            const rest = key.substring(4);
+            const lastColon = rest.lastIndexOf(':');
+            const runtimeId = rest.substring(0, lastColon);
+            const envName = rest.substring(lastColon + 1);
+            this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
         }
     }
 

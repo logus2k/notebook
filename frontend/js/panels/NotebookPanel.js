@@ -25,7 +25,7 @@ export class NotebookPanel {
             id: 'notebook-panel',
             headerTitle: 'Notebooks',
             theme: 'none',
-            borderRadius: '8px',
+            borderRadius: '5px',
             border: '1px solid var(--border-color)',
             boxShadow: 3,
             position: { my: 'center-top', at: 'center-top', offsetY: 100 },

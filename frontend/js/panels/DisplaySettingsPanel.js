@@ -18,7 +18,7 @@ export class DisplaySettingsPanel {
             id: 'display-settings-panel',
             headerTitle: 'Settings',
             theme: 'none',
-            borderRadius: '8px',
+            borderRadius: '5px',
             border: '1px solid var(--border-color)',
             boxShadow: 3,
             position: { my: 'right-top', at: 'right-top', offsetX: -60, offsetY: 100 },

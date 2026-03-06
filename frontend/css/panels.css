@@ -6,7 +6,7 @@
 .jsPanel .jsPanel-hdr {
     background: #ffe39eed !important;
     border-bottom: 0.5px solid var(--border-color);
-    border-radius: 5px 5px 0px 0px;
+    border-radius: 4px 4px 0px 0px !important;
 }
 
 .jsPanel .jsPanel-titlebar {
@@ -19,7 +19,7 @@
 
 .jsPanel .jsPanel-title {
     color: var(--text-primary) !important;
-    font-size: 14px !important;
+    font-size: 13px !important;
     font-weight: 500 !important;
     text-transform: none !important;
     font-variant: normal !important;
@@ -27,7 +27,7 @@
 }
 
 .jsPanel .jsPanel-controlbar {
-    margin: 4px 7px 3px 3px;
+    margin: 4px 1px 3px 3px;
 }
 
 .jsPanel .jsPanel-controlbar .jsPanel-btn {
@@ -35,18 +35,25 @@
     background: transparent !important;
     -webkit-text-stroke: 1px;
     paint-order: stroke fill;
+    padding: 0 !important;
+    width: 24px !important;
+    height: 22px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
 }
 
 .jsPanel .jsPanel-controlbar .jsPanel-btn:hover {
     color: var(--text-primary) !important;
-    background: rgba(0, 0, 0, 0.08) !important;
-    border-radius: 3px;
+    background: #c8e6c0 !important;
+    opacity: 0.7;
+    border-radius: var(--radius);
 }
 
 .jsPanel-controlbar .jsPanel-btn.jsPanel-btn-md span:not(.material-icons),
 .jsPanel-controlbar .jsPanel-btn.jsPanel-btn-md svg:not(.svg-inline--fa) {
-    width: 0.85rem !important;
-    height: 0.85rem !important;
+    width: 0.75rem !important;
+    height: 0.75rem !important;
     margin: 0px !important;
 }
 
