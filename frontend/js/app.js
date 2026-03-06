@@ -204,7 +204,18 @@ class App {
         if (savedVenv) {
             const parts = savedVenv.split(':');
             const name = parts[0];
-            const pythonVersion = parts[1] || null;
+            let pythonVersion = parts[1] || null;
+            // If version wasn't persisted, fetch it from the API
+            if (!pythonVersion) {
+                try {
+                    const resp = await fetch('api/venvs');
+                    if (resp.ok) {
+                        const venvs = await resp.json();
+                        const match = venvs.find(v => v.name === name);
+                        if (match) pythonVersion = match.python_version || null;
+                    }
+                } catch { /* ignore */ }
+            }
             this._activeVenv = { name, pythonVersion };
             this._infoBar.setVenv(name, pythonVersion);
             this._client.startKernel(name);
