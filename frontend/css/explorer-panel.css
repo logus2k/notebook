@@ -203,7 +203,7 @@
     position: absolute;
     top: 10px;
     left: 10px;
-    right: 10px;
+    right: 5px;
     bottom: 10px;
 }
 
@@ -242,7 +242,7 @@
 /* Vertically center icon and title within row */
 #explorerTree span.wb-node i.wb-icon,
 #explorerTree span.wb-node span.wb-title {
-    vertical-align: middle;
+    /* vertical-align: middle; */
 }
 
 #explorerTree span.wb-node i.wb-expander,
@@ -288,7 +288,7 @@
 
 /* Node styling */
 #explorerTree span.wb-node {
-    padding: 3px 6px;
+    padding: 0px 0px;
     border-radius: 3px;
 }
 
@@ -357,7 +357,7 @@ div.wunderbaum span.wb-node span.wb-title {
     font-size: 0.9em;
     font-family: 'Roboto', sans-serif !important;
     position: relative;
-    top: -3px;
+    top: 0px;
 }
 
 #explorerTree *:focus,
@@ -369,7 +369,7 @@ div.wunderbaum span.wb-node span.wb-title {
 i.wb-expander.fa-solid {
     font-size: 10px;
     text-align: center;
-    vertical-align: middle !important;
+    /* vertical-align: middle !important; */
     margin-top: 1px;
 }
 
