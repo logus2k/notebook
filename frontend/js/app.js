@@ -115,6 +115,12 @@ class App {
             onVenvDeleted: (deletedName) => this._onVenvDeleted(deletedName),
         });
 
+        // Track kernel running state for explorer panel
+        this._client.on('kernel:status', (data) => {
+            const running = data.status === 'idle' || data.status === 'busy';
+            this._explorerPanel.setKernelRunning(running);
+        });
+
         // Connect Socket.IO
         this._client.connect();
 

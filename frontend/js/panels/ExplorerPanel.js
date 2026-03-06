@@ -21,6 +21,7 @@ export class ExplorerPanel {
         this._detailPane = null;
         this._treeEl = null;
         this._activeVenvName = null;
+        this._kernelRunning = false;
         this._autoLoad = false;
         this._currentProject = null;
         this._currentNotebook = null;
@@ -28,6 +29,10 @@ export class ExplorerPanel {
 
     setActiveVenv(name) {
         this._activeVenvName = name;
+    }
+
+    setKernelRunning(running) {
+        this._kernelRunning = running;
     }
 
     /**
@@ -674,15 +679,18 @@ export class ExplorerPanel {
         const header = this._createDetailHeader(envName, 'fa-solid fa-cube');
         this._detailEl.appendChild(header);
 
-        const isActive = this._activeVenvName === envName;
+        const isSelected = this._activeVenvName === envName;
+        const isActive = isSelected && this._kernelRunning;
 
-        // Status tag — top right corner
-        const statusTag = document.createElement('span');
-        statusTag.className = isActive ? 'explorer-env-tag active' : 'explorer-env-tag inactive';
-        statusTag.textContent = isActive ? 'ACTIVE' : 'INACTIVE';
-        this._detailEl.appendChild(statusTag);
+        // Status tag — only show when this env is selected for the current notebook
+        if (isSelected) {
+            const statusTag = document.createElement('span');
+            statusTag.className = isActive ? 'explorer-env-tag active' : 'explorer-env-tag inactive';
+            statusTag.textContent = isActive ? 'ACTIVE' : 'INACTIVE';
+            this._detailEl.appendChild(statusTag);
+        }
 
-        if (!isActive) {
+        if (!isSelected) {
             const actions = document.createElement('div');
             actions.className = 'explorer-detail-actions';
             const selectBtn = document.createElement('button');
@@ -705,7 +713,7 @@ export class ExplorerPanel {
 
         const pkgLabel = document.createElement('div');
         pkgLabel.className = 'explorer-pkg-section-label';
-        pkgLabel.textContent = 'Packages';
+        pkgLabel.textContent = 'Package Management';
         pkgSection.appendChild(pkgLabel);
 
         const loading = document.createElement('div');
