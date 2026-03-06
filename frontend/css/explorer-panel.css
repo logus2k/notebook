@@ -13,10 +13,23 @@
 }
 
 .explorer-detail-pane {
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     min-width: 0;
-    padding: 14px 16px;
     background: var(--bg-primary);
+    position: relative;
+}
+
+.explorer-detail-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 16px;
+}
+
+.explorer-close-btn {
+    position: absolute;
+    bottom: 12px;
+    right: 16px;
 }
 
 /* Split.js gutter */
@@ -66,6 +79,16 @@
     margin-bottom: 12px;
 }
 
+.explorer-autoload-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-secondary, #666);
+    cursor: pointer;
+    margin-left: 4px;
+}
+
 /* Buttons */
 .explorer-btn {
     font-size: 12px;
@@ -99,13 +122,13 @@
 }
 
 .explorer-btn.danger {
-    color: var(--accent-red);
+    color: #fff;
     border-color: transparent;
-    background: transparent;
+    background: #e07070;
 }
 
 .explorer-btn.danger:hover {
-    background: rgba(224, 69, 69, 0.08);
+    background: #d45555;
 }
 
 .explorer-btn.small {
@@ -192,7 +215,7 @@
     border: none !important;
     background: transparent !important;
     font-family: Roboto, sans-serif;
-    font-size: 12px;
+    font-size: 13px;
     /* Override Wunderbaum color variables */
     --wb-background-color: transparent;
     --wb-hover-color: rgba(0, 0, 0, 0.05);
@@ -330,11 +353,11 @@ div.wunderbaum span.wb-node span.wb-title {
     overflow-x: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    padding-left: 2px;
+    padding-left: 1px;
     font-size: 0.9em;
     font-family: 'Roboto', sans-serif !important;
     position: relative;
-    top: -4px;
+    top: -3px;
 }
 
 #explorerTree *:focus,
@@ -351,16 +374,16 @@ i.wb-expander.fa-solid {
 }
 
 /* Detail pane scrollbar */
-.explorer-detail-pane::-webkit-scrollbar {
+.explorer-detail-content::-webkit-scrollbar {
     width: 6px;
 }
 
-.explorer-detail-pane::-webkit-scrollbar-track {
+.explorer-detail-content::-webkit-scrollbar-track {
     background: transparent;
     margin: 0;
 }
 
-.explorer-detail-pane::-webkit-scrollbar-thumb {
+.explorer-detail-content::-webkit-scrollbar-thumb {
     background-color: #cecece;
     border-radius: 6px;
 }

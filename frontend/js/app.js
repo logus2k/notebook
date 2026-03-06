@@ -67,7 +67,7 @@ class App {
             document.getElementById('toolbar'),
             this._client,
             {
-                onBrowse: () => this._explorerPanel.open(),
+                onBrowse: () => this._explorerPanel.open(this._currentProject, this._currentNotebook),
                 onImport: () => this._onImportNotebook(),
                 onSave: () => this._editor.save(),
                 onExport: () => this._editor.export(),

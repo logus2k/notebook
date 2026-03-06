@@ -16,15 +16,22 @@ export class ExplorerPanel {
         this._detailEl = null;
         this._treeEl = null;
         this._activeVenvName = null;
+        this._autoLoad = false;
+        this._currentProject = null;
+        this._currentNotebook = null;
     }
 
     setActiveVenv(name) {
         this._activeVenvName = name;
     }
 
-    open() {
+    open(currentProject = null, currentNotebook = null) {
+        this._currentProject = currentProject;
+        this._currentNotebook = currentNotebook;
+
         if (this._panel) {
             this._panel.front();
+            this._navigateToCurrentNotebook();
             return;
         }
 
@@ -76,10 +83,20 @@ export class ExplorerPanel {
         treeWrapper.appendChild(this._treeEl);
         left.appendChild(treeWrapper);
 
-        // Right pane: detail
+        // Right pane: detail wrapper with close button
         const right = document.createElement('div');
         right.className = 'explorer-detail-pane';
-        this._detailEl = right;
+
+        this._detailEl = document.createElement('div');
+        this._detailEl.className = 'explorer-detail-content';
+        right.appendChild(this._detailEl);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'explorer-btn explorer-close-btn';
+        closeBtn.textContent = 'Close';
+        closeBtn.addEventListener('click', () => this.close());
+        right.appendChild(closeBtn);
+
         this._showWelcomeDetail();
 
         container.append(left, right);
@@ -221,6 +238,9 @@ export class ExplorerPanel {
                     const notebookName = parts.slice(1).join(':');
                     node.setActive(true, { noEvents: true });
                     this._showNotebookDetail(projectId, notebookName);
+                    if (this._autoLoad && this._callbacks.onNotebookSelect) {
+                        this._callbacks.onNotebookSelect(projectId, notebookName);
+                    }
                     return false;
                 }
 
@@ -234,6 +254,27 @@ export class ExplorerPanel {
             }
         });
 
+        this._navigateToCurrentNotebook();
+    }
+
+    async _navigateToCurrentNotebook() {
+        if (!this._tree || !this._currentProject || !this._currentNotebook) return;
+
+        // Expand the project node (triggers lazy load of notebooks)
+        const projectNode = this._tree.findKey(`project:${this._currentProject}`);
+        if (!projectNode) return;
+
+        if (!projectNode.isExpanded()) {
+            await projectNode.setExpanded(true);
+        }
+
+        // Find and activate the notebook node
+        const nbKey = `notebook:${this._currentProject}:${this._currentNotebook}`;
+        const nbNode = this._tree.findKey(nbKey);
+        if (nbNode) {
+            nbNode.setActive(true, { noEvents: true });
+            this._showNotebookDetail(this._currentProject, this._currentNotebook);
+        }
     }
 
     // --- Detail views ---
@@ -377,9 +418,24 @@ export class ExplorerPanel {
             if (this._callbacks.onNotebookSelect) {
                 this._callbacks.onNotebookSelect(projectId, notebookName);
             }
-            this.close();
         });
         actions.appendChild(openBtn);
+
+        const autoLoadLabel = document.createElement('label');
+        autoLoadLabel.className = 'explorer-autoload-label';
+        const autoLoadCb = document.createElement('input');
+        autoLoadCb.type = 'checkbox';
+        autoLoadCb.checked = this._autoLoad;
+        autoLoadCb.addEventListener('change', () => {
+            this._autoLoad = autoLoadCb.checked;
+            if (this._autoLoad && this._callbacks.onNotebookSelect) {
+                this._callbacks.onNotebookSelect(projectId, notebookName);
+            }
+        });
+        autoLoadLabel.appendChild(autoLoadCb);
+        autoLoadLabel.appendChild(document.createTextNode(' Auto-load'));
+        actions.appendChild(autoLoadLabel);
+
         this._detailEl.appendChild(actions);
 
         // Fetch and display summary
@@ -528,7 +584,10 @@ export class ExplorerPanel {
 
         try {
             const resp = await fetch(`api/venvs/${envName}/packages`);
-            if (!resp.ok) throw new Error('Failed to load packages');
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                throw new Error(err.detail || 'Failed to load packages');
+            }
             const packages = await resp.json();
 
             loading.remove();
