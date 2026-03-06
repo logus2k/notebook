@@ -238,7 +238,7 @@ export class ExplorerPanel {
                         return notebooks.map(nb => ({
                             title: nb.name,
                             key: `notebook:${projectId}:${nb.name}`,
-                            icon: 'fa-solid fa-file-code',
+                            icon: 'fa-solid fa-file',
                         }));
                     } catch {
                         return [];
@@ -550,7 +550,7 @@ export class ExplorerPanel {
     async _showNotebookDetail(projectId, notebookName) {
         this._detailEl.innerHTML = '';
 
-        const header = this._createEditableHeader(notebookName, 'fa-solid fa-file-code', async (newName) => {
+        const header = this._createEditableHeader(notebookName, 'fa-solid fa-file', async (newName) => {
             return this._renameNotebook(projectId, notebookName, newName);
         });
         this._detailEl.appendChild(header);
@@ -938,7 +938,7 @@ export class ExplorerPanel {
                 projectNode.addChildren([{
                     title: nbName,
                     key: `notebook:${projectId}:${nbName}`,
-                    icon: 'fa-solid fa-file-code',
+                    icon: 'fa-solid fa-file',
                 }]);
                 projectNode.setExpanded(true);
             }

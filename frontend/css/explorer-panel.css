@@ -272,7 +272,9 @@
 #explorerTree span.wb-node i.wb-icon {
     background-repeat: no-repeat;
     background-size: contain;
+    align-content: baseline;
 }
+
 
 /* Folder icons */
 #explorer-panel .fa-folder,
@@ -282,8 +284,8 @@
     paint-order: stroke fill;
 }
 
-/* File icons */
-#explorer-panel .fa-file-code {
+/* File icons (notebooks) */
+#explorer-panel .fa-file {
     color: #fff9ddab !important;
     -webkit-text-stroke: 1px #666666;
     paint-order: stroke fill;
@@ -413,8 +415,8 @@ i.wb-expander.fa-solid {
 div.wunderbaum div.wb-node-list div.wb-row.wb-active,
 div.wunderbaum div.wb-node-list div.wb-row.wb-selected {
     background-color: #7ae58c96;
-    border: 1px solid #99999933;
-    border-radius: 3px;
+    border: 0.5px solid #99999933;
+    border-radius: 2px;
 }
 
 /* Detail pane scrollbar */
