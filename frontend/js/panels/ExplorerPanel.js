@@ -766,7 +766,7 @@ export class ExplorerPanel {
             countLabel.className = 'package-count';
             countLabel.textContent = `${packages.length} packages`;
 
-            installRow.append(installBtn, countLabel);
+            installRow.append(countLabel, installBtn);
             pkgSection.appendChild(installRow);
             pkgSection.appendChild(logArea);
 
