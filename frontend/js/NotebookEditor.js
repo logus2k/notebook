@@ -92,7 +92,7 @@ export class NotebookEditor {
             saveBtn.className = 'img-copy-btn';
             saveBtn.innerHTML = saveSvg;
             saveBtn.title = 'Save image';
-            saveBtn.style.right = '40px';
+            saveBtn.style.right = '38px';
             saveBtn.addEventListener('click', async (ev) => {
                 ev.stopPropagation();
                 try {
