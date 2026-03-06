@@ -33,6 +33,9 @@ GPU is auto-detected at runtime -- the same image works on both GPU and CPU-only
 - **CodeMirror 6 editor** -- Syntax highlighting, line numbers, multiple themes
 - **Notebook import/export** -- Standard `.ipynb` format compatible with Jupyter
 - **GPU acceleration** -- CUDA runtime included for frameworks like PyTorch and TensorFlow
+- **File explorer** -- Browse projects, notebooks, and environments from a tree-view panel (Wunderbaum)
+- **Display settings** -- Configurable editor themes and display preferences via a dedicated panel
+- **Split views** -- Resizable panel layout with Split.js
 
 ## Development
 
@@ -61,6 +64,7 @@ backend/
     managers/
       kernel_manager.py     Jupyter kernel lifecycle
       env_manager.py        Runtime registry and environment management
+      venv_manager.py       Virtual environment creation and package ops
       execution_bridge.py   Kernel output streaming
       collaboration.py      Multi-user rooms and cell locking
       notebook_manager.py   .ipynb file storage
@@ -79,8 +83,23 @@ frontend/
     InfoBar.js              Kernel status and controls
     NotebookToolbar.js      Project/notebook selectors, user avatars
     panels/
-      ExplorerPanel.js      File and environment explorer
-  css/                      Stylesheets
+      ExplorerPanel.js      File and environment tree explorer
+      BrowserPanel.js       Project/notebook browser
+      ProjectPanel.js       Project management
+      NotebookPanel.js      Notebook management
+      EnvironmentPanel.js   Virtual environment panel
+      DisplaySettingsPanel.js  Editor themes and display preferences
+  css/
+    base.css                Global styles and variables
+    toolbar.css             Top toolbar layout
+    info-bar.css            Kernel status bar
+    panels.css              Shared panel styles
+    notebook.css            Notebook container
+    cell.css                Cell layout and states
+    output.css              Cell output rendering
+    venv-panel.css          Environment panel styles
+    explorer-panel.css      File explorer styles
+    settings-panel.css      Display settings styles
 
 scripts/
   entrypoint.sh             Container entrypoint
@@ -100,7 +119,8 @@ data/
 | Kernel | jupyter_client, ipykernel, pyzmq |
 | Frontend | Vanilla ES6 modules, CodeMirror 6 |
 | Real-time | Socket.IO |
-| UI Panels | jsPanel, Wunderbaum |
+| UI Panels | jsPanel, Wunderbaum, Split.js |
+| Icons | Font Awesome |
 | Markdown | Marked, Highlight.js, KaTeX |
 | Container | Docker, NVIDIA CUDA 13.1 runtime |
 
