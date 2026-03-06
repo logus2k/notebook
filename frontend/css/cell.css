@@ -583,3 +583,8 @@
     background: rgba(0, 0, 0, 0.03);
 }
 
+.cell-markdown-rendered img {
+    max-width: 100%;
+    height: auto;
+}
+

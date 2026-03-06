@@ -64,6 +64,7 @@ function loadCodeMirror() {
 
 // Track the currently focused cell so we can blur it when another is focused
 let _currentlyFocusedCell = null;
+let _currentProjectId = null;
 
 export class CellEditor {
     /**
@@ -530,6 +531,16 @@ export class CellEditor {
         } else {
             this._mdRenderedEl.textContent = this._getSource();
         }
+        // Rewrite relative image URLs to use the project files API
+        if (_currentProjectId) {
+            const base = `api/projects/${encodeURIComponent(_currentProjectId)}/files/`;
+            for (const img of this._mdRenderedEl.querySelectorAll('img')) {
+                const src = img.getAttribute('src');
+                if (src && !src.startsWith('http') && !src.startsWith('data:') && !src.startsWith('/')) {
+                    img.src = base + src;
+                }
+            }
+        }
         // Render LaTeX math expressions
         if (typeof renderMathInElement !== 'undefined') {
             renderMathInElement(this._mdRenderedEl, {
@@ -577,6 +588,10 @@ export class CellEditor {
      * Apply a theme to all live editor instances.
      * @param {string} themeName - Key from editorThemes
      */
+    static setProjectId(projectId) {
+        _currentProjectId = projectId;
+    }
+
     static setTheme(themeName) {
         const theme = editorThemes[themeName] || [];
         localStorage.setItem('notebook-editor-theme', themeName);

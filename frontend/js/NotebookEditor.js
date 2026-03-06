@@ -76,6 +76,7 @@ export class NotebookEditor {
     openNotebook(projectId, notebookPath, userName) {
         this._projectId = projectId;
         this._notebookPath = notebookPath;
+        CellEditor.setProjectId(projectId);
         this._client.openNotebook(projectId, notebookPath, userName);
     }
 

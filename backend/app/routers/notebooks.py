@@ -1,7 +1,10 @@
+import os
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
 from app.managers.notebook_manager import NotebookManager
+from app.config import PROJECTS_DIR
 
 router = APIRouter(prefix="/api", tags=["notebooks"])
 notebook_mgr = NotebookManager()
@@ -122,3 +125,18 @@ def delete_notebook(project_id: str, notebook_name: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.get("/projects/{project_id}/files/{file_path:path}")
+def get_project_file(project_id: str, file_path: str):
+    """Serve files (images, etc.) from a project's notebooks directory."""
+    if ".." in file_path or file_path.startswith("/"):
+        raise HTTPException(status_code=400, detail="Invalid file path")
+    full_path = os.path.realpath(
+        os.path.join(PROJECTS_DIR, project_id, "notebooks", file_path)
+    )
+    # Ensure resolved path stays within the project directory
+    project_dir = os.path.realpath(os.path.join(PROJECTS_DIR, project_id))
+    if not full_path.startswith(project_dir + os.sep) and full_path != project_dir:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if not os.path.isfile(full_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(full_path)
