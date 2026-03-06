@@ -8,6 +8,10 @@ export class ExplorerPanel {
      *   onNotebookSelect(projectId, notebookName)
      *   onVenvSelect({ name, runtimeId, displayName })
      *   onVenvDeleted(name)
+     *   onProjectDeleted(projectId)
+     *   onNotebookDeleted(projectId, notebookName)
+     *   onProjectRenamed(oldId, newId)
+     *   onNotebookRenamed(projectId, oldName, newName)
      */
     constructor(callbacks = {}) {
         this._callbacks = callbacks;
@@ -492,7 +496,9 @@ export class ExplorerPanel {
     _showProjectDetail(projectId) {
         this._detailEl.innerHTML = '';
 
-        const header = this._createDetailHeader(projectId, 'fa-solid fa-folder-open');
+        const header = this._createEditableHeader(projectId, 'fa-solid fa-folder-open', async (newName) => {
+            return this._renameProject(projectId, newName);
+        });
         this._detailEl.appendChild(header);
 
         const form = document.createElement('div');
@@ -522,14 +528,42 @@ export class ExplorerPanel {
         });
 
         this._detailEl.appendChild(form);
+
+        // Bottom action bar
+        const actionBar = this._createActionBar();
+        const delBtn = document.createElement('button');
+        delBtn.className = 'explorer-btn danger';
+        delBtn.textContent = 'Delete Project';
+        delBtn.addEventListener('click', async () => {
+            if (!confirm(`Delete project "${projectId}" and all its notebooks?`)) return;
+            try {
+                const resp = await fetch(`api/projects/${encodeURIComponent(projectId)}`, { method: 'DELETE' });
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to delete project');
+                }
+                const projectNode = this._tree.findKey(`project:${projectId}`);
+                if (projectNode) projectNode.remove();
+                if (this._callbacks.onProjectDeleted) {
+                    this._callbacks.onProjectDeleted(projectId);
+                }
+                this._showWelcomeDetail();
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        });
+        actionBar.appendChild(delBtn);
+        this._detailEl.appendChild(actionBar);
+
         nameInput.focus();
     }
 
     async _showNotebookDetail(projectId, notebookName) {
         this._detailEl.innerHTML = '';
 
-        const displayName = notebookName;
-        const header = this._createDetailHeader(displayName, 'fa-solid fa-file-code');
+        const header = this._createEditableHeader(notebookName, 'fa-solid fa-file-code', async (newName) => {
+            return this._renameNotebook(projectId, notebookName, newName);
+        });
         this._detailEl.appendChild(header);
 
         const meta = document.createElement('div');
@@ -619,6 +653,35 @@ export class ExplorerPanel {
         } catch {
             // Summary is optional — fail silently
         }
+
+        // Bottom action bar
+        const actionBar = this._createActionBar();
+        const delBtn = document.createElement('button');
+        delBtn.className = 'explorer-btn danger';
+        delBtn.textContent = 'Delete Notebook';
+        delBtn.addEventListener('click', async () => {
+            if (!confirm(`Delete notebook "${notebookName}"?`)) return;
+            try {
+                const resp = await fetch(
+                    `api/projects/${encodeURIComponent(projectId)}/notebooks/${encodeURIComponent(notebookName)}`,
+                    { method: 'DELETE' }
+                );
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to delete notebook');
+                }
+                const nbNode = this._tree.findKey(`notebook:${projectId}:${notebookName}`);
+                if (nbNode) nbNode.remove();
+                if (this._callbacks.onNotebookDeleted) {
+                    this._callbacks.onNotebookDeleted(projectId, notebookName);
+                }
+                this._showWelcomeDetail();
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        });
+        actionBar.appendChild(delBtn);
+        this._detailEl.appendChild(actionBar);
     }
 
     _showEnvDetail(envName, runtimeId, displayName) {
@@ -665,6 +728,10 @@ export class ExplorerPanel {
         });
         actions.appendChild(pkgBtn);
 
+        this._detailEl.appendChild(actions);
+
+        // Bottom action bar
+        const actionBar = this._createActionBar();
         const delBtn = document.createElement('button');
         delBtn.className = 'explorer-btn danger';
         delBtn.textContent = 'Delete Environment';
@@ -675,7 +742,6 @@ export class ExplorerPanel {
                 if (this._callbacks.onVenvDeleted) {
                     this._callbacks.onVenvDeleted(envName);
                 }
-                // Remove from tree
                 const envNode = this._tree.findKey(`env:${runtimeId}:${envName}`);
                 if (envNode) envNode.remove();
                 this._showWelcomeDetail();
@@ -683,9 +749,8 @@ export class ExplorerPanel {
                 alert(`Error: ${err.message}`);
             }
         });
-        actions.appendChild(delBtn);
-
-        this._detailEl.appendChild(actions);
+        actionBar.appendChild(delBtn);
+        this._detailEl.appendChild(actionBar);
     }
 
     async _showEnvPackages(envName, runtimeId) {
@@ -1008,6 +1073,141 @@ export class ExplorerPanel {
         return rt ? rt.display_name : runtimeId;
     }
 
+    _createActionBar() {
+        const bar = document.createElement('div');
+        bar.className = 'explorer-action-bar';
+        return bar;
+    }
+
+    _createEditableHeader(text, iconClass, onRename) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'explorer-detail-header explorer-editable-header';
+
+        if (iconClass) {
+            const icon = document.createElement('i');
+            icon.className = iconClass;
+            wrapper.appendChild(icon);
+        }
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'explorer-header-name';
+        nameSpan.textContent = text;
+        wrapper.appendChild(nameSpan);
+
+        const editBtn = document.createElement('i');
+        editBtn.className = 'fa-solid fa-pen explorer-rename-icon';
+        editBtn.title = 'Rename';
+        wrapper.appendChild(editBtn);
+
+        const startEdit = () => {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'explorer-rename-input';
+            input.value = text;
+            nameSpan.style.display = 'none';
+            editBtn.style.display = 'none';
+            wrapper.appendChild(input);
+            input.focus();
+            input.select();
+
+            const commit = async () => {
+                const newName = input.value.trim();
+                if (!newName || newName === text) {
+                    cancel();
+                    return;
+                }
+                try {
+                    await onRename(newName);
+                } catch (err) {
+                    alert(`Rename failed: ${err.message}`);
+                    cancel();
+                }
+            };
+
+            const cancel = () => {
+                input.remove();
+                nameSpan.style.display = '';
+                editBtn.style.display = '';
+            };
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); commit(); }
+                if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            });
+            input.addEventListener('blur', () => {
+                // Small delay to allow click events to fire first
+                setTimeout(() => { if (input.parentNode) commit(); }, 150);
+            });
+        };
+
+        editBtn.addEventListener('click', startEdit);
+
+        return wrapper;
+    }
+
+    async _renameProject(oldId, newId) {
+        const resp = await fetch(`api/projects/${encodeURIComponent(oldId)}/rename`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ new_id: newId })
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to rename project');
+        }
+        // Update tree node
+        const node = this._tree.findKey(`project:${oldId}`);
+        if (node) {
+            node.title = newId;
+            node.key = `project:${newId}`;
+            node.update();
+            // Update child notebook keys
+            node.visit(child => {
+                if (child.key && child.key.startsWith(`notebook:${oldId}:`)) {
+                    const nbName = child.key.replace(`notebook:${oldId}:`, '');
+                    child.key = `notebook:${newId}:${nbName}`;
+                }
+            });
+        }
+        if (this._callbacks.onProjectRenamed) {
+            this._callbacks.onProjectRenamed(oldId, newId);
+        }
+        // Refresh detail with new name
+        this._showProjectDetail(newId);
+        const newNode = this._tree.findKey(`project:${newId}`);
+        if (newNode) newNode.setActive(true, { noEvents: true });
+    }
+
+    async _renameNotebook(projectId, oldName, newName) {
+        if (!newName.endsWith('.ipynb')) newName += '.ipynb';
+        const resp = await fetch(
+            `api/projects/${encodeURIComponent(projectId)}/notebooks/${encodeURIComponent(oldName)}/rename`,
+            {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ new_name: newName })
+            }
+        );
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to rename notebook');
+        }
+        // Update tree node
+        const node = this._tree.findKey(`notebook:${projectId}:${oldName}`);
+        if (node) {
+            node.title = newName;
+            node.key = `notebook:${projectId}:${newName}`;
+            node.update();
+        }
+        if (this._callbacks.onNotebookRenamed) {
+            this._callbacks.onNotebookRenamed(projectId, oldName, newName);
+        }
+        // Refresh detail with new name
+        this._showNotebookDetail(projectId, newName);
+        const newNode = this._tree.findKey(`notebook:${projectId}:${newName}`);
+        if (newNode) newNode.setActive(true, { noEvents: true });
+    }
+
     _createDetailHeader(text, iconClass = null) {
         const h = document.createElement('div');
         h.className = 'explorer-detail-header';
@@ -1015,7 +1215,7 @@ export class ExplorerPanel {
             const icon = document.createElement('i');
             icon.className = iconClass;
             h.appendChild(icon);
-            h.appendChild(document.createTextNode(` ${text}`));
+            h.appendChild(document.createTextNode(text));
         } else {
             h.textContent = text;
         }

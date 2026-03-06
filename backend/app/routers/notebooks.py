@@ -16,6 +16,14 @@ class CreateNotebookRequest(BaseModel):
     content: Optional[dict] = None
 
 
+class RenameProjectRequest(BaseModel):
+    new_id: str
+
+
+class RenameNotebookRequest(BaseModel):
+    new_name: str
+
+
 class UpdateNotebookRequest(BaseModel):
     content: dict
 
@@ -29,6 +37,28 @@ def list_projects():
 def create_project(req: CreateProjectRequest):
     try:
         return notebook_mgr.create_project(req.project_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/projects/{project_id}")
+def delete_project(project_id: str):
+    try:
+        return notebook_mgr.delete_project(project_id)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/projects/{project_id}/rename")
+def rename_project(project_id: str, req: RenameProjectRequest):
+    try:
+        return notebook_mgr.rename_project(project_id, req.new_id)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except FileExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -70,6 +100,18 @@ def update_notebook(project_id: str, notebook_name: str, req: UpdateNotebookRequ
         return notebook_mgr.update_notebook(project_id, notebook_name, req.content)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.put("/projects/{project_id}/notebooks/{notebook_name}/rename")
+def rename_notebook(project_id: str, notebook_name: str, req: RenameNotebookRequest):
+    try:
+        return notebook_mgr.rename_notebook(project_id, notebook_name, req.new_name)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except FileExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.delete("/projects/{project_id}/notebooks/{notebook_name}")

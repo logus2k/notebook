@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 import uuid
 import hashlib
 from typing import Optional
@@ -272,6 +273,42 @@ class NotebookManager:
             raise FileNotFoundError(f"Notebook not found: {notebook_name}")
         os.remove(filepath)
         return {"name": notebook_name, "deleted": True}
+
+    def delete_project(self, project_id: str) -> dict:
+        if ".." in project_id or "/" in project_id or "\\" in project_id:
+            raise ValueError("Invalid project ID")
+        project_path = os.path.join(PROJECTS_DIR, project_id)
+        if not os.path.exists(project_path):
+            raise FileNotFoundError(f"Project not found: {project_id}")
+        shutil.rmtree(project_path)
+        return {"id": project_id, "deleted": True}
+
+    def rename_project(self, project_id: str, new_id: str) -> dict:
+        if ".." in project_id or "/" in project_id or "\\" in project_id:
+            raise ValueError("Invalid project ID")
+        if ".." in new_id or "/" in new_id or "\\" in new_id or not new_id.strip():
+            raise ValueError("Invalid new project name")
+        old_path = os.path.join(PROJECTS_DIR, project_id)
+        new_path = os.path.join(PROJECTS_DIR, new_id)
+        if not os.path.exists(old_path):
+            raise FileNotFoundError(f"Project not found: {project_id}")
+        if os.path.exists(new_path):
+            raise FileExistsError(f"Project already exists: {new_id}")
+        os.rename(old_path, new_path)
+        return {"old_id": project_id, "new_id": new_id, "renamed": True}
+
+    def rename_notebook(self, project_id: str, notebook_name: str,
+                        new_name: str) -> dict:
+        notebook_name = self._validate_notebook_name(notebook_name)
+        new_name = self._validate_notebook_name(new_name)
+        old_path = self._notebook_path(project_id, notebook_name)
+        new_path = self._notebook_path(project_id, new_name)
+        if not os.path.exists(old_path):
+            raise FileNotFoundError(f"Notebook not found: {notebook_name}")
+        if os.path.exists(new_path):
+            raise FileExistsError(f"Notebook already exists: {new_name}")
+        os.rename(old_path, new_path)
+        return {"old_name": notebook_name, "new_name": new_name, "renamed": True}
 
     def get_notebook_hash(self, project_id: str, notebook_name: str) -> str:
         notebook_name = self._validate_notebook_name(notebook_name)
