@@ -18,6 +18,7 @@ export class ExplorerPanel {
         this._panel = null;
         this._tree = null;
         this._detailEl = null;
+        this._detailPane = null;
         this._treeEl = null;
         this._activeVenvName = null;
         this._autoLoad = false;
@@ -105,6 +106,7 @@ export class ExplorerPanel {
         this._detailEl = document.createElement('div');
         this._detailEl.className = 'explorer-detail-content';
         right.appendChild(this._detailEl);
+        this._detailPane = right;
 
         const closeBtn = document.createElement('button');
         closeBtn.className = 'explorer-btn primary explorer-close-btn';
@@ -126,6 +128,7 @@ export class ExplorerPanel {
     }
 
     _showWelcomeDetail() {
+        this._clearActionBar();
         this._detailEl.innerHTML = `
             <div class="explorer-detail-empty">
                 <span>Select an item from the tree</span>
@@ -338,6 +341,7 @@ export class ExplorerPanel {
     // --- Detail routing ---
 
     _showDetailForNode(node) {
+        this._clearActionBar();
         this._detailEl.style.overflowY = '';
         const key = node.key || '';
         if (key === 'root-projects') {
@@ -424,28 +428,25 @@ export class ExplorerPanel {
         const form = document.createElement('div');
         form.className = 'explorer-create-form';
 
-        const interpreterLabel = document.createElement('label');
-        interpreterLabel.textContent = 'Select Interpreter';
-        form.appendChild(interpreterLabel);
-
-        // Runtime selector
+        // Runtime selector (hidden when a specific runtime node was clicked)
         const runtimeSelect = document.createElement('select');
         runtimeSelect.className = 'explorer-select';
         const runtimes = this._runtimes || [];
-        if (runtimes.length > 1) {
-            for (const rt of runtimes) {
-                const opt = document.createElement('option');
-                opt.value = rt.runtime_id;
-                opt.textContent = rt.display_name;
-                if (rt.runtime_id === preselectedRuntimeId) opt.selected = true;
-                runtimeSelect.appendChild(opt);
-            }
-            form.appendChild(runtimeSelect);
-        } else if (runtimes.length === 1) {
-            runtimeSelect.innerHTML = `<option value="${runtimes[0].runtime_id}">${runtimes[0].display_name}</option>`;
+        for (const rt of runtimes) {
+            const opt = document.createElement('option');
+            opt.value = rt.runtime_id;
+            opt.textContent = rt.display_name;
+            if (rt.runtime_id === preselectedRuntimeId) opt.selected = true;
+            runtimeSelect.appendChild(opt);
         }
-        // If preselected and only one runtime, don't show selector
-        if (runtimes.length <= 1) {
+
+        if (!preselectedRuntimeId && runtimes.length > 1) {
+            const interpreterLabel = document.createElement('label');
+            interpreterLabel.textContent = 'Select Interpreter';
+            form.appendChild(interpreterLabel);
+            form.appendChild(runtimeSelect);
+        } else {
+            // Pre-selected or single runtime — keep hidden select for form logic
             runtimeSelect.style.display = 'none';
             form.appendChild(runtimeSelect);
         }
@@ -459,15 +460,6 @@ export class ExplorerPanel {
         nameInput.placeholder = 'Environment name (e.g. ml-env)';
         form.appendChild(nameInput);
 
-        const reqLabel = document.createElement('label');
-        reqLabel.textContent = 'Requirements (optional, one per line)';
-        form.appendChild(reqLabel);
-
-        const reqInput = document.createElement('textarea');
-        reqInput.placeholder = 'numpy\npandas\nmatplotlib';
-        reqInput.rows = 4;
-        form.appendChild(reqInput);
-
         const errorEl = document.createElement('div');
         errorEl.className = 'explorer-form-error';
         form.appendChild(errorEl);
@@ -475,7 +467,7 @@ export class ExplorerPanel {
         const createBtn = document.createElement('button');
         createBtn.className = 'explorer-btn primary';
         createBtn.textContent = 'Create Environment';
-        createBtn.addEventListener('click', () => this._createEnv(nameInput, reqInput, runtimeSelect, createBtn, errorEl));
+        createBtn.addEventListener('click', () => this._createEnv(nameInput, runtimeSelect, createBtn, errorEl));
         form.appendChild(createBtn);
 
         nameInput.addEventListener('keydown', (e) => {
@@ -547,7 +539,7 @@ export class ExplorerPanel {
             }
         });
         actionBar.appendChild(delBtn);
-        this._detailEl.appendChild(actionBar);
+        this._detailPane.appendChild(actionBar);
 
         nameInput.focus();
     }
@@ -671,7 +663,7 @@ export class ExplorerPanel {
             }
         });
         actionBar.appendChild(delBtn);
-        this._detailEl.appendChild(actionBar);
+        this._detailPane.appendChild(actionBar);
     }
 
     async _showEnvDetail(envName, runtimeId, displayName) {
@@ -851,7 +843,7 @@ export class ExplorerPanel {
             }
         });
         actionBar.appendChild(delBtn);
-        this._detailEl.appendChild(actionBar);
+        this._detailPane.appendChild(actionBar);
     }
 
     // --- Create actions ---
@@ -937,15 +929,12 @@ export class ExplorerPanel {
         }
     }
 
-    async _createEnv(nameInput, reqInput, runtimeSelect, createBtn, errorEl) {
+    async _createEnv(nameInput, runtimeSelect, createBtn, errorEl) {
         const name = nameInput.value.trim();
         if (!name) { nameInput.focus(); return; }
         const runtimeId = runtimeSelect.value;
         if (!runtimeId) { errorEl.textContent = 'No runtime selected'; return; }
         errorEl.textContent = '';
-        const requirements = reqInput.value.trim()
-            ? reqInput.value.trim().split('\n').map(s => s.trim()).filter(Boolean)
-            : null;
 
         createBtn.disabled = true;
         createBtn.textContent = 'Creating...';
@@ -953,7 +942,7 @@ export class ExplorerPanel {
             const resp = await fetch('api/envs', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ runtime_id: runtimeId, name, requirements })
+                body: JSON.stringify({ runtime_id: runtimeId, name })
             });
             if (!resp.ok) {
                 const err = await resp.json();
@@ -973,7 +962,6 @@ export class ExplorerPanel {
                 runtimeNode.setExpanded(true);
             }
             nameInput.value = '';
-            reqInput.value = '';
             // Show the new env's detail
             this._showEnvDetail(name, runtimeId, displayName);
             const newNode = this._tree.findKey(`env:${runtimeId}:${name}`);
@@ -1044,7 +1032,13 @@ export class ExplorerPanel {
         return rt ? rt.display_name : runtimeId;
     }
 
+    _clearActionBar() {
+        const existing = this._detailPane?.querySelector('.explorer-action-bar');
+        if (existing) existing.remove();
+    }
+
     _createActionBar() {
+        this._clearActionBar();
         const bar = document.createElement('div');
         bar.className = 'explorer-action-bar';
         return bar;
