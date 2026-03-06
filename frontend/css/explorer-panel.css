@@ -373,6 +373,15 @@ i.wb-expander.fa-solid {
     margin-top: 1px;
 }
 
+div.wunderbaum:not(:focus-within) div.wb-node-list div.wb-row.wb-active,
+div.wunderbaum:not(:focus-within) div.wb-node-list div.wb-row.wb-selected,
+div.wunderbaum:not(:focus) div.wb-node-list div.wb-row.wb-active,
+div.wunderbaum:not(:focus) div.wb-node-list div.wb-row.wb-selected {
+    background-color: #7ae58c96;
+    border: 1px solid #99999933;
+    border-radius: 3px;
+}
+
 /* Detail pane scrollbar */
 .explorer-detail-content::-webkit-scrollbar {
     width: 6px;
