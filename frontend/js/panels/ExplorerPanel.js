@@ -338,6 +338,7 @@ export class ExplorerPanel {
     // --- Detail routing ---
 
     _showDetailForNode(node) {
+        this._detailEl.style.overflowY = '';
         const key = node.key || '';
         if (key === 'root-projects') {
             this._showProjectsRootDetail();
@@ -364,6 +365,7 @@ export class ExplorerPanel {
 
     _showProjectsRootDetail() {
         this._detailEl.innerHTML = '';
+        this._addParentLabel('Workspace');
 
         const header = this._createDetailHeader('Projects', 'fa-solid fa-folder');
         this._detailEl.appendChild(header);
@@ -400,6 +402,7 @@ export class ExplorerPanel {
 
     _showEnvsRootDetail() {
         this._detailEl.innerHTML = '';
+        this._addParentLabel('Workspace');
 
         const header = this._createDetailHeader('Environments', 'fa-solid fa-cubes');
         this._detailEl.appendChild(header);
@@ -409,6 +412,7 @@ export class ExplorerPanel {
 
     _showRuntimeDetail(runtimeId, displayName) {
         this._detailEl.innerHTML = '';
+        this._addParentLabel('Environments');
 
         const header = this._createDetailHeader(displayName || runtimeId, 'fa-solid fa-layer-group');
         this._detailEl.appendChild(header);
@@ -484,6 +488,7 @@ export class ExplorerPanel {
 
     _showProjectDetail(projectId) {
         this._detailEl.innerHTML = '';
+        this._addParentLabel('Projects');
 
         const header = this._createEditableHeader(projectId, 'fa-solid fa-folder-open', async (newName) => {
             return this._renameProject(projectId, newName);
@@ -549,16 +554,12 @@ export class ExplorerPanel {
 
     async _showNotebookDetail(projectId, notebookName) {
         this._detailEl.innerHTML = '';
+        this._addParentLabel(projectId);
 
         const header = this._createEditableHeader(notebookName, 'fa-solid fa-file', async (newName) => {
             return this._renameNotebook(projectId, notebookName, newName);
         });
         this._detailEl.appendChild(header);
-
-        const meta = document.createElement('div');
-        meta.className = 'explorer-detail-meta';
-        meta.textContent = `Project: ${projectId}`;
-        this._detailEl.appendChild(meta);
 
         const actions = document.createElement('div');
         actions.className = 'explorer-detail-actions';
@@ -673,23 +674,25 @@ export class ExplorerPanel {
         this._detailEl.appendChild(actionBar);
     }
 
-    _showEnvDetail(envName, runtimeId, displayName) {
+    async _showEnvDetail(envName, runtimeId, displayName) {
         this._detailEl.innerHTML = '';
+        this._detailEl.style.overflowY = 'hidden';
+        this._addParentLabel(displayName || runtimeId);
 
-        const title = displayName ? `${envName} (${displayName})` : envName;
-        const header = this._createDetailHeader(title, 'fa-solid fa-cube');
+        const header = this._createDetailHeader(envName, 'fa-solid fa-cube');
         this._detailEl.appendChild(header);
 
         const isActive = this._activeVenvName === envName;
-        const actions = document.createElement('div');
-        actions.className = 'explorer-detail-actions';
 
-        if (isActive) {
-            const badge = document.createElement('span');
-            badge.className = 'env-active-badge';
-            badge.textContent = 'Active';
-            actions.appendChild(badge);
-        } else {
+        // Status tag — top right corner
+        const statusTag = document.createElement('span');
+        statusTag.className = isActive ? 'explorer-env-tag active' : 'explorer-env-tag inactive';
+        statusTag.textContent = isActive ? 'ACTIVE' : 'INACTIVE';
+        this._detailEl.appendChild(statusTag);
+
+        if (!isActive) {
+            const actions = document.createElement('div');
+            actions.className = 'explorer-detail-actions';
             const selectBtn = document.createElement('button');
             selectBtn.className = 'explorer-btn primary';
             selectBtn.textContent = 'Use This Environment';
@@ -701,60 +704,23 @@ export class ExplorerPanel {
                 this._showEnvDetail(envName, runtimeId, displayName);
             });
             actions.appendChild(selectBtn);
+            this._detailEl.appendChild(actions);
         }
 
-        const pkgBtn = document.createElement('button');
-        pkgBtn.className = 'explorer-btn orange';
-        pkgBtn.textContent = 'Manage Packages';
-        pkgBtn.addEventListener('click', () => {
-            this._showEnvPackages(envName, runtimeId);
-        });
-        actions.appendChild(pkgBtn);
+        // Packages section — inline
+        const pkgSection = document.createElement('div');
+        pkgSection.className = 'explorer-pkg-section';
 
-        this._detailEl.appendChild(actions);
+        const pkgLabel = document.createElement('div');
+        pkgLabel.className = 'explorer-pkg-section-label';
+        pkgLabel.textContent = 'Packages';
+        pkgSection.appendChild(pkgLabel);
 
-        // Bottom action bar
-        const actionBar = this._createActionBar();
-        const delBtn = document.createElement('button');
-        delBtn.className = 'explorer-btn danger';
-        delBtn.textContent = 'Delete Environment';
-        delBtn.addEventListener('click', async () => {
-            if (!confirm(`Delete environment "${envName}"?`)) return;
-            try {
-                await fetch(`api/envs/${runtimeId}/${envName}`, { method: 'DELETE' });
-                if (this._callbacks.onVenvDeleted) {
-                    this._callbacks.onVenvDeleted(envName);
-                }
-                const envNode = this._tree.findKey(`env:${runtimeId}:${envName}`);
-                if (envNode) envNode.remove();
-                this._showWelcomeDetail();
-            } catch (err) {
-                alert(`Error: ${err.message}`);
-            }
-        });
-        actionBar.appendChild(delBtn);
-        this._detailEl.appendChild(actionBar);
-    }
-
-    async _showEnvPackages(envName, runtimeId) {
-        this._detailEl.innerHTML = '';
-
-        const header = this._createDetailHeader(`${envName} — Packages`, 'fa-solid fa-box-open');
-        this._detailEl.appendChild(header);
-
-        const backBtn = document.createElement('button');
-        backBtn.className = 'explorer-btn small';
-        backBtn.textContent = '← Back';
-        backBtn.addEventListener('click', () => {
-            this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
-        });
-        this._detailEl.appendChild(backBtn);
-
-        // Loading
         const loading = document.createElement('div');
         loading.className = 'venv-loading';
         loading.innerHTML = '<div class="spinner"></div><span>Loading packages...</span>';
-        this._detailEl.appendChild(loading);
+        pkgSection.appendChild(loading);
+        this._detailEl.appendChild(pkgSection);
 
         const apiBase = `api/envs/${runtimeId}/${envName}/packages`;
 
@@ -773,7 +739,7 @@ export class ExplorerPanel {
             textarea.className = 'package-install-textarea';
             textarea.rows = 2;
             textarea.placeholder = 'Package names (e.g. numpy pandas)';
-            this._detailEl.appendChild(textarea);
+            pkgSection.appendChild(textarea);
 
             const installRow = document.createElement('div');
             installRow.className = 'package-install-actions';
@@ -801,8 +767,8 @@ export class ExplorerPanel {
             countLabel.textContent = `${packages.length} packages`;
 
             installRow.append(installBtn, countLabel);
-            this._detailEl.appendChild(installRow);
-            this._detailEl.appendChild(logArea);
+            pkgSection.appendChild(installRow);
+            pkgSection.appendChild(logArea);
 
             // Filter
             if (packages.length > 10) {
@@ -817,7 +783,7 @@ export class ExplorerPanel {
                         li.style.display = name.includes(q) ? '' : 'none';
                     }
                 });
-                this._detailEl.appendChild(filterInput);
+                pkgSection.appendChild(filterInput);
             }
 
             // Package list
@@ -850,7 +816,7 @@ export class ExplorerPanel {
                             body: JSON.stringify({ packages: [pkg.name] })
                         });
                         if (!resp.ok) throw new Error('Failed to uninstall');
-                        this._showEnvPackages(envName, runtimeId);
+                        this._showEnvDetail(envName, runtimeId, displayName);
                     } catch (err) {
                         alert(`Uninstall error: ${err.message}`);
                     }
@@ -859,11 +825,33 @@ export class ExplorerPanel {
 
                 list.appendChild(li);
             }
-            this._detailEl.appendChild(list);
+            pkgSection.appendChild(list);
 
         } catch (err) {
             loading.innerHTML = `<span>Error: ${err.message}</span>`;
         }
+
+        // Bottom action bar
+        const actionBar = this._createActionBar();
+        const delBtn = document.createElement('button');
+        delBtn.className = 'explorer-btn danger';
+        delBtn.textContent = 'Delete Environment';
+        delBtn.addEventListener('click', async () => {
+            if (!confirm(`Delete environment "${envName}"?`)) return;
+            try {
+                await fetch(`api/envs/${runtimeId}/${envName}`, { method: 'DELETE' });
+                if (this._callbacks.onVenvDeleted) {
+                    this._callbacks.onVenvDeleted(envName);
+                }
+                const envNode = this._tree.findKey(`env:${runtimeId}:${envName}`);
+                if (envNode) envNode.remove();
+                this._showWelcomeDetail();
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        });
+        actionBar.appendChild(delBtn);
+        this._detailEl.appendChild(actionBar);
     }
 
     // --- Create actions ---
@@ -1026,7 +1014,7 @@ export class ExplorerPanel {
                 logArea.className = 'package-install-log visible';
                 logArea.textContent = `> pip install ${tokens.join(' ')}\n\n${result.output || 'Done'}`;
                 textarea.value = '';
-                this._showEnvPackages(envName, runtimeId);
+                this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
             }
         } catch (err) {
             logArea.className = 'package-install-log visible error';
@@ -1203,5 +1191,12 @@ export class ExplorerPanel {
             h.textContent = text;
         }
         return h;
+    }
+
+    _addParentLabel(parentText) {
+        const label = document.createElement('div');
+        label.className = 'explorer-detail-parent';
+        label.textContent = parentText;
+        this._detailEl.appendChild(label);
     }
 }
