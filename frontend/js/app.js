@@ -23,6 +23,9 @@ class App {
     }
 
     async init() {
+        // Make panels more opaque while dragging (default 0.8 → 0.9)
+        jsPanel.defaults.dragit.opacity = 0.9;
+
         // Restore saved cell width
         const savedWidth = localStorage.getItem('notebook-cell-width');
         if (savedWidth) {

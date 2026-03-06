@@ -50,7 +50,7 @@ export class ExplorerPanel {
 
         this._panel = jsPanel.create({
             id: 'explorer-panel',
-            headerTitle: 'Explorer',
+            headerTitle: 'Workspace',
             theme: 'none',
             borderRadius: '8px',
             border: '1px solid var(--border-color)',

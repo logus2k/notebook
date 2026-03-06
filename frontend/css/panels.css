@@ -4,8 +4,9 @@
 }
 
 .jsPanel .jsPanel-titlebar {
-    background: var(--bg-secondary) !important;
-    border-bottom: 1px solid var(--border-color);
+    background: #ffe39eed !important;
+    border-bottom: 0.5px solid var(--border-color);
+    border-radius: 3px 3px 0px 0px;
 }
 
 .jsPanel .jsPanel-title {
