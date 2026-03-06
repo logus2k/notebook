@@ -583,8 +583,46 @@
     background: rgba(0, 0, 0, 0.03);
 }
 
-.cell-markdown-rendered img {
+.cell-markdown-rendered img,
+.cell-output img {
     max-width: 100%;
     height: auto;
+}
+
+/* Image copy button overlay */
+.img-copy-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.img-copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    padding: 5px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 1;
+}
+
+.img-copy-wrapper:hover .img-copy-btn {
+    opacity: 1;
+}
+
+.img-copy-btn:hover {
+    background: #c8e6c0;
+}
+
+.img-copy-btn.copied {
+    background: #c8e6c0;
 }
 

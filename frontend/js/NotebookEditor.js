@@ -47,6 +47,85 @@ export class NotebookEditor {
             }
         });
 
+        // Add copy/save buttons to images inside cells
+        const copySvg = '<svg viewBox="0 0 24 24" fill="none" stroke="#202020" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" fill="#a8d8a0"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+        const checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="#2a7a2a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 6"/></svg>';
+        const saveSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="#202020" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4" /><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" fill="#a8c8f0"/></svg>';
+
+        const wrapImage = (img) => {
+            if (img.closest('.img-copy-wrapper')) return;
+            if (!img.closest('.cell-markdown-rendered') && !img.closest('.cell-output')) return;
+
+            const wrapper = document.createElement('span');
+            wrapper.className = 'img-copy-wrapper';
+            img.parentNode.insertBefore(wrapper, img);
+            wrapper.appendChild(img);
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'img-copy-btn';
+            copyBtn.innerHTML = copySvg;
+            copyBtn.title = 'Copy image';
+            copyBtn.addEventListener('click', async (ev) => {
+                ev.stopPropagation();
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+                    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ]);
+                    copyBtn.classList.add('copied');
+                    copyBtn.innerHTML = checkSvg;
+                    setTimeout(() => {
+                        copyBtn.classList.remove('copied');
+                        copyBtn.innerHTML = copySvg;
+                    }, 1500);
+                } catch {
+                    window.open(img.src, '_blank');
+                }
+            });
+            wrapper.appendChild(copyBtn);
+
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'img-copy-btn';
+            saveBtn.innerHTML = saveSvg;
+            saveBtn.title = 'Save image';
+            saveBtn.style.right = '40px';
+            saveBtn.addEventListener('click', async (ev) => {
+                ev.stopPropagation();
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+                    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const srcName = img.src.split('/').pop().split('?')[0];
+                    a.download = srcName && srcName.includes('.') ? srcName : 'image.png';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch {
+                    window.open(img.src, '_blank');
+                }
+            });
+            wrapper.appendChild(saveBtn);
+        };
+
+        // Observe DOM changes to wrap new images as they appear
+        new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                for (const node of m.addedNodes) {
+                    if (node.nodeType !== 1) continue;
+                    const imgs = node.tagName === 'IMG' ? [node] : node.querySelectorAll?.('img') || [];
+                    for (const img of imgs) wrapImage(img);
+                }
+            }
+        }).observe(this._container, { childList: true, subtree: true });
+
         // Clicking page margins (outside the notebook container entirely)
         // should also not transfer focus into a CodeMirror editor.
         document.addEventListener('mousedown', (e) => {
