@@ -752,7 +752,7 @@ export class ExplorerPanel {
             const textarea = document.createElement('textarea');
             textarea.className = 'package-install-textarea';
             textarea.rows = 2;
-            textarea.placeholder = 'Package names (e.g. numpy pandas)';
+            textarea.placeholder = 'Package names, pip commands, or requirements.txt content';
             pkgSection.appendChild(textarea);
 
             const installRow = document.createElement('div');

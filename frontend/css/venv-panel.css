@@ -167,7 +167,7 @@
 /* Action row: Install + Upload + count */
 .package-install-actions {
     display: flex;
-    align-items: center;
+    align-items: end;
     gap: 6px;
     margin: 8px 0;
 }
