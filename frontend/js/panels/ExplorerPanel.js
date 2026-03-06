@@ -25,13 +25,24 @@ export class ExplorerPanel {
         this._activeVenvName = name;
     }
 
-    open(currentProject = null, currentNotebook = null) {
+    /**
+     * @param {object} opts
+     *   opts.currentProject, opts.currentNotebook - for notebook navigation
+     *   opts.navigateToVenv - venv name to navigate to and select
+     */
+    open(opts = {}) {
+        const { currentProject = null, currentNotebook = null, navigateToVenv = null } = opts;
         this._currentProject = currentProject;
         this._currentNotebook = currentNotebook;
+        this._navigateToVenvName = navigateToVenv;
 
         if (this._panel) {
             this._panel.front();
-            this._navigateToCurrentNotebook();
+            if (navigateToVenv) {
+                this._navigateToVenv(navigateToVenv);
+            } else {
+                this._navigateToCurrentNotebook();
+            }
             return;
         }
 
@@ -254,7 +265,24 @@ export class ExplorerPanel {
             }
         });
 
-        this._navigateToCurrentNotebook();
+        if (this._navigateToVenvName) {
+            this._navigateToVenv(this._navigateToVenvName);
+        } else {
+            this._navigateToCurrentNotebook();
+        }
+    }
+
+    _navigateToVenv(envName) {
+        if (!this._tree) return;
+        const envsRoot = this._tree.findKey('root-envs');
+        if (envsRoot && !envsRoot.isExpanded()) {
+            envsRoot.setExpanded(true);
+        }
+        const envNode = this._tree.findKey(`env:${envName}`);
+        if (envNode) {
+            envNode.setActive(true, { noEvents: true });
+            this._showEnvDetail(envName, envNode.data?.pythonVersion);
+        }
     }
 
     async _navigateToCurrentNotebook() {

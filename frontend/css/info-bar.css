@@ -24,7 +24,7 @@
 /* Right section: kernel status (absolute, won't affect centering) */
 .info-bar-right {
     position: absolute;
-    right: 16px;
+    right: 10px;
     display: flex;
     align-items: center;
 }
