@@ -142,6 +142,16 @@
     background: #d45555;
 }
 
+.explorer-btn.orange {
+    color: #fff;
+    border-color: transparent;
+    background: #e8a850;
+}
+
+.explorer-btn.orange:hover {
+    background: #d4943f;
+}
+
 .explorer-btn.small {
     font-size: 11px;
     padding: 3px 8px;
@@ -283,14 +293,14 @@
 #explorer-panel .fa-folder,
 #explorer-panel .fa-folder-open {
     color: #eec541 !important;
-    -webkit-text-stroke: 1px #666666;
+    -webkit-text-stroke: 1.5px #666666;
     paint-order: stroke fill;
 }
 
 /* File icons (notebooks) */
 #explorer-panel .fa-file {
     color: #fff9ddab !important;
-    -webkit-text-stroke: 1px #666666;
+    -webkit-text-stroke: 1.5px #666666;
     paint-order: stroke fill;
 }
 
@@ -298,27 +308,27 @@
 #explorer-panel .fa-cube,
 #explorer-panel .fa-cubes {
     color: #90d490 !important;
-    -webkit-text-stroke: 1px #666666;
+    -webkit-text-stroke: 1.5px #666666;
     paint-order: stroke fill;
 }
 
 /* Layer group icons (runtimes) */
 #explorer-panel .fa-layer-group {
     color: #7ec8e3 !important;
-    -webkit-text-stroke: 1px #666666;
+    -webkit-text-stroke: 1.5px #666666;
     paint-order: stroke fill;
 }
 
 /* Package icons */
 #explorer-panel .fa-box-open {
     color: #c4a6e0 !important;
-    -webkit-text-stroke: 1px #666666;
+    -webkit-text-stroke: 1.5px #666666;
     paint-order: stroke fill;
 }
 
 #explorerTree .fa-diagram-project {
     color: #eec541 !important;
-    -webkit-text-stroke: 1px #666666;
+    -webkit-text-stroke: 1.5px #666666;
     paint-order: stroke fill;
 }
 
@@ -460,7 +470,7 @@ div.wunderbaum div.wb-node-list div.wb-row.wb-selected {
 .explorer-nb-info-label {
     width: 80px;
     flex-shrink: 0;
-    color: var(--text-muted);
+    color: #333333;
     font-weight: 500;
 }
 
@@ -472,12 +482,55 @@ div.wunderbaum div.wb-node-list div.wb-row.wb-selected {
     font-size: 12px;
     color: var(--text-secondary);
     line-height: 1.5;
-    padding: 10px;
+    padding: 8px 10px;
     background: var(--bg-secondary);
     border-radius: var(--radius);
-    white-space: pre-wrap;
     max-height: 200px;
     overflow-y: auto;
+}
+
+.explorer-nb-description h1,
+.explorer-nb-description h2,
+.explorer-nb-description h3 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    color: var(--text-primary);
+}
+
+.explorer-nb-description h1 { font-size: 14px; }
+
+.explorer-nb-description p {
+    margin: 0 0 6px;
+}
+
+.explorer-nb-description p:last-child {
+    margin-bottom: 0;
+}
+
+.explorer-nb-description ul,
+.explorer-nb-description ol {
+    margin: 0 0 6px;
+    padding-left: 18px;
+}
+
+.explorer-nb-description table {
+    border-collapse: collapse;
+    font-size: 11px;
+    margin: 4px 0;
+}
+
+.explorer-nb-description th,
+.explorer-nb-description td {
+    border: 1px solid var(--border-color);
+    padding: 2px 6px;
+}
+
+.explorer-nb-description code {
+    font-size: 11px;
+    background: rgba(0,0,0,0.05);
+    padding: 1px 3px;
+    border-radius: 2px;
 }
 
 /* Bottom action bar — pinned to bottom-left of detail pane */

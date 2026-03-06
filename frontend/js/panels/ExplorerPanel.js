@@ -107,7 +107,7 @@ export class ExplorerPanel {
         right.appendChild(this._detailEl);
 
         const closeBtn = document.createElement('button');
-        closeBtn.className = 'explorer-btn explorer-close-btn';
+        closeBtn.className = 'explorer-btn primary explorer-close-btn';
         closeBtn.textContent = 'Close';
         closeBtn.addEventListener('click', () => this.close());
         right.appendChild(closeBtn);
@@ -632,11 +632,11 @@ export class ExplorerPanel {
 
             this._detailEl.appendChild(infoGrid);
 
-            // Description preview (first markdown cell)
+            // Description preview (first markdown cell, rendered as HTML)
             if (summary.description) {
                 const descEl = document.createElement('div');
                 descEl.className = 'explorer-nb-description';
-                descEl.textContent = summary.description;
+                descEl.innerHTML = marked.parse(summary.description);
                 this._detailEl.appendChild(descEl);
             }
         } catch {
@@ -676,15 +676,9 @@ export class ExplorerPanel {
     _showEnvDetail(envName, runtimeId, displayName) {
         this._detailEl.innerHTML = '';
 
-        const header = this._createDetailHeader(envName, 'fa-solid fa-cube');
+        const title = displayName ? `${envName} (${displayName})` : envName;
+        const header = this._createDetailHeader(title, 'fa-solid fa-cube');
         this._detailEl.appendChild(header);
-
-        if (displayName) {
-            const meta = document.createElement('div');
-            meta.className = 'explorer-detail-meta';
-            meta.textContent = displayName;
-            this._detailEl.appendChild(meta);
-        }
 
         const isActive = this._activeVenvName === envName;
         const actions = document.createElement('div');
@@ -710,7 +704,7 @@ export class ExplorerPanel {
         }
 
         const pkgBtn = document.createElement('button');
-        pkgBtn.className = 'explorer-btn';
+        pkgBtn.className = 'explorer-btn orange';
         pkgBtn.textContent = 'Manage Packages';
         pkgBtn.addEventListener('click', () => {
             this._showEnvPackages(envName, runtimeId);
