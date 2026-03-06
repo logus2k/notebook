@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from app.config import FRONTEND_DIR, SYSTEM_PYTHON
+from app.config import FRONTEND_DIR
 from app.routers import notebooks, venvs
 from app.managers.kernel_manager import KernelManagerService
 from app.managers.execution_bridge import ExecutionBridge
@@ -275,26 +275,42 @@ async def on_cell_execute(sid, data):
 @sio.on("kernel:start")
 async def on_kernel_start(sid, data):
     ctx = client_context.get(sid, {})
-    venv_name = data.get("venv_name")
+    env_mgr = venv_mgr.env_manager
+    runtime_id = data.get("runtime_id")
+    env_name = data.get("env_name")
+
+    # Backward compat: old frontend sends {venv_name}
+    if not runtime_id and data.get("venv_name"):
+        venv_name = data["venv_name"]
+        found_runtime = venv_mgr._find_env(venv_name)
+        if found_runtime:
+            runtime_id = found_runtime
+            env_name = venv_name
+
+    if not runtime_id or not env_name:
+        await sio.emit("error", {
+            "message": "runtime_id and env_name required",
+            "code": "INVALID_REQUEST",
+        }, to=sid)
+        return
 
     try:
-        if venv_name:
-            python_path = venv_mgr.get_python_path(venv_name)
-        else:
-            python_path = SYSTEM_PYTHON
+        kernel_cmd, kernel_language = env_mgr.get_kernel_cmd(runtime_id, env_name)
+        runtime = env_mgr._registry.get_runtime(runtime_id)
+        display_name = runtime["display_name"] if runtime else runtime_id
 
         project_id = ctx.get("project_id")
         session_id = f"{sid}_{uuid.uuid4().hex[:8]}"
         await kernel_mgr.start_kernel(
-            session_id, python_path,
-            project_id, ctx.get("notebook_path", ""), sid
+            session_id, kernel_cmd, kernel_language, display_name,
+            project_id, ctx.get("notebook_path", ""), sid,
         )
         room_id = f"notebook:{project_id}:{ctx.get('notebook_path', '')}"
         await sio.emit("kernel:status", {"status": "idle"}, room=room_id)
 
-    except FileNotFoundError as e:
+    except (FileNotFoundError, ValueError) as e:
         await sio.emit("error", {
-            "message": str(e), "code": "VENV_NOT_FOUND"
+            "message": str(e), "code": "ENV_NOT_FOUND"
         }, to=sid)
     except Exception as e:
         await sio.emit("error", {

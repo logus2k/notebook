@@ -7,4 +7,6 @@ services:
       - "8123:8123"
     volumes:
       - ./data:/app/data
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
     restart: unless-stopped

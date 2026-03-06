@@ -1,4 +1,3 @@
-import os
 import asyncio
 import logging
 from datetime import datetime, timedelta
@@ -14,8 +13,9 @@ logger = logging.getLogger(__name__)
 class KernelSession:
     session_id: str
     kernel_manager: JupyterKernelManager
-    python_path: str
-    venv_path: str
+    kernel_cmd: list[str]
+    kernel_language: str
+    display_name: str
     project_id: str
     notebook_path: str
     client_sid: str
@@ -45,7 +45,8 @@ class KernelManagerService:
         for session_id in list(self._kernels.keys()):
             await self.stop_kernel(session_id)
 
-    async def start_kernel(self, session_id: str, python_path: str,
+    async def start_kernel(self, session_id: str, kernel_cmd: list[str],
+                           kernel_language: str, display_name: str,
                            project_id: str, notebook_path: str,
                            client_sid: str) -> KernelSession:
         if session_id in self._kernels:
@@ -54,21 +55,15 @@ class KernelManagerService:
         km = JupyterKernelManager(kernel_name="python3")
 
         # Bypass kernel spec lookup by providing the command directly.
-        # Setting kernel_cmd before start_kernel() tells jupyter_client
-        # to use this command instead of looking up a kernel spec.
-        km.kernel_cmd = [
-            python_path, "-m", "ipykernel_launcher",
-            "-f", "{connection_file}"
-        ]
+        km.kernel_cmd = kernel_cmd
 
         # Provide a minimal kernel spec so the manager doesn't try to
-        # look one up from disk (which fails if ipykernel isn't installed
-        # in the server's own environment).
+        # look one up from disk.
         from jupyter_client.kernelspec import KernelSpec
         km._kernel_spec = KernelSpec(
-            argv=[python_path, "-m", "ipykernel_launcher", "-f", "{connection_file}"],
-            display_name="Python 3 (venv)",
-            language="python"
+            argv=kernel_cmd,
+            display_name=display_name,
+            language=kernel_language,
         )
 
         km.start_kernel()
@@ -76,20 +71,21 @@ class KernelManagerService:
         # Give kernel process a moment to either start or crash
         await asyncio.sleep(1)
         if not km.is_alive():
-            logger.error(f"Kernel process died immediately for {session_id} with {python_path}")
+            logger.error(f"Kernel process died immediately for {session_id}")
             raise RuntimeError(
-                f"Kernel process failed to start. Ensure ipykernel is installed in the venv."
+                f"Kernel process failed to start. Check that the kernel is properly installed in the environment."
             )
 
         session = KernelSession(
             session_id=session_id,
             kernel_manager=km,
-            python_path=python_path,
-            venv_path=os.path.dirname(os.path.dirname(python_path)),
+            kernel_cmd=kernel_cmd,
+            kernel_language=kernel_language,
+            display_name=display_name,
             project_id=project_id,
             notebook_path=notebook_path,
             client_sid=client_sid,
-            status="idle"
+            status="idle",
         )
         self._kernels[session_id] = session
         self._client_locks[session_id] = asyncio.Lock()
@@ -106,7 +102,7 @@ class KernelManagerService:
             logger.warning(f"Kernel client not immediately ready: {e}")
             kc.stop_channels()
 
-        logger.info(f"Kernel started: {session_id} with {python_path}")
+        logger.info(f"Kernel started: {session_id} ({display_name})")
         return session
 
     async def stop_kernel(self, session_id: str) -> bool:
@@ -135,9 +131,10 @@ class KernelManagerService:
             return None
         await self.stop_kernel(session_id)
         return await self.start_kernel(
-            session_id, session.python_path,
+            session_id, session.kernel_cmd,
+            session.kernel_language, session.display_name,
             session.project_id, session.notebook_path,
-            session.client_sid
+            session.client_sid,
         )
 
     async def interrupt_kernel(self, session_id: str) -> bool:

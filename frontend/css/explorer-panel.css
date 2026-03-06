@@ -151,6 +151,21 @@
     color: var(--text-secondary);
 }
 
+.explorer-create-form select {
+    padding: 6px 8px;
+    font-size: 13px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.explorer-create-form select:focus {
+    border-color: var(--accent-blue);
+    outline: none;
+}
+
 .explorer-create-form input {
     padding: 6px 8px;
     font-size: 13px;
@@ -280,6 +295,13 @@
     paint-order: stroke fill;
 }
 
+/* Layer group icons (runtimes) */
+#explorerTree .fa-layer-group {
+    color: #7ec8e3 !important;
+    -webkit-text-stroke: 1px #666666;
+    paint-order: stroke fill;
+}
+
 #explorerTree .fa-diagram-project {
     color: #eec541 !important;
     -webkit-text-stroke: 1px #666666;
@@ -318,6 +340,12 @@
 /* Notebook nodes */
 #explorerTree .wb-row[data-type="notebook"] span.wb-node {
     color: #444;
+}
+
+/* Runtime nodes */
+#explorerTree .wb-row[data-type="runtime"] span.wb-node {
+    color: #333;
+    font-weight: 500;
 }
 
 /* Env nodes */

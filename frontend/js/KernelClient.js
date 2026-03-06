@@ -131,8 +131,11 @@ export class KernelClient {
 
     // --- Kernel ---
 
-    startKernel(venvName) {
-        this._socket.emit('kernel:start', { venv_name: venvName || null });
+    startKernel(runtimeId, envName) {
+        this._socket.emit('kernel:start', {
+            runtime_id: runtimeId,
+            env_name: envName,
+        });
     }
 
     stopKernel() {

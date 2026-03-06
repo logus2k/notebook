@@ -22,7 +22,7 @@ export class InfoBar {
         this._client = kernelClient;
         this._callbacks = callbacks;
         this._venvName = null;
-        this._pythonVersion = null;
+        this._displayName = null;
         this._kernelStatus = 'dead';
         this._build();
         this._client.on('kernel:status', (data) => this._setKernelStatus(data.status));
@@ -101,11 +101,11 @@ export class InfoBar {
 
     /**
      * @param {string|null} name - venv name
-     * @param {string|null} pythonVersion - e.g. "3.12.12"
+     * @param {string|null} displayName - runtime display name, e.g. "Python 3.12"
      */
-    setVenv(name, pythonVersion) {
+    setVenv(name, displayName) {
         this._venvName = name;
-        this._pythonVersion = pythonVersion;
+        this._displayName = displayName;
         // If a venv is selected but kernel hasn't started yet, show standby (gray) instead of dead (red)
         if (name && this._kernelStatus === 'dead') {
             this._kernelDot.className = 'kernel-status-dot standby';
@@ -135,8 +135,8 @@ export class InfoBar {
         if (this._venvName) {
             const info = suffix
                 ? `(${suffix})`
-                : this._pythonVersion
-                    ? `(Python ${this._formatVersion(this._pythonVersion)})`
+                : this._displayName
+                    ? `(${this._displayName})`
                     : '';
             this._kernelLabel.textContent = info
                 ? `${this._venvName} ${info}`
@@ -153,12 +153,6 @@ export class InfoBar {
             this._flashTimer = null;
             this._updateKernelLabel();
         }, 2000);
-    }
-
-    /** Shorten "3.12.12" to "3.12" */
-    _formatVersion(v) {
-        const parts = v.split('.');
-        return parts.length >= 2 ? `${parts[0]}.${parts[1]}` : v;
     }
 
     // --- Helpers ---

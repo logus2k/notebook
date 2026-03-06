@@ -18,7 +18,7 @@ class App {
         this._displaySettingsPanel = null;
         this._currentProject = null;
         this._currentNotebook = null;
-        this._activeVenv = null; // { name, pythonVersion } or null
+        this._activeVenv = null; // { name, runtimeId, displayName } or null
         this._userName = this._generateUserName();
     }
 
@@ -90,7 +90,9 @@ class App {
                     this._explorerPanel.open({
                         currentProject: this._currentProject,
                         currentNotebook: this._currentNotebook,
-                        navigateToVenv: this._activeVenv ? this._activeVenv.name : null,
+                        navigateToVenv: this._activeVenv
+                            ? `${this._activeVenv.runtimeId}:${this._activeVenv.name}`
+                            : null,
                         navigateToEnvs: !this._activeVenv,
                     });
                 },
@@ -121,7 +123,7 @@ class App {
                 );
                 // Re-start kernel if a venv was selected
                 if (this._activeVenv) {
-                    this._client.startKernel(this._activeVenv.name);
+                    this._client.startKernel(this._activeVenv.runtimeId, this._activeVenv.name);
                 }
             }
         });
@@ -205,21 +207,23 @@ class App {
         this._editor.openNotebook(projectId, notebookName, this._userName);
 
         // Restore persisted venv for this notebook, validating against API
+        // localStorage format: "runtimeId:name" (e.g. "python/3.12:my-env")
         const savedVenv = localStorage.getItem(`notebook-venv:${projectId}:${notebookName}`);
         let restored = false;
         if (savedVenv) {
-            const parts = savedVenv.split(':');
-            const name = parts[0];
+            // Parse "runtimeId:name" — runtimeId contains "/" so split on last ":"
+            const lastColon = savedVenv.lastIndexOf(':');
+            const runtimeId = lastColon > 0 ? savedVenv.substring(0, lastColon) : null;
+            const name = lastColon > 0 ? savedVenv.substring(lastColon + 1) : savedVenv;
             try {
-                const resp = await fetch('api/venvs');
+                const resp = await fetch('api/envs');
                 if (resp.ok) {
-                    const venvs = await resp.json();
-                    const match = venvs.find(v => v.name === name);
+                    const envs = await resp.json();
+                    const match = envs.find(v => v.name === name && (!runtimeId || v.runtime_id === runtimeId));
                     if (match) {
-                        const pythonVersion = match.python_version || null;
-                        this._activeVenv = { name, pythonVersion };
-                        this._infoBar.setVenv(name, pythonVersion);
-                        this._client.startKernel(name);
+                        this._activeVenv = { name: match.name, runtimeId: match.runtime_id, displayName: match.display_name };
+                        this._infoBar.setVenv(match.name, match.display_name);
+                        this._client.startKernel(match.runtime_id, match.name);
                         restored = true;
                     }
                 }
@@ -246,20 +250,17 @@ class App {
     _onVenvSelect(venv) {
         this._activeVenv = venv;
         if (venv) {
-            this._infoBar.setVenv(venv.name, venv.pythonVersion);
-            // Persist for this notebook (name:pythonVersion)
+            this._infoBar.setVenv(venv.name, venv.displayName);
+            // Persist for this notebook (runtimeId:name)
             if (this._currentProject && this._currentNotebook) {
-                const val = venv.pythonVersion
-                    ? `${venv.name}:${venv.pythonVersion}`
-                    : venv.name;
                 localStorage.setItem(
                     `notebook-venv:${this._currentProject}:${this._currentNotebook}`,
-                    val
+                    `${venv.runtimeId}:${venv.name}`
                 );
             }
             // Auto-start the kernel with the selected venv (only if a notebook is open)
             if (this._currentNotebook) {
-                this._client.startKernel(venv.name);
+                this._client.startKernel(venv.runtimeId, venv.name);
             }
         } else {
             this._infoBar.setVenv(null);
@@ -326,7 +327,7 @@ class App {
             alert('Select a virtual environment first (click the environment area in the info bar)');
             return;
         }
-        this._client.startKernel(this._activeVenv.name);
+        this._client.startKernel(this._activeVenv.runtimeId, this._activeVenv.name);
     }
 
     _generateUserName() {

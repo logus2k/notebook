@@ -6,7 +6,7 @@ export class ExplorerPanel {
     /**
      * @param {object} callbacks
      *   onNotebookSelect(projectId, notebookName)
-     *   onVenvSelect({ name, pythonVersion })
+     *   onVenvSelect({ name, runtimeId, displayName })
      *   onVenvDeleted(name)
      */
     constructor(callbacks = {}) {
@@ -127,14 +127,43 @@ export class ExplorerPanel {
     }
 
     async _loadTree() {
-        // Fetch both projects and environments in parallel
-        const [projectsResp, envsResp] = await Promise.all([
+        // Fetch projects, runtimes, and environments in parallel
+        const [projectsResp, runtimesResp, envsResp] = await Promise.all([
             fetch('api/projects'),
-            fetch('api/venvs')
+            fetch('api/runtimes'),
+            fetch('api/envs')
         ]);
 
         const projects = await projectsResp.json();
+        this._runtimes = await runtimesResp.json();
         const envs = await envsResp.json();
+
+        // Group envs by runtime_id
+        const envsByRuntime = {};
+        for (const env of envs) {
+            if (!envsByRuntime[env.runtime_id]) envsByRuntime[env.runtime_id] = [];
+            envsByRuntime[env.runtime_id].push(env);
+        }
+
+        // Build runtime nodes, sorted alphabetically; env children sorted too
+        const runtimeNodes = this._runtimes
+            .slice().sort((a, b) => a.display_name.localeCompare(b.display_name))
+            .map(rt => ({
+                title: rt.display_name,
+                key: `runtime:${rt.runtime_id}`,
+                icon: 'fa-solid fa-layer-group',
+                folder: true,
+                expanded: true,
+                data: { runtimeId: rt.runtime_id, displayName: rt.display_name },
+                children: (envsByRuntime[rt.runtime_id] || [])
+                    .slice().sort((a, b) => a.name.localeCompare(b.name))
+                    .map(env => ({
+                        title: env.name,
+                        key: `env:${env.runtime_id}:${env.name}`,
+                        icon: 'fa-solid fa-cube',
+                        data: { runtimeId: env.runtime_id, displayName: env.display_name },
+                    }))
+            }));
 
         const treeData = [
             {
@@ -157,12 +186,7 @@ export class ExplorerPanel {
                 icon: 'fa-solid fa-cubes',
                 folder: true,
                 expanded: true,
-                children: envs.map(v => ({
-                    title: v.name,
-                    key: `env:${v.name}`,
-                    icon: 'fa-solid fa-cube',
-                    data: { pythonVersion: v.python_version },
-                }))
+                children: runtimeNodes,
             }
         ];
 
@@ -189,6 +213,7 @@ export class ExplorerPanel {
                 if (key === 'root-projects' || key === 'root-envs') type = 'root';
                 else if (key.startsWith('project:')) type = 'project';
                 else if (key.startsWith('notebook:')) type = 'notebook';
+                else if (key.startsWith('runtime:')) type = 'runtime';
                 else if (key.startsWith('env:')) type = 'env';
                 row.setAttribute('data-type', type);
             },
@@ -253,11 +278,23 @@ export class ExplorerPanel {
                     return false;
                 }
 
+                // Runtime node: toggle expand + show create form
+                if (key.startsWith('runtime:')) {
+                    node.setExpanded(!node.isExpanded());
+                    node.setActive(true, { noEvents: true });
+                    this._showRuntimeDetail(node.data?.runtimeId, node.data?.displayName);
+                    return false;
+                }
+
                 // Environment node: show detail
                 if (key.startsWith('env:')) {
-                    const envName = key.replace('env:', '');
+                    // key = "env:{runtimeId}:{name}"
+                    const rest = key.substring(4); // after "env:"
+                    const lastColon = rest.lastIndexOf(':');
+                    const runtimeId = rest.substring(0, lastColon);
+                    const envName = rest.substring(lastColon + 1);
                     node.setActive(true, { noEvents: true });
-                    this._showEnvDetail(envName, node.data?.pythonVersion);
+                    this._showEnvDetail(envName, runtimeId, node.data?.displayName);
                     return false;
                 }
             }
@@ -286,16 +323,22 @@ export class ExplorerPanel {
         }
     }
 
-    _navigateToVenv(envName) {
+    _navigateToVenv(envKey) {
         if (!this._tree) return;
         const envsRoot = this._tree.findKey('root-envs');
-        if (envsRoot && !envsRoot.isExpanded()) {
-            envsRoot.setExpanded(true);
-        }
-        const envNode = this._tree.findKey(`env:${envName}`);
+        if (envsRoot && !envsRoot.isExpanded()) envsRoot.setExpanded(true);
+        // envKey = "runtimeId:name" (e.g. "python/3.12:my-env")
+        const nodeKey = `env:${envKey}`;
+        const envNode = this._tree.findKey(nodeKey);
         if (envNode) {
+            // Expand the runtime parent
+            const parent = envNode.parent;
+            if (parent && !parent.isExpanded()) parent.setExpanded(true);
             envNode.setActive(true, { noEvents: true });
-            this._showEnvDetail(envName, envNode.data?.pythonVersion);
+            const lastColon = envKey.lastIndexOf(':');
+            const runtimeId = envKey.substring(0, lastColon);
+            const envName = envKey.substring(lastColon + 1);
+            this._showEnvDetail(envName, runtimeId, envNode.data?.displayName);
         }
     }
 
@@ -363,12 +406,51 @@ export class ExplorerPanel {
         const header = this._createDetailHeader('Environments');
         this._detailEl.appendChild(header);
 
+        this._buildEnvCreateForm(this._detailEl);
+    }
+
+    _showRuntimeDetail(runtimeId, displayName) {
+        this._detailEl.innerHTML = '';
+
+        const header = this._createDetailHeader(displayName || runtimeId);
+        this._detailEl.appendChild(header);
+
+        this._buildEnvCreateForm(this._detailEl, runtimeId);
+    }
+
+    _buildEnvCreateForm(container, preselectedRuntimeId = null) {
         const form = document.createElement('div');
         form.className = 'explorer-create-form';
 
-        const nameLabel = document.createElement('label');
-        nameLabel.textContent = 'New Environment';
-        form.appendChild(nameLabel);
+        const interpreterLabel = document.createElement('label');
+        interpreterLabel.textContent = 'Select Interpreter';
+        form.appendChild(interpreterLabel);
+
+        // Runtime selector
+        const runtimeSelect = document.createElement('select');
+        runtimeSelect.className = 'explorer-select';
+        const runtimes = this._runtimes || [];
+        if (runtimes.length > 1) {
+            for (const rt of runtimes) {
+                const opt = document.createElement('option');
+                opt.value = rt.runtime_id;
+                opt.textContent = rt.display_name;
+                if (rt.runtime_id === preselectedRuntimeId) opt.selected = true;
+                runtimeSelect.appendChild(opt);
+            }
+            form.appendChild(runtimeSelect);
+        } else if (runtimes.length === 1) {
+            runtimeSelect.innerHTML = `<option value="${runtimes[0].runtime_id}">${runtimes[0].display_name}</option>`;
+        }
+        // If preselected and only one runtime, don't show selector
+        if (runtimes.length <= 1) {
+            runtimeSelect.style.display = 'none';
+            form.appendChild(runtimeSelect);
+        }
+
+        const envNameLabel = document.createElement('label');
+        envNameLabel.textContent = 'Environment Name';
+        form.appendChild(envNameLabel);
 
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
@@ -391,14 +473,14 @@ export class ExplorerPanel {
         const createBtn = document.createElement('button');
         createBtn.className = 'explorer-btn primary';
         createBtn.textContent = 'Create Environment';
-        createBtn.addEventListener('click', () => this._createEnv(nameInput, reqInput, createBtn, errorEl));
+        createBtn.addEventListener('click', () => this._createEnv(nameInput, reqInput, runtimeSelect, createBtn, errorEl));
         form.appendChild(createBtn);
 
         nameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') createBtn.click();
         });
 
-        this._detailEl.appendChild(form);
+        container.appendChild(form);
         nameInput.focus();
     }
 
@@ -534,17 +616,16 @@ export class ExplorerPanel {
         }
     }
 
-    _showEnvDetail(envName, pythonVersion) {
+    _showEnvDetail(envName, runtimeId, displayName) {
         this._detailEl.innerHTML = '';
 
         const header = this._createDetailHeader(`🔧 ${envName}`);
         this._detailEl.appendChild(header);
 
-        if (pythonVersion) {
-            const parts = pythonVersion.split('.');
+        if (displayName) {
             const meta = document.createElement('div');
             meta.className = 'explorer-detail-meta';
-            meta.textContent = `Python ${parts.length >= 2 ? parts[0] + '.' + parts[1] : pythonVersion}`;
+            meta.textContent = displayName;
             this._detailEl.appendChild(meta);
         }
 
@@ -564,9 +645,9 @@ export class ExplorerPanel {
             selectBtn.addEventListener('click', () => {
                 this._activeVenvName = envName;
                 if (this._callbacks.onVenvSelect) {
-                    this._callbacks.onVenvSelect({ name: envName, pythonVersion });
+                    this._callbacks.onVenvSelect({ name: envName, runtimeId, displayName });
                 }
-                this._showEnvDetail(envName, pythonVersion);
+                this._showEnvDetail(envName, runtimeId, displayName);
             });
             actions.appendChild(selectBtn);
         }
@@ -575,7 +656,7 @@ export class ExplorerPanel {
         pkgBtn.className = 'explorer-btn';
         pkgBtn.textContent = 'Manage Packages';
         pkgBtn.addEventListener('click', () => {
-            this._showEnvPackages(envName);
+            this._showEnvPackages(envName, runtimeId);
         });
         actions.appendChild(pkgBtn);
 
@@ -585,12 +666,12 @@ export class ExplorerPanel {
         delBtn.addEventListener('click', async () => {
             if (!confirm(`Delete environment "${envName}"?`)) return;
             try {
-                await fetch(`api/venvs/${envName}`, { method: 'DELETE' });
+                await fetch(`api/envs/${runtimeId}/${envName}`, { method: 'DELETE' });
                 if (this._callbacks.onVenvDeleted) {
                     this._callbacks.onVenvDeleted(envName);
                 }
                 // Remove from tree
-                const envNode = this._tree.findKey(`env:${envName}`);
+                const envNode = this._tree.findKey(`env:${runtimeId}:${envName}`);
                 if (envNode) envNode.remove();
                 this._showWelcomeDetail();
             } catch (err) {
@@ -602,7 +683,7 @@ export class ExplorerPanel {
         this._detailEl.appendChild(actions);
     }
 
-    async _showEnvPackages(envName) {
+    async _showEnvPackages(envName, runtimeId) {
         this._detailEl.innerHTML = '';
 
         const header = this._createDetailHeader(`📦 ${envName} — Packages`);
@@ -612,9 +693,9 @@ export class ExplorerPanel {
         backBtn.className = 'explorer-btn small';
         backBtn.textContent = '← Back';
         backBtn.addEventListener('click', () => {
-            const envNode = this._tree.findKey(`env:${envName}`);
-            const pv = envNode?.data?.pythonVersion || null;
-            this._showEnvDetail(envName, pv);
+            const envNode = this._tree.findKey(`env:${runtimeId}:${envName}`);
+            const dn = envNode?.data?.displayName || null;
+            this._showEnvDetail(envName, runtimeId, dn);
         });
         this._detailEl.appendChild(backBtn);
 
@@ -624,8 +705,10 @@ export class ExplorerPanel {
         loading.innerHTML = '<div class="spinner"></div><span>Loading packages...</span>';
         this._detailEl.appendChild(loading);
 
+        const apiBase = `api/envs/${runtimeId}/${envName}/packages`;
+
         try {
-            const resp = await fetch(`api/venvs/${envName}/packages`);
+            const resp = await fetch(apiBase);
             if (!resp.ok) {
                 const err = await resp.json().catch(() => ({}));
                 throw new Error(err.detail || 'Failed to load packages');
@@ -652,7 +735,7 @@ export class ExplorerPanel {
             logArea.className = 'package-install-log';
 
             installBtn.addEventListener('click', () =>
-                this._doInstall(textarea, installBtn, logArea, envName)
+                this._doInstall(textarea, installBtn, logArea, envName, runtimeId)
             );
 
             textarea.addEventListener('keydown', (e) => {
@@ -710,13 +793,13 @@ export class ExplorerPanel {
                 removeBtn.addEventListener('click', async () => {
                     if (!confirm(`Uninstall ${pkg.name}?`)) return;
                     try {
-                        const resp = await fetch(`api/venvs/${envName}/packages`, {
+                        const resp = await fetch(apiBase, {
                             method: 'DELETE',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ packages: [pkg.name] })
                         });
                         if (!resp.ok) throw new Error('Failed to uninstall');
-                        this._showEnvPackages(envName);
+                        this._showEnvPackages(envName, runtimeId);
                     } catch (err) {
                         alert(`Uninstall error: ${err.message}`);
                     }
@@ -815,9 +898,11 @@ export class ExplorerPanel {
         }
     }
 
-    async _createEnv(nameInput, reqInput, createBtn, errorEl) {
+    async _createEnv(nameInput, reqInput, runtimeSelect, createBtn, errorEl) {
         const name = nameInput.value.trim();
         if (!name) { nameInput.focus(); return; }
+        const runtimeId = runtimeSelect.value;
+        if (!runtimeId) { errorEl.textContent = 'No runtime selected'; return; }
         errorEl.textContent = '';
         const requirements = reqInput.value.trim()
             ? reqInput.value.trim().split('\n').map(s => s.trim()).filter(Boolean)
@@ -826,31 +911,34 @@ export class ExplorerPanel {
         createBtn.disabled = true;
         createBtn.textContent = 'Creating...';
         try {
-            const resp = await fetch('api/venvs', {
+            const resp = await fetch('api/envs', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, requirements })
+                body: JSON.stringify({ runtime_id: runtimeId, name, requirements })
             });
             if (!resp.ok) {
                 const err = await resp.json();
                 throw new Error(err.detail || 'Failed to create environment');
             }
-            // Add to tree
-            const envsRoot = this._tree.findKey('root-envs');
-            if (envsRoot) {
-                envsRoot.addChildren([{
+            // Find display name from runtimes
+            const rt = (this._runtimes || []).find(r => r.runtime_id === runtimeId);
+            const displayName = rt ? rt.display_name : runtimeId;
+            // Add to tree under the correct runtime node
+            const runtimeNode = this._tree.findKey(`runtime:${runtimeId}`);
+            if (runtimeNode) {
+                runtimeNode.addChildren([{
                     title: name,
-                    key: `env:${name}`,
+                    key: `env:${runtimeId}:${name}`,
                     icon: 'fa-solid fa-cube',
-                    data: { pythonVersion: null },
+                    data: { runtimeId, displayName },
                 }]);
-                envsRoot.setExpanded(true);
+                runtimeNode.setExpanded(true);
             }
             nameInput.value = '';
             reqInput.value = '';
             // Show the new env's detail
-            this._showEnvDetail(name, null);
-            const newNode = this._tree.findKey(`env:${name}`);
+            this._showEnvDetail(name, runtimeId, displayName);
+            const newNode = this._tree.findKey(`env:${runtimeId}:${name}`);
             if (newNode) newNode.setActive(true, { noEvents: true });
         } catch (err) {
             errorEl.textContent = err.message;
@@ -862,7 +950,7 @@ export class ExplorerPanel {
 
     // --- Install helper ---
 
-    async _doInstall(textarea, installBtn, logArea, envName) {
+    async _doInstall(textarea, installBtn, logArea, envName, runtimeId) {
         const tokens = this._parseInstallInput(textarea.value);
         if (!tokens.length) return;
 
@@ -871,8 +959,10 @@ export class ExplorerPanel {
         logArea.className = 'package-install-log visible';
         logArea.textContent = `> pip install ${tokens.join(' ')}\n\nInstalling...`;
 
+        const apiBase = `api/envs/${runtimeId}/${envName}/packages`;
+
         try {
-            const resp = await fetch(`api/venvs/${envName}/packages`, {
+            const resp = await fetch(apiBase, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ packages: tokens })
@@ -886,7 +976,7 @@ export class ExplorerPanel {
                 logArea.className = 'package-install-log visible';
                 logArea.textContent = `> pip install ${tokens.join(' ')}\n\n${result.output || 'Done'}`;
                 textarea.value = '';
-                this._showEnvPackages(envName);
+                this._showEnvPackages(envName, runtimeId);
             }
         } catch (err) {
             logArea.className = 'package-install-log visible error';
