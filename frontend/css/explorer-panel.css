@@ -191,8 +191,20 @@
     overflow-y: auto !important;
     border: none !important;
     background: transparent !important;
-    font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+    font-family: Roboto, sans-serif;
     font-size: 12px;
+    /* Override Wunderbaum color variables */
+    --wb-background-color: transparent;
+    --wb-hover-color: rgba(0, 0, 0, 0.05);
+    --wb-hover-border-color: transparent;
+    --wb-active-color: #d4e8fc;
+    --wb-active-border-color: transparent;
+    --wb-active-hover-color: #c8e2f8;
+    --wb-active-hover-border-color: transparent;
+    --wb-active-color-grayscale: #d4e8fc;
+    --wb-active-border-color-grayscale: transparent;
+    --wb-active-hover-color-grayscale: #c8e2f8;
+    --wb-icon-padding-y: 0px;
 }
 
 #explorerTree > .wb-header {
@@ -204,44 +216,51 @@
     cursor: pointer;
 }
 
-/* Icon badge styling (pill shape like cell-type-badge) */
-#explorerTree span.wb-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 16px;
-    border-radius: 3px;
-    font-size: 10px;
+/* Vertically center icon and title within row */
+#explorerTree span.wb-node i.wb-icon,
+#explorerTree span.wb-node span.wb-title {
+    vertical-align: middle;
+}
+
+#explorerTree span.wb-node i.wb-expander,
+#explorerTree span.wb-node i.wb-icon {
+    background-repeat: no-repeat;
+    background-size: contain;
 }
 
 /* Folder icons */
-#explorerTree .fa-folder,
+#explorerTree .fa-folder {
+    color: #eec541 !important;
+    -webkit-text-stroke: 1px #666666;
+    paint-order: stroke fill;
+}
+
+#explorerTree i.fa-folder-open,
 #explorerTree .fa-folder-open {
-    color: #b8860b !important;
-    background: #fdf3d7;
+    color: #eec541 !important;
+    -webkit-text-stroke: 1px #666666;
+    paint-order: stroke fill;
 }
 
 /* File icons */
 #explorerTree .fa-file-code {
-    color: #5675e3 !important;
-    background: #e8edfb;
+    color: #fff9ddab !important;
+    -webkit-text-stroke: 1px #666666;
+    paint-order: stroke fill;
 }
 
 /* Cube icons (environments) */
-#explorerTree .fa-cube {
-    color: #298829 !important;
-    background: #e6f4e6;
-}
-
+#explorerTree .fa-cube,
 #explorerTree .fa-cubes {
-    color: #298829 !important;
-    background: #e6f4e6;
+    color: #90d490 !important;
+    -webkit-text-stroke: 1px #666666;
+    paint-order: stroke fill;
 }
 
 #explorerTree .fa-diagram-project {
-    color: #cc9b5a !important;
-    background: #faf0e4;
+    color: #eec541 !important;
+    -webkit-text-stroke: 1px #666666;
+    paint-order: stroke fill;
 }
 
 /* Node styling */
@@ -254,8 +273,7 @@
     background-color: rgba(0, 0, 0, 0.05);
 }
 
-#explorerTree span.wb-node.wb-active {
-    background-color: #d4e8fc;
+#explorerTree div.wb-row.wb-active span.wb-title {
     font-weight: 500;
 }
 
@@ -286,24 +304,27 @@
 
 /* Style explorerTree scrollbar */
 #explorerTree::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
+    height: 8px;
 }
 
 #explorerTree::-webkit-scrollbar-track {
-    background: transparent;
-    margin: 0;
+    box-shadow: inset 0 0 5px #dedede;
+    border-radius: 8px;
+    margin-block: 4px;
 }
 
 #explorerTree::-webkit-scrollbar-thumb {
     background-color: #cecece;
-    border-radius: 6px;
+    border-radius: 10px;
 }
 
 #explorerTree::-webkit-scrollbar-thumb:hover {
     background-color: #76c47e;
+    cursor: pointer;
 }
 
-#explorerTree span.wb-node span.wb-title {
+div.wunderbaum span.wb-node span.wb-title {
     min-width: 1em;
     vertical-align: middle !important;
     overflow-x: hidden;
@@ -311,7 +332,9 @@
     text-overflow: ellipsis;
     padding-left: 2px;
     font-size: 0.9em;
-    padding-bottom: 2px;
+    font-family: 'Roboto', sans-serif !important;
+    position: relative;
+    top: -4px;
 }
 
 #explorerTree *:focus,
@@ -324,12 +347,7 @@ i.wb-expander.fa-solid {
     font-size: 10px;
     text-align: center;
     vertical-align: middle !important;
-    margin-top: 3px;
-}
-
-div.wb-row.wb-active {
-    background-color: #d4e8fc !important;
-    border-radius: 1px;
+    margin-top: 1px;
 }
 
 /* Detail pane scrollbar */
