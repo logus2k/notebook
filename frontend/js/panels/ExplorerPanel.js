@@ -68,9 +68,13 @@ export class ExplorerPanel {
         const left = document.createElement('div');
         left.className = 'explorer-tree-pane';
 
+        const treeWrapper = document.createElement('div');
+        treeWrapper.id = 'explorerTreeWrapper';
+
         this._treeEl = document.createElement('div');
         this._treeEl.id = 'explorerTree';
-        left.appendChild(this._treeEl);
+        treeWrapper.appendChild(this._treeEl);
+        left.appendChild(treeWrapper);
 
         // Right pane: detail
         const right = document.createElement('div');
@@ -137,6 +141,7 @@ export class ExplorerPanel {
         ];
 
         this._tree = new mar10.Wunderbaum({
+            adjustHeight: false,
             element: this._treeEl,
             source: treeData,
             selectMode: 'single',
@@ -228,6 +233,7 @@ export class ExplorerPanel {
                 }
             }
         });
+
     }
 
     // --- Detail views ---

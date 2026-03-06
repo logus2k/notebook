@@ -5,11 +5,11 @@
 }
 
 .explorer-tree-pane {
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     min-width: 0;
+    height: 100%;
     background: var(--bg-secondary);
-    padding: 6px 0;
+    position: relative;
 }
 
 .explorer-detail-pane {
@@ -176,25 +176,36 @@
 
 /* --- Wunderbaum tree styling (adapted from docbro) --- */
 
+#explorerTreeWrapper {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+}
+
 #explorerTree {
+    height: 100%;
     outline: none;
-    padding-top: 2px;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    border: none !important;
+    background: transparent !important;
+    font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+    font-size: 12px;
+}
+
+#explorerTree > .wb-header {
+    display: none !important;
 }
 
 #explorerTree .wb-list-container {
     outline: none;
     cursor: pointer;
-    overflow-x: hidden !important;
-}
-
-#explorerTree .wunderbaum {
-    font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
-    font-size: 12px;
-    background: transparent;
 }
 
 /* Icon badge styling (pill shape like cell-type-badge) */
-#explorerTree .wunderbaum span.wb-icon {
+#explorerTree span.wb-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -205,85 +216,94 @@
 }
 
 /* Folder icons */
-#explorerTree .wunderbaum .fa-folder,
-#explorerTree .wunderbaum .fa-folder-open {
+#explorerTree .fa-folder,
+#explorerTree .fa-folder-open {
     color: #b8860b !important;
     background: #fdf3d7;
 }
 
 /* File icons */
-#explorerTree .wunderbaum .fa-file-code {
+#explorerTree .fa-file-code {
     color: #5675e3 !important;
     background: #e8edfb;
 }
 
 /* Cube icons (environments) */
-#explorerTree .wunderbaum .fa-cube {
+#explorerTree .fa-cube {
     color: #298829 !important;
     background: #e6f4e6;
 }
 
-#explorerTree .wunderbaum .fa-cubes {
+#explorerTree .fa-cubes {
     color: #298829 !important;
     background: #e6f4e6;
 }
 
-#explorerTree .wunderbaum .fa-diagram-project {
+#explorerTree .fa-diagram-project {
     color: #cc9b5a !important;
     background: #faf0e4;
 }
 
 /* Node styling */
-#explorerTree .wunderbaum span.wb-node {
+#explorerTree span.wb-node {
     padding: 3px 6px;
     border-radius: 3px;
 }
 
-#explorerTree .wunderbaum span.wb-node:hover {
+#explorerTree span.wb-node:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
 
-#explorerTree .wunderbaum span.wb-node.wb-active {
+#explorerTree span.wb-node.wb-active {
     background-color: #d4e8fc;
     font-weight: 500;
 }
 
-#explorerTree .wunderbaum span.wb-node.wb-focus {
+#explorerTree span.wb-node.wb-focus {
     outline: none;
 }
 
 /* Root nodes */
-#explorerTree .wunderbaum .wb-row[data-type="root"] span.wb-node {
+#explorerTree .wb-row[data-type="root"] span.wb-node {
     font-weight: 600;
     color: #1a1a1a;
 }
 
 /* Project nodes */
-#explorerTree .wunderbaum .wb-row[data-type="project"] span.wb-node {
+#explorerTree .wb-row[data-type="project"] span.wb-node {
     color: #333;
 }
 
 /* Notebook nodes */
-#explorerTree .wunderbaum .wb-row[data-type="notebook"] span.wb-node {
+#explorerTree .wb-row[data-type="notebook"] span.wb-node {
     color: #444;
 }
 
 /* Env nodes */
-#explorerTree .wunderbaum .wb-row[data-type="env"] span.wb-node {
+#explorerTree .wb-row[data-type="env"] span.wb-node {
     color: #333;
 }
 
-/* Force transparent Wunderbaum container */
-div.wunderbaum,
-#explorerTree div.wunderbaum,
-.wunderbaum {
-    border: none !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    outline: none !important;
+/* Style explorerTree scrollbar */
+#explorerTree::-webkit-scrollbar {
+    width: 6px;
 }
 
-div.wunderbaum span.wb-node span.wb-title {
+#explorerTree::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 0;
+}
+
+#explorerTree::-webkit-scrollbar-thumb {
+    background-color: #cecece;
+    border-radius: 6px;
+}
+
+#explorerTree::-webkit-scrollbar-thumb:hover {
+    background-color: #76c47e;
+}
+
+#explorerTree span.wb-node span.wb-title {
     min-width: 1em;
     vertical-align: middle !important;
     overflow-x: hidden;
@@ -312,24 +332,6 @@ div.wb-row.wb-active {
     border-radius: 1px;
 }
 
-/* Scrollbar for tree */
-.explorer-tree-pane::-webkit-scrollbar {
-    width: 6px;
-}
-
-.explorer-tree-pane::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.explorer-tree-pane::-webkit-scrollbar-thumb {
-    background-color: #cecece;
-    border-radius: 6px;
-}
-
-.explorer-tree-pane::-webkit-scrollbar-thumb:hover {
-    background-color: #76c47e;
-}
-
 /* Detail pane scrollbar */
 .explorer-detail-pane::-webkit-scrollbar {
     width: 6px;
@@ -337,6 +339,7 @@ div.wb-row.wb-active {
 
 .explorer-detail-pane::-webkit-scrollbar-track {
     background: transparent;
+    margin: 0;
 }
 
 .explorer-detail-pane::-webkit-scrollbar-thumb {
