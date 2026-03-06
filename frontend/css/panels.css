@@ -20,6 +20,8 @@
 .jsPanel .jsPanel-controlbar .jsPanel-btn {
     color: var(--text-secondary) !important;
     background: var(--bg-secondary) !important;
+    -webkit-text-stroke: 1.5px;
+    paint-order: stroke fill;
 }
 
 .jsPanel .jsPanel-controlbar .jsPanel-btn:hover {
