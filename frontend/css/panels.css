@@ -31,7 +31,7 @@
 }
 
 .jsPanel .jsPanel-controlbar .jsPanel-btn {
-    color: #333333 !important;
+    color: #666666 !important;
     background: transparent !important;
     -webkit-text-stroke: 1px;
     paint-order: stroke fill;
