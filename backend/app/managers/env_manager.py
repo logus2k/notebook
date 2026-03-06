@@ -82,6 +82,7 @@ class EnvironmentManager:
         self._environments_dir = environments_dir
         self._registry = registry or RuntimeRegistry()
         self._migrate_flat_environments()
+        self._repair_environments()
 
     def _migrate_flat_environments(self):
         """Move old flat data/environments/{name} to data/environments/python/3.12/{name}."""
@@ -103,6 +104,100 @@ class EnvironmentManager:
                         logger.info(f"Migrated environment '{item}' to {default_runtime}/{item}")
                     except OSError as e:
                         logger.warning(f"Failed to migrate environment '{item}': {e}")
+
+    def _repair_environments(self):
+        """Repair venvs whose Python symlinks point to a stale path.
+
+        This runs at every startup so that image rebuilds (new Python patch
+        versions, path changes like /usr/local → /usr/bin) are handled
+        transparently without requiring users to recreate environments.
+        """
+        if not os.path.exists(self._environments_dir):
+            return
+        for language in os.listdir(self._environments_dir):
+            lang_dir = os.path.join(self._environments_dir, language)
+            if not os.path.isdir(lang_dir):
+                continue
+            if os.path.lexists(os.path.join(lang_dir, "bin", "python")):
+                continue  # un-migrated flat env
+            for version in os.listdir(lang_dir):
+                ver_dir = os.path.join(lang_dir, version)
+                if not os.path.isdir(ver_dir):
+                    continue
+                runtime_id = f"{language}/{version}"
+                runtime = self._registry.get_runtime(runtime_id)
+                if not runtime:
+                    continue
+                correct_executable = runtime["executable"]
+                correct_home = os.path.dirname(correct_executable)
+                for env_name in os.listdir(ver_dir):
+                    env_path = os.path.join(ver_dir, env_name)
+                    if not os.path.isdir(env_path):
+                        continue
+                    self._repair_venv(env_path, correct_executable, correct_home, env_name)
+
+    def _repair_venv(self, env_path: str, correct_executable: str,
+                     correct_home: str, env_name: str):
+        """Fix a single venv's symlinks and pyvenv.cfg if they point to a stale path."""
+        bin_dir = os.path.join(env_path, "bin")
+        if not os.path.isdir(bin_dir):
+            return
+
+        # Check if the main python symlink resolves correctly
+        python_link = os.path.join(bin_dir, "python")
+        if os.path.lexists(python_link) and os.path.exists(python_link):
+            # Symlink resolves — check it points to the right executable
+            resolved = os.path.realpath(python_link)
+            if resolved == os.path.realpath(correct_executable):
+                return  # already correct
+
+        # Find and fix versioned python symlinks (e.g. python3.12)
+        repaired = False
+        for entry in os.listdir(bin_dir):
+            entry_path = os.path.join(bin_dir, entry)
+            if not os.path.islink(entry_path):
+                continue
+            target = os.readlink(entry_path)
+            # Only fix python symlinks that point outside the venv (absolute paths)
+            if not entry.startswith("python"):
+                continue
+            if os.path.isabs(target) and not os.path.exists(target):
+                # Broken absolute symlink — repoint to correct executable
+                os.remove(entry_path)
+                os.symlink(correct_executable, entry_path)
+                repaired = True
+                logger.info(f"Repaired symlink {entry_path} → {correct_executable}")
+
+        # Update pyvenv.cfg
+        cfg_path = os.path.join(env_path, "pyvenv.cfg")
+        if os.path.isfile(cfg_path):
+            try:
+                with open(cfg_path) as f:
+                    lines = f.readlines()
+                new_lines = []
+                changed = False
+                for line in lines:
+                    if line.startswith("home = "):
+                        old_home = line.strip().split(" = ", 1)[1]
+                        if old_home != correct_home:
+                            line = f"home = {correct_home}\n"
+                            changed = True
+                    elif line.startswith("executable = "):
+                        old_exec = line.strip().split(" = ", 1)[1]
+                        if old_exec != correct_executable:
+                            line = f"executable = {correct_executable}\n"
+                            changed = True
+                    new_lines.append(line)
+                if changed:
+                    with open(cfg_path, "w") as f:
+                        f.writelines(new_lines)
+                    logger.info(f"Updated pyvenv.cfg for {env_name}")
+                    repaired = True
+            except OSError as e:
+                logger.warning(f"Failed to update pyvenv.cfg for {env_name}: {e}")
+
+        if repaired:
+            logger.info(f"Repaired environment: {env_name}")
 
     def _validate_name(self, name: str):
         if ".." in name or "/" in name or "\\" in name or not name:

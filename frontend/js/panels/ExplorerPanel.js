@@ -154,14 +154,12 @@ export class ExplorerPanel {
                 icon: 'fa-solid fa-layer-group',
                 folder: true,
                 expanded: true,
-                data: { runtimeId: rt.runtime_id, displayName: rt.display_name },
                 children: (envsByRuntime[rt.runtime_id] || [])
                     .slice().sort((a, b) => a.name.localeCompare(b.name))
                     .map(env => ({
                         title: env.name,
                         key: `env:${env.runtime_id}:${env.name}`,
                         icon: 'fa-solid fa-cube',
-                        data: { runtimeId: env.runtime_id, displayName: env.display_name },
                     }))
             }));
 
@@ -282,7 +280,8 @@ export class ExplorerPanel {
                 if (key.startsWith('runtime:')) {
                     node.setExpanded(!node.isExpanded());
                     node.setActive(true, { noEvents: true });
-                    this._showRuntimeDetail(node.data?.runtimeId, node.data?.displayName);
+                    const rtId = key.substring(8); // after "runtime:"
+                    this._showRuntimeDetail(rtId, this._getDisplayName(rtId));
                     return false;
                 }
 
@@ -294,7 +293,7 @@ export class ExplorerPanel {
                     const runtimeId = rest.substring(0, lastColon);
                     const envName = rest.substring(lastColon + 1);
                     node.setActive(true, { noEvents: true });
-                    this._showEnvDetail(envName, runtimeId, node.data?.displayName);
+                    this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
                     return false;
                 }
             }
@@ -338,7 +337,7 @@ export class ExplorerPanel {
             const lastColon = envKey.lastIndexOf(':');
             const runtimeId = envKey.substring(0, lastColon);
             const envName = envKey.substring(lastColon + 1);
-            this._showEnvDetail(envName, runtimeId, envNode.data?.displayName);
+            this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
         }
     }
 
@@ -693,9 +692,7 @@ export class ExplorerPanel {
         backBtn.className = 'explorer-btn small';
         backBtn.textContent = '← Back';
         backBtn.addEventListener('click', () => {
-            const envNode = this._tree.findKey(`env:${runtimeId}:${envName}`);
-            const dn = envNode?.data?.displayName || null;
-            this._showEnvDetail(envName, runtimeId, dn);
+            this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
         });
         this._detailEl.appendChild(backBtn);
 
@@ -930,7 +927,6 @@ export class ExplorerPanel {
                     title: name,
                     key: `env:${runtimeId}:${name}`,
                     icon: 'fa-solid fa-cube',
-                    data: { runtimeId, displayName },
                 }]);
                 runtimeNode.setExpanded(true);
             }
@@ -1000,6 +996,11 @@ export class ExplorerPanel {
     }
 
     // --- Helpers ---
+
+    _getDisplayName(runtimeId) {
+        const rt = (this._runtimes || []).find(r => r.runtime_id === runtimeId);
+        return rt ? rt.display_name : runtimeId;
+    }
 
     _createDetailHeader(text) {
         const h = document.createElement('div');

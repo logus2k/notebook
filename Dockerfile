@@ -1,10 +1,11 @@
-# ── Base image: CUDA runtime for optional GPU support ──
-# Use --gpus all on GPU hosts; falls back to CPU transparently on non-GPU hosts.
-FROM nvidia/cuda:13.1.1-runtime-ubuntu24.04
+# ── Stage 1: Base image with CUDA runtime, Python interpreters, and pip deps ──
+# Docker caches this stage. It only rebuilds when these layers change
+# (new Python versions, system packages, or requirements.txt updates).
+FROM nvidia/cuda:13.1.1-runtime-ubuntu24.04 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# ── System packages + deadsnakes PPA for multiple Python versions ──
+# System packages + deadsnakes PPA for multiple Python versions
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         software-properties-common gpg-agent && \
@@ -27,27 +28,31 @@ RUN apt-get update && \
         curl && \
     rm -rf /var/lib/apt/lists/*
 
-# ── Ensure pip is available for each Python version ──
-# deadsnakes Pythons don't ship pip; bootstrap via ensurepip
+# Ensure pip is available for each Python version
 RUN for py in python3.10 python3.11 python3.12 python3.13 python3.14; do \
         $py -m ensurepip --upgrade 2>/dev/null || true; \
     done
 
 WORKDIR /app
 
-# ── Install Python dependencies (using system Python 3.12) ──
+# Install Python dependencies (using system Python 3.12)
 COPY backend/requirements.txt backend/requirements.txt
 RUN python3.12 -m pip install --no-cache-dir --break-system-packages \
     -r backend/requirements.txt
 
-# ── Copy application ──
+# ── Stage 2: App image — copies application code onto the cached base ──
+# Fast rebuild (~1s) on every code change.
+FROM base
+
+WORKDIR /app
+
 COPY backend/ backend/
 COPY frontend/ frontend/
 COPY scripts/ scripts/
 
 RUN chmod +x scripts/*.sh
 
-# ── Ensure data directories exist ──
+# Ensure data directories exist
 RUN mkdir -p data/projects data/environments
 
 EXPOSE 8123

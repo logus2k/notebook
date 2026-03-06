@@ -112,16 +112,20 @@ class App {
         // Connect Socket.IO
         this._client.connect();
 
+        this._initialConnect = true;
         this._client.on('connected', () => {
-            console.log('Connected to server');
+            if (this._initialConnect) {
+                this._initialConnect = false;
+                console.log('Connected to server');
+                return;
+            }
+            console.log('Reconnected to server');
             if (this._currentProject && this._currentNotebook) {
-                console.log('Reconnecting to notebook...');
                 this._editor.openNotebook(
                     this._currentProject,
                     this._currentNotebook,
                     this._userName
                 );
-                // Re-start kernel if a venv was selected
                 if (this._activeVenv) {
                     this._client.startKernel(this._activeVenv.runtimeId, this._activeVenv.name);
                 }
@@ -250,7 +254,11 @@ class App {
     _onVenvSelect(venv) {
         this._activeVenv = venv;
         if (venv) {
-            this._infoBar.setVenv(venv.name, venv.displayName);
+            // Derive display name from runtimeId if not provided (e.g. "python/3.12" → "Python 3.12")
+            const displayName = venv.displayName
+                || (venv.runtimeId ? venv.runtimeId.replace(/^(\w)/, c => c.toUpperCase()).replace('/', ' ') : null);
+            venv.displayName = displayName;
+            this._infoBar.setVenv(venv.name, displayName);
             // Persist for this notebook (runtimeId:name)
             if (this._currentProject && this._currentNotebook) {
                 localStorage.setItem(

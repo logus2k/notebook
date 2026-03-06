@@ -295,10 +295,26 @@ async def on_kernel_start(sid, data):
         return
 
     try:
+        # Stop ALL existing kernels for this client before starting a new one
+        stopped = 0
+        while True:
+            existing = kernel_mgr.get_session_by_sid(sid)
+            if not existing:
+                break
+            logger.info(f"Stopping existing kernel {existing.session_id} for {sid}")
+            execution_bridge.stop_iopub_listener(existing.session_id)
+            await kernel_mgr.stop_kernel(existing.session_id)
+            stopped += 1
+        if stopped:
+            await asyncio.sleep(0.5)
+        else:
+            logger.info(f"No existing kernel for {sid}")
+
         kernel_cmd, kernel_language = env_mgr.get_kernel_cmd(runtime_id, env_name)
         runtime = env_mgr._registry.get_runtime(runtime_id)
         display_name = runtime["display_name"] if runtime else runtime_id
 
+        logger.info(f"Starting kernel for {sid}: runtime={runtime_id}, env={env_name}, cmd={kernel_cmd}")
         project_id = ctx.get("project_id")
         session_id = f"{sid}_{uuid.uuid4().hex[:8]}"
         await kernel_mgr.start_kernel(

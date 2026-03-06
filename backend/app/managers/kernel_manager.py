@@ -66,7 +66,10 @@ class KernelManagerService:
             language=kernel_language,
         )
 
-        km.start_kernel()
+        # Run blocking kernel start in executor to avoid blocking the event loop
+        await asyncio.get_event_loop().run_in_executor(
+            None, km.start_kernel
+        )
 
         # Give kernel process a moment to either start or crash
         await asyncio.sleep(1)
@@ -118,7 +121,10 @@ class KernelManagerService:
             logger.error(f"Error stopping kernel client channels {session_id}: {e}")
         try:
             if session.kernel_manager.is_alive():
-                session.kernel_manager.shutdown_kernel(now=True)
+                # Run blocking shutdown in executor to avoid blocking the event loop
+                await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: session.kernel_manager.shutdown_kernel(now=True)
+                )
             session.kernel_manager.cleanup_resources()
         except Exception as e:
             logger.error(f"Error stopping kernel {session_id}: {e}")

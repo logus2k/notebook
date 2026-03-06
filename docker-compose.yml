@@ -3,6 +3,7 @@ services:
     image: logus2k/noted
     container_name: noted
     build: .
+    pull_policy: never
     ports:
       - "8123:8123"
     volumes:
