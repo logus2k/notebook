@@ -220,13 +220,13 @@
     --wb-background-color: transparent;
     --wb-hover-color: rgba(0, 0, 0, 0.05);
     --wb-hover-border-color: transparent;
-    --wb-active-color: #d4e8fc;
-    --wb-active-border-color: transparent;
-    --wb-active-hover-color: #c8e2f8;
-    --wb-active-hover-border-color: transparent;
-    --wb-active-color-grayscale: #d4e8fc;
-    --wb-active-border-color-grayscale: transparent;
-    --wb-active-hover-color-grayscale: #c8e2f8;
+    --wb-active-color: #7ae58c96;
+    --wb-active-border-color: #99999933;
+    --wb-active-hover-color: #7ae58cbb;
+    --wb-active-hover-border-color: #99999933;
+    --wb-active-color-grayscale: #7ae58c96;
+    --wb-active-border-color-grayscale: #99999933;
+    --wb-active-hover-color-grayscale: #7ae58cbb;
     --wb-icon-padding-y: 0px;
 }
 
@@ -373,10 +373,8 @@ i.wb-expander.fa-solid {
     margin-top: 1px;
 }
 
-div.wunderbaum:not(:focus-within) div.wb-node-list div.wb-row.wb-active,
-div.wunderbaum:not(:focus-within) div.wb-node-list div.wb-row.wb-selected,
-div.wunderbaum:not(:focus) div.wb-node-list div.wb-row.wb-active,
-div.wunderbaum:not(:focus) div.wb-node-list div.wb-row.wb-selected {
+div.wunderbaum div.wb-node-list div.wb-row.wb-active,
+div.wunderbaum div.wb-node-list div.wb-row.wb-selected {
     background-color: #7ae58c96;
     border: 1px solid #99999933;
     border-radius: 3px;
