@@ -173,12 +173,12 @@
 }
 
 .package-install-actions button {
+    margin-left: auto;
     font-size: 11px;
     padding: 3px 8px;
 }
 
 .package-count {
-    margin-left: auto;
     font-size: 11px;
     color: var(--text-muted);
 }
