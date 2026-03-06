@@ -315,6 +315,8 @@ async def on_kernel_start(sid, data):
         display_name = runtime["display_name"] if runtime else runtime_id
 
         logger.info(f"Starting kernel for {sid}: runtime={runtime_id}, env={env_name}, cmd={kernel_cmd}")
+        ctx["runtime_id"] = runtime_id
+        ctx["env_name"] = env_name
         project_id = ctx.get("project_id")
         session_id = f"{sid}_{uuid.uuid4().hex[:8]}"
         await kernel_mgr.start_kernel(
@@ -348,28 +350,36 @@ async def on_kernel_stop(sid, data):
 @sio.on("kernel:restart")
 async def on_kernel_restart(sid, data):
     session = kernel_mgr.get_session_by_sid(sid)
-    if session:
-        execution_bridge.stop_iopub_listener(session.session_id)
+    if not session:
+        # Session was stopped — do a fresh start if we have context
         ctx = client_context.get(sid, {})
-        room_id = f"notebook:{ctx.get('project_id', '')}:{ctx.get('notebook_path', '')}"
-        await sio.emit("kernel:status", {"status": "starting"}, room=room_id)
-        try:
-            result = await kernel_mgr.restart_kernel(session.session_id)
-            if result:
-                await sio.emit("kernel:status", {"status": "idle"}, room=room_id)
-            else:
-                await sio.emit("kernel:status", {"status": "dead"}, room=room_id)
-                await sio.emit("error", {
-                    "message": "Kernel restart failed",
-                    "code": "RESTART_FAILED"
-                }, room=room_id)
-        except Exception as e:
-            logger.error(f"Kernel restart error: {e}")
+        runtime_id = ctx.get("runtime_id")
+        env_name = ctx.get("env_name")
+        if runtime_id and env_name:
+            await on_kernel_start(sid, {"runtime_id": runtime_id, "env_name": env_name})
+        return
+
+    execution_bridge.stop_iopub_listener(session.session_id)
+    ctx = client_context.get(sid, {})
+    room_id = f"notebook:{ctx.get('project_id', '')}:{ctx.get('notebook_path', '')}"
+    await sio.emit("kernel:status", {"status": "starting"}, room=room_id)
+    try:
+        result = await kernel_mgr.restart_kernel(session.session_id)
+        if result:
+            await sio.emit("kernel:status", {"status": "idle"}, room=room_id)
+        else:
             await sio.emit("kernel:status", {"status": "dead"}, room=room_id)
             await sio.emit("error", {
-                "message": f"Kernel restart failed: {e}",
+                "message": "Kernel restart failed",
                 "code": "RESTART_FAILED"
             }, room=room_id)
+    except Exception as e:
+        logger.error(f"Kernel restart error: {e}")
+        await sio.emit("kernel:status", {"status": "dead"}, room=room_id)
+        await sio.emit("error", {
+            "message": f"Kernel restart failed: {e}",
+            "code": "RESTART_FAILED"
+        }, room=room_id)
 
 
 @sio.on("kernel:interrupt")

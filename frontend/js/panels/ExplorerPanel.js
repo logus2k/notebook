@@ -33,6 +33,20 @@ export class ExplorerPanel {
 
     setKernelRunning(running) {
         this._kernelRunning = running;
+        this._syncStatusTag();
+    }
+
+    _syncStatusTag() {
+        if (!this._detailPane) return;
+        const tag = this._detailPane.querySelector('.explorer-env-tag');
+        if (!tag) return;
+        if (this._kernelRunning) {
+            tag.className = 'explorer-env-tag active';
+            tag.textContent = 'ACTIVE';
+        } else {
+            tag.className = 'explorer-env-tag inactive';
+            tag.textContent = 'INACTIVE';
+        }
     }
 
     /**
