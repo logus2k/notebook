@@ -175,12 +175,12 @@
 .package-install-actions button {
     margin-left: auto;
     font-size: 11px;
-    padding: 3px 8px;
+    padding: 7px 10px;
 }
 
 .package-count {
     font-size: 11px;
-    color: var(--text-muted);
+    color: #1d1d1d;
 }
 
 /* Install log area */
