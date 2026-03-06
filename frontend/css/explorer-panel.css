@@ -51,6 +51,8 @@
 .explorer-layout > .gutter.gutter-horizontal {
     width: 6px;
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="30"><path d="M2 5v20M4 5v20" stroke="%23999" stroke-width="1"/></svg>');
+    right: 3px;
+    position: relative;
 }
 
 .explorer-detail-empty {
