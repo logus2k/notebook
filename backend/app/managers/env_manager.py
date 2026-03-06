@@ -101,9 +101,40 @@ class EnvironmentManager:
                 if not os.path.exists(target_path):
                     try:
                         shutil.move(item_path, target_path)
+                        self._fix_shebangs(target_path, item_path)
                         logger.info(f"Migrated environment '{item}' to {default_runtime}/{item}")
                     except OSError as e:
                         logger.warning(f"Failed to migrate environment '{item}': {e}")
+
+    def _fix_shebangs(self, new_env_path: str, old_env_path: str):
+        """Rewrite shebangs in bin/ scripts after moving an environment."""
+        bin_dir = os.path.join(new_env_path, "bin")
+        if not os.path.isdir(bin_dir):
+            return
+        old_prefix = old_env_path
+        new_prefix = new_env_path
+        for entry in os.listdir(bin_dir):
+            entry_path = os.path.join(bin_dir, entry)
+            if os.path.islink(entry_path) or not os.path.isfile(entry_path):
+                continue
+            try:
+                with open(entry_path, "rb") as f:
+                    first_line = f.readline()
+                if not first_line.startswith(b"#!"):
+                    continue
+                shebang = first_line.decode("utf-8", errors="replace")
+                if old_prefix not in shebang:
+                    continue
+                with open(entry_path, "rb") as f:
+                    content = f.read()
+                content = content.replace(
+                    old_prefix.encode(), new_prefix.encode()
+                )
+                with open(entry_path, "wb") as f:
+                    f.write(content)
+                logger.info(f"Fixed shebang in {entry_path}")
+            except OSError:
+                pass
 
     def _repair_environments(self):
         """Repair venvs whose Python symlinks point to a stale path.
@@ -144,12 +175,18 @@ class EnvironmentManager:
             return
 
         # Check if the main python symlink resolves correctly
+        python_ok = False
         python_link = os.path.join(bin_dir, "python")
         if os.path.lexists(python_link) and os.path.exists(python_link):
-            # Symlink resolves — check it points to the right executable
             resolved = os.path.realpath(python_link)
             if resolved == os.path.realpath(correct_executable):
-                return  # already correct
+                python_ok = True
+
+        # Always fix shebangs (e.g. pip scripts with stale paths)
+        self._repair_shebangs(env_path, env_name)
+
+        if python_ok:
+            return
 
         # Find and fix versioned python symlinks (e.g. python3.12)
         repaired = False
@@ -198,6 +235,48 @@ class EnvironmentManager:
 
         if repaired:
             logger.info(f"Repaired environment: {env_name}")
+
+    def _repair_shebangs(self, env_path: str, env_name: str):
+        """Fix shebangs in bin/ scripts that reference a wrong env path."""
+        bin_dir = os.path.join(env_path, "bin")
+        if not os.path.isdir(bin_dir):
+            return
+        correct_bin = bin_dir
+        for entry in os.listdir(bin_dir):
+            entry_path = os.path.join(bin_dir, entry)
+            if os.path.islink(entry_path) or not os.path.isfile(entry_path):
+                continue
+            try:
+                with open(entry_path, "rb") as f:
+                    first_line = f.readline()
+                if not first_line.startswith(b"#!"):
+                    continue
+                shebang = first_line.decode("utf-8", errors="replace").strip()
+                # Only fix shebangs that reference a path ending in /bin/pythonX.Y
+                # but whose directory doesn't match this env's bin dir
+                if "/bin/python" not in shebang:
+                    continue
+                # Extract the interpreter path from the shebang
+                interp = shebang[2:].strip()
+                if interp.startswith(correct_bin):
+                    continue  # already correct
+                if os.path.exists(interp):
+                    continue  # interpreter exists, no fix needed
+                # Derive the correct interpreter from the basename
+                basename = os.path.basename(interp)
+                correct_interp = os.path.join(correct_bin, basename)
+                if not os.path.exists(correct_interp):
+                    continue  # can't fix if correct interpreter doesn't exist
+                with open(entry_path, "rb") as f:
+                    content = f.read()
+                content = content.replace(
+                    interp.encode(), correct_interp.encode()
+                )
+                with open(entry_path, "wb") as f:
+                    f.write(content)
+                logger.info(f"Fixed shebang in {entry_path}: {interp} → {correct_interp}")
+            except OSError:
+                pass
 
     def _validate_name(self, name: str):
         if ".." in name or "/" in name or "\\" in name or not name:

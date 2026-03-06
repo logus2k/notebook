@@ -23,6 +23,7 @@
 .explorer-detail-content {
     flex: 1;
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 14px 16px;
     display: flex;
     flex-direction: column;
@@ -421,7 +422,8 @@ div.wunderbaum div.wb-node-list div.wb-row.wb-selected {
     width: 6px;
 }
 
-.explorer-detail-content::-webkit-scrollbar-track {
+.explorer-detail-content::-webkit-scrollbar-track,
+#explorer-panel ::-webkit-scrollbar-track {
     background: transparent;
     margin: 0;
 }

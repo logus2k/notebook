@@ -66,6 +66,8 @@ export class ExplorerPanel {
                 this._panel = panel;
                 panel.content.style.padding = '0';
                 panel.content.style.overflow = 'hidden';
+                // Prevent wheel events from bleeding through to the page behind
+                panel.content.addEventListener('wheel', (e) => e.stopPropagation(), { passive: false });
                 this._buildLayout(panel.content);
                 this._loadTree();
             }
