@@ -39,6 +39,8 @@
 
 .jsPanel .jsPanel-controlbar .jsPanel-btn:hover {
     color: var(--text-primary) !important;
+    background: rgba(0, 0, 0, 0.08) !important;
+    border-radius: 3px;
 }
 
 .jsPanel-controlbar .jsPanel-btn.jsPanel-btn-md span:not(.material-icons),
@@ -46,6 +48,10 @@
     width: 0.85rem !important;
     height: 0.85rem !important;
     margin: 0px !important;
+}
+
+.jsPanel-depth-3 {
+    box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
 }
 
 .jsPanel .jsPanel-content {
