@@ -112,7 +112,7 @@ export class ExplorerPanel {
 
         // Initialize resizable splitter
         Split([left, right], {
-            sizes: [36, 64],
+            sizes: [45, 55],
             minSize: [150, 200],
             gutterSize: 6,
             cursor: 'col-resize',
@@ -145,7 +145,13 @@ export class ExplorerPanel {
             envsByRuntime[env.runtime_id].push(env);
         }
 
-        // Build runtime nodes, sorted alphabetically; env children sorted too
+        // Find which runtime contains the active venv (if any)
+        const activeEnv = this._activeVenvName
+            ? envs.find(e => e.name === this._activeVenvName)
+            : null;
+        const activeRuntimeId = activeEnv ? activeEnv.runtime_id : null;
+
+        // Build runtime nodes, sorted alphabetically; only expand the active runtime
         const runtimeNodes = this._runtimes
             .slice().sort((a, b) => a.display_name.localeCompare(b.display_name))
             .map(rt => ({
@@ -153,7 +159,7 @@ export class ExplorerPanel {
                 key: `runtime:${rt.runtime_id}`,
                 icon: 'fa-solid fa-layer-group',
                 folder: true,
-                expanded: true,
+                expanded: rt.runtime_id === activeRuntimeId,
                 children: (envsByRuntime[rt.runtime_id] || [])
                     .slice().sort((a, b) => a.name.localeCompare(b.name))
                     .map(env => ({
@@ -224,7 +230,7 @@ export class ExplorerPanel {
                         const resp = await fetch(`api/projects/${encodeURIComponent(projectId)}/notebooks`);
                         const notebooks = await resp.json();
                         return notebooks.map(nb => ({
-                            title: nb.name.replace(/\.ipynb$/, ''),
+                            title: nb.name,
                             key: `notebook:${projectId}:${nb.name}`,
                             icon: 'fa-solid fa-file-code',
                         }));
@@ -366,7 +372,7 @@ export class ExplorerPanel {
     _showProjectsRootDetail() {
         this._detailEl.innerHTML = '';
 
-        const header = this._createDetailHeader('Projects');
+        const header = this._createDetailHeader('Projects', 'fa-solid fa-folder');
         this._detailEl.appendChild(header);
 
         const form = document.createElement('div');
@@ -402,7 +408,7 @@ export class ExplorerPanel {
     _showEnvsRootDetail() {
         this._detailEl.innerHTML = '';
 
-        const header = this._createDetailHeader('Environments');
+        const header = this._createDetailHeader('Environments', 'fa-solid fa-cubes');
         this._detailEl.appendChild(header);
 
         this._buildEnvCreateForm(this._detailEl);
@@ -411,7 +417,7 @@ export class ExplorerPanel {
     _showRuntimeDetail(runtimeId, displayName) {
         this._detailEl.innerHTML = '';
 
-        const header = this._createDetailHeader(displayName || runtimeId);
+        const header = this._createDetailHeader(displayName || runtimeId, 'fa-solid fa-layer-group');
         this._detailEl.appendChild(header);
 
         this._buildEnvCreateForm(this._detailEl, runtimeId);
@@ -486,7 +492,7 @@ export class ExplorerPanel {
     _showProjectDetail(projectId) {
         this._detailEl.innerHTML = '';
 
-        const header = this._createDetailHeader(`📁 ${projectId}`);
+        const header = this._createDetailHeader(projectId, 'fa-solid fa-folder-open');
         this._detailEl.appendChild(header);
 
         const form = document.createElement('div');
@@ -522,8 +528,8 @@ export class ExplorerPanel {
     async _showNotebookDetail(projectId, notebookName) {
         this._detailEl.innerHTML = '';
 
-        const displayName = notebookName.replace(/\.ipynb$/, '');
-        const header = this._createDetailHeader(`📓 ${displayName}`);
+        const displayName = notebookName;
+        const header = this._createDetailHeader(displayName, 'fa-solid fa-file-code');
         this._detailEl.appendChild(header);
 
         const meta = document.createElement('div');
@@ -618,7 +624,7 @@ export class ExplorerPanel {
     _showEnvDetail(envName, runtimeId, displayName) {
         this._detailEl.innerHTML = '';
 
-        const header = this._createDetailHeader(`🔧 ${envName}`);
+        const header = this._createDetailHeader(envName, 'fa-solid fa-cube');
         this._detailEl.appendChild(header);
 
         if (displayName) {
@@ -685,7 +691,7 @@ export class ExplorerPanel {
     async _showEnvPackages(envName, runtimeId) {
         this._detailEl.innerHTML = '';
 
-        const header = this._createDetailHeader(`📦 ${envName} — Packages`);
+        const header = this._createDetailHeader(`${envName} — Packages`, 'fa-solid fa-box-open');
         this._detailEl.appendChild(header);
 
         const backBtn = document.createElement('button');
@@ -876,7 +882,7 @@ export class ExplorerPanel {
             const projectNode = this._tree.findKey(`project:${projectId}`);
             if (projectNode) {
                 projectNode.addChildren([{
-                    title: nbName.replace(/\.ipynb$/, ''),
+                    title: nbName,
                     key: `notebook:${projectId}:${nbName}`,
                     icon: 'fa-solid fa-file-code',
                 }]);
@@ -1002,10 +1008,17 @@ export class ExplorerPanel {
         return rt ? rt.display_name : runtimeId;
     }
 
-    _createDetailHeader(text) {
+    _createDetailHeader(text, iconClass = null) {
         const h = document.createElement('div');
         h.className = 'explorer-detail-header';
-        h.textContent = text;
+        if (iconClass) {
+            const icon = document.createElement('i');
+            icon.className = iconClass;
+            h.appendChild(icon);
+            h.appendChild(document.createTextNode(` ${text}`));
+        } else {
+            h.textContent = text;
+        }
         return h;
     }
 }

@@ -65,6 +65,10 @@
     margin-bottom: 8px;
 }
 
+.explorer-detail-header i {
+    margin-right: 4px;
+}
+
 .explorer-detail-meta {
     font-size: 12px;
     color: var(--text-muted);
@@ -267,37 +271,38 @@
 }
 
 /* Folder icons */
-#explorerTree .fa-folder {
-    color: #eec541 !important;
-    -webkit-text-stroke: 1px #666666;
-    paint-order: stroke fill;
-}
-
-#explorerTree i.fa-folder-open,
-#explorerTree .fa-folder-open {
+#explorer-panel .fa-folder,
+#explorer-panel .fa-folder-open {
     color: #eec541 !important;
     -webkit-text-stroke: 1px #666666;
     paint-order: stroke fill;
 }
 
 /* File icons */
-#explorerTree .fa-file-code {
+#explorer-panel .fa-file-code {
     color: #fff9ddab !important;
     -webkit-text-stroke: 1px #666666;
     paint-order: stroke fill;
 }
 
 /* Cube icons (environments) */
-#explorerTree .fa-cube,
-#explorerTree .fa-cubes {
+#explorer-panel .fa-cube,
+#explorer-panel .fa-cubes {
     color: #90d490 !important;
     -webkit-text-stroke: 1px #666666;
     paint-order: stroke fill;
 }
 
 /* Layer group icons (runtimes) */
-#explorerTree .fa-layer-group {
+#explorer-panel .fa-layer-group {
     color: #7ec8e3 !important;
+    -webkit-text-stroke: 1px #666666;
+    paint-order: stroke fill;
+}
+
+/* Package icons */
+#explorer-panel .fa-box-open {
+    color: #c4a6e0 !important;
     -webkit-text-stroke: 1px #666666;
     paint-order: stroke fill;
 }

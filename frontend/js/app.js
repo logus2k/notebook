@@ -67,7 +67,10 @@ class App {
             document.getElementById('toolbar'),
             this._client,
             {
-                onBrowse: () => this._explorerPanel.open({ currentProject: this._currentProject, currentNotebook: this._currentNotebook }),
+                onBrowse: () => {
+                    this._explorerPanel.setActiveVenv(this._activeVenv ? this._activeVenv.name : null);
+                    this._explorerPanel.open({ currentProject: this._currentProject, currentNotebook: this._currentNotebook });
+                },
                 onImport: () => this._onImportNotebook(),
                 onSave: () => this._editor.save(),
                 onExport: () => this._editor.export(),
