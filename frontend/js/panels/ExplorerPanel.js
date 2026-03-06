@@ -709,7 +709,7 @@ export class ExplorerPanel {
             actions.className = 'explorer-detail-actions';
             const selectBtn = document.createElement('button');
             selectBtn.className = 'explorer-btn primary';
-            selectBtn.textContent = 'Use This Environment';
+            selectBtn.textContent = 'Activate Environment';
             selectBtn.addEventListener('click', () => {
                 this._activeVenvName = envName;
                 if (this._callbacks.onVenvSelect) {
