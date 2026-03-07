@@ -1,5 +1,5 @@
 /**
- * NotebookViewer - Read-only Jupyter notebook renderer.
+ * NotebookViewer - Read-only Jupyter notebook renderer with theme support.
  *
  * Dependencies (loaded as globals before this script):
  *   - marked.min.js          (global: marked)
@@ -10,10 +10,49 @@
  *
  * Usage:
  *   NotebookViewer.render('#container', '/path/to/notebook.ipynb');
- *   NotebookViewer.render('#container', '/path/to/notebook.ipynb', { showCellNumbers: true });
+ *   NotebookViewer.render('#container', '/path/to/notebook.ipynb', 'dark');
+ *   NotebookViewer.render('#container', '/path/to/notebook.ipynb', { theme: 'presentation' });
  */
 (function (root) {
     'use strict';
+
+    // ── Default theme (embedded fallback) ─────────────────────────────
+
+    const DEFAULT_THEME = {
+        name: 'Default',
+        colors: {
+            scheme: 'light', background: '#ffffff', pageBg: '#f5f5f5',
+            text: '#1d1d1d', textMuted: '#888888', cellBorder: '#e8e8e8',
+            codeBg: '#f7f7f7', outputBg: '#ffffff', prompt: '#2069c0',
+            resultText: '#2069c0', errorText: '#d32f2f', link: '#2069c0',
+        },
+        cells: {
+            borders: true, leftBar: true,
+            leftBarColors: { code: '#2069c0', markdown: '#4caf50', raw: '#999999' },
+            numbering: false, spacing: 0,
+        },
+        code: {
+            lineNumbers: false, prompt: true, copyButton: true,
+            font: '"JetBrains Mono", "Fira Code", "Consolas", monospace',
+        },
+        output: {
+            copyButton: true, collapsible: true, maxHeight: 500, imageShadow: false,
+        },
+        markdown: { toc: false, anchorLinks: true },
+        page: { maxWidth: '960px', header: true, printStyles: true },
+    };
+
+    function mergeDeep(target, source) {
+        const out = Object.assign({}, target);
+        for (const key of Object.keys(source)) {
+            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                out[key] = mergeDeep(target[key] || {}, source[key]);
+            } else {
+                out[key] = source[key];
+            }
+        }
+        return out;
+    }
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -24,6 +63,31 @@
 
     function escapeHtml(s) {
         return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function slugify(text) {
+        return text.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    // ── Copy button helper ────────────────────────────────────────────
+
+    const COPY_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    const CHECK_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2a7a2a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 6"/></svg>';
+
+    function createCopyBtn(getText) {
+        const btn = document.createElement('button');
+        btn.className = 'nbv-copy-btn';
+        btn.innerHTML = COPY_ICON;
+        btn.title = 'Copy';
+        btn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            const text = typeof getText === 'function' ? getText() : getText;
+            navigator.clipboard.writeText(text).then(() => {
+                btn.innerHTML = CHECK_ICON;
+                setTimeout(() => { btn.innerHTML = COPY_ICON; }, 1500);
+            });
+        });
+        return btn;
     }
 
     // ── ANSI → HTML ─────────────────────────────────────────────────────
@@ -99,7 +163,6 @@
         return html;
     }
 
-    // Process \r carriage returns (for saved tqdm / progress bar output)
     function processCarriageReturns(text) {
         const result = [];
         let current = '';
@@ -115,19 +178,87 @@
         return result.join('\n');
     }
 
+    // ── Line numbers helper ─────────────────────────────────────────────
+
+    function addLineNumbers(source) {
+        const lines = source.split('\n');
+        const count = lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
+        const gutter = document.createElement('div');
+        gutter.className = 'nbv-line-numbers';
+        for (let i = 1; i <= count; i++) {
+            const ln = document.createElement('span');
+            ln.textContent = i;
+            gutter.appendChild(ln);
+        }
+        return gutter;
+    }
+
+    // ── TOC builder ─────────────────────────────────────────────────────
+
+    function buildToc(container) {
+        const headings = container.querySelectorAll('.nbv-markdown h1, .nbv-markdown h2, .nbv-markdown h3');
+        if (headings.length === 0) return null;
+
+        const toc = document.createElement('nav');
+        toc.className = 'nbv-toc';
+        const title = document.createElement('div');
+        title.className = 'nbv-toc-title';
+        title.textContent = 'Table of Contents';
+        toc.appendChild(title);
+
+        const list = document.createElement('ul');
+        headings.forEach((h) => {
+            const li = document.createElement('li');
+            li.className = 'nbv-toc-' + h.tagName.toLowerCase();
+            const a = document.createElement('a');
+            a.textContent = h.textContent.replace(/#$/, '').trim();
+            a.href = '#' + h.id;
+            li.appendChild(a);
+            list.appendChild(li);
+        });
+        toc.appendChild(list);
+        return toc;
+    }
+
     // ── Rendering ───────────────────────────────────────────────────────
 
-    function renderMarkdownCell(source) {
-        const div = document.createElement('div');
-        div.className = 'nbv-cell nbv-markdown';
-        if (typeof marked !== 'undefined') {
-            div.innerHTML = marked.parse(source);
-        } else {
-            div.textContent = source;
+    function renderMarkdownCell(source, theme, cellIndex) {
+        const cell = document.createElement('div');
+        cell.className = 'nbv-cell nbv-markdown';
+        if (theme.cells.leftBar) {
+            cell.style.setProperty('--nbv-left-bar-color', theme.cells.leftBarColors.markdown);
         }
-        // Render LaTeX in markdown
+
+        if (theme.cells.numbering) {
+            const num = document.createElement('span');
+            num.className = 'nbv-cell-number';
+            num.textContent = cellIndex + 1;
+            cell.appendChild(num);
+        }
+
+        const content = document.createElement('div');
+        content.className = 'nbv-markdown-content';
+
+        if (typeof marked !== 'undefined') {
+            content.innerHTML = marked.parse(source);
+        } else {
+            content.textContent = source;
+        }
+
+        if (theme.markdown.anchorLinks) {
+            content.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((h) => {
+                const id = slugify(h.textContent);
+                h.id = id;
+                const anchor = document.createElement('a');
+                anchor.className = 'nbv-anchor';
+                anchor.href = '#' + id;
+                anchor.textContent = '#';
+                h.appendChild(anchor);
+            });
+        }
+
         if (typeof renderMathInElement !== 'undefined') {
-            renderMathInElement(div, {
+            renderMathInElement(content, {
                 delimiters: [
                     { left: '$$', right: '$$', display: true },
                     { left: '$', right: '$', display: false },
@@ -137,41 +268,75 @@
                 throwOnError: false,
             });
         }
-        return div;
+
+        cell.appendChild(content);
+        return cell;
     }
 
-    function renderCodeCell(source, executionCount, outputs) {
+    function renderCodeCell(source, executionCount, outputs, theme, cellIndex) {
         const cell = document.createElement('div');
         cell.className = 'nbv-cell nbv-code';
+        if (theme.cells.leftBar) {
+            cell.style.setProperty('--nbv-left-bar-color', theme.cells.leftBarColors.code);
+        }
+
+        if (theme.cells.numbering) {
+            const num = document.createElement('span');
+            num.className = 'nbv-cell-number';
+            num.textContent = cellIndex + 1;
+            cell.appendChild(num);
+        }
 
         // Input area
         const input = document.createElement('div');
         input.className = 'nbv-input';
 
-        const prompt = document.createElement('span');
-        prompt.className = 'nbv-prompt';
-        prompt.textContent = executionCount != null ? `[${executionCount}]` : '[ ]';
+        if (theme.code.prompt) {
+            const prompt = document.createElement('span');
+            prompt.className = 'nbv-prompt';
+            prompt.textContent = executionCount != null ? `[${executionCount}]` : '[ ]';
+            input.appendChild(prompt);
+        }
 
-        const code = document.createElement('pre');
+        const codeWrap = document.createElement('div');
+        codeWrap.className = 'nbv-code-wrap';
+
+        if (theme.code.lineNumbers) {
+            codeWrap.appendChild(addLineNumbers(source));
+        }
+
+        const pre = document.createElement('pre');
         const codeEl = document.createElement('code');
         codeEl.className = 'language-python';
         codeEl.textContent = source;
         if (typeof hljs !== 'undefined') {
             hljs.highlightElement(codeEl);
         }
-        code.appendChild(codeEl);
-        input.append(prompt, code);
+        pre.appendChild(codeEl);
+        codeWrap.appendChild(pre);
+        input.appendChild(codeWrap);
+
+        if (theme.code.copyButton) {
+            input.appendChild(createCopyBtn(() => source));
+        }
+
         cell.appendChild(input);
 
         // Outputs
         if (outputs && outputs.length > 0) {
             const outputArea = document.createElement('div');
             outputArea.className = 'nbv-output';
+
             for (const out of outputs) {
-                const rendered = renderOutput(out);
+                const rendered = renderOutput(out, theme);
                 if (rendered) outputArea.appendChild(rendered);
             }
+
             if (outputArea.children.length > 0) {
+                if (theme.output.collapsible && theme.output.maxHeight) {
+                    outputArea.style.maxHeight = theme.output.maxHeight + 'px';
+                    outputArea.classList.add('nbv-output-collapsible');
+                }
                 cell.appendChild(outputArea);
             }
         }
@@ -179,32 +344,45 @@
         return cell;
     }
 
-    function renderOutput(output) {
+    function renderOutput(output, theme) {
         const type = output.output_type;
-        if (type === 'stream') return renderStreamOutput(output);
-        if (type === 'execute_result' || type === 'display_data') return renderRichOutput(output);
-        if (type === 'error') return renderErrorOutput(output);
+        if (type === 'stream') return renderStreamOutput(output, theme);
+        if (type === 'execute_result' || type === 'display_data') return renderRichOutput(output, theme);
+        if (type === 'error') return renderErrorOutput(output, theme);
         return null;
     }
 
-    function renderStreamOutput(output) {
+    function renderStreamOutput(output, theme) {
         const text = textValue(output.text);
         const processed = processCarriageReturns(text);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'nbv-stream-wrapper';
+
         const div = document.createElement('div');
         div.className = 'nbv-stream' + (output.name === 'stderr' ? ' nbv-stderr' : '');
         div.innerHTML = ansiToHtml(processed);
-        return div;
+        wrapper.appendChild(div);
+
+        if (theme.output.copyButton) {
+            wrapper.appendChild(createCopyBtn(() => div.textContent));
+        }
+        return wrapper;
     }
 
-    function renderRichOutput(output) {
+    function renderRichOutput(output, theme) {
         const data = output.data || {};
 
-        // Priority: HTML > LaTeX > image > SVG > text
         if (data['text/html']) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'nbv-html-wrapper';
             const div = document.createElement('div');
             div.className = 'nbv-html';
             div.innerHTML = textValue(data['text/html']);
-            return div;
+            wrapper.appendChild(div);
+            if (theme.output.copyButton) {
+                wrapper.appendChild(createCopyBtn(() => div.textContent));
+            }
+            return wrapper;
         }
         if (data['text/latex']) {
             const div = document.createElement('div');
@@ -224,16 +402,22 @@
             return div;
         }
         if (data['image/png']) {
+            const div = document.createElement('div');
+            div.className = 'nbv-image-wrapper';
             const img = document.createElement('img');
-            img.className = 'nbv-image';
+            img.className = 'nbv-image' + (theme.output.imageShadow ? ' nbv-image-shadow' : '');
             img.src = 'data:image/png;base64,' + textValue(data['image/png']);
-            return img;
+            div.appendChild(img);
+            return div;
         }
         if (data['image/jpeg']) {
+            const div = document.createElement('div');
+            div.className = 'nbv-image-wrapper';
             const img = document.createElement('img');
-            img.className = 'nbv-image';
+            img.className = 'nbv-image' + (theme.output.imageShadow ? ' nbv-image-shadow' : '');
             img.src = 'data:image/jpeg;base64,' + textValue(data['image/jpeg']);
-            return img;
+            div.appendChild(img);
+            return div;
         }
         if (data['image/svg+xml']) {
             const div = document.createElement('div');
@@ -242,15 +426,24 @@
             return div;
         }
         if (data['text/plain']) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'nbv-text-wrapper';
             const div = document.createElement('div');
             div.className = 'nbv-text';
             div.textContent = textValue(data['text/plain']);
-            return div;
+            wrapper.appendChild(div);
+            if (theme.output.copyButton) {
+                wrapper.appendChild(createCopyBtn(() => div.textContent));
+            }
+            return wrapper;
         }
         return null;
     }
 
-    function renderErrorOutput(output) {
+    function renderErrorOutput(output, theme) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'nbv-error-wrapper';
+
         const div = document.createElement('div');
         div.className = 'nbv-error';
 
@@ -265,21 +458,98 @@
             tb.innerHTML = ansiToHtml(output.traceback.join('\n'));
             div.appendChild(tb);
         }
-        return div;
+
+        wrapper.appendChild(div);
+        if (theme.output.copyButton) {
+            wrapper.appendChild(createCopyBtn(() => div.textContent));
+        }
+        return wrapper;
     }
 
-    function renderRawCell(source) {
-        const div = document.createElement('div');
-        div.className = 'nbv-cell nbv-raw';
-        div.textContent = source;
-        return div;
+    function renderRawCell(source, theme, cellIndex) {
+        const cell = document.createElement('div');
+        cell.className = 'nbv-cell nbv-raw';
+        if (theme.cells.leftBar) {
+            cell.style.setProperty('--nbv-left-bar-color', theme.cells.leftBarColors.raw);
+        }
+        if (theme.cells.numbering) {
+            const num = document.createElement('span');
+            num.className = 'nbv-cell-number';
+            num.textContent = cellIndex + 1;
+            cell.appendChild(num);
+        }
+        cell.appendChild(document.createTextNode(source));
+        return cell;
+    }
+
+    // ── Header ──────────────────────────────────────────────────────────
+
+    function renderHeader(container, notebook) {
+        const header = document.createElement('div');
+        header.className = 'nbv-header';
+
+        const meta = notebook.metadata || {};
+        const kernelInfo = meta.kernelspec || {};
+        const langInfo = meta.language_info || {};
+
+        const title = document.createElement('div');
+        title.className = 'nbv-header-title';
+        const params = new URLSearchParams(window.location.search);
+        const nbName = params.get('notebook') || kernelInfo.display_name || 'Notebook';
+        title.textContent = nbName.replace(/\.ipynb$/, '');
+        header.appendChild(title);
+
+        const info = document.createElement('div');
+        info.className = 'nbv-header-info';
+        const parts = [];
+        if (langInfo.name) parts.push(langInfo.name);
+        if (langInfo.version) parts.push('v' + langInfo.version);
+        if (kernelInfo.display_name) parts.push(kernelInfo.display_name);
+        const cellCount = (notebook.cells || []).length;
+        parts.push(cellCount + ' cell' + (cellCount !== 1 ? 's' : ''));
+        info.textContent = parts.join('  |  ');
+        header.appendChild(info);
+
+        container.appendChild(header);
+    }
+
+    // ── Apply theme CSS custom properties ───────────────────────────────
+
+    function applyThemeVars(container, theme) {
+        const c = theme.colors;
+        container.style.setProperty('--nbv-bg', c.background);
+        container.style.setProperty('--nbv-page-bg', c.pageBg);
+        container.style.setProperty('--nbv-text', c.text);
+        container.style.setProperty('--nbv-text-muted', c.textMuted);
+        container.style.setProperty('--nbv-cell-border', c.cellBorder);
+        container.style.setProperty('--nbv-code-bg', c.codeBg);
+        container.style.setProperty('--nbv-output-bg', c.outputBg);
+        container.style.setProperty('--nbv-prompt', c.prompt);
+        container.style.setProperty('--nbv-result-text', c.resultText);
+        container.style.setProperty('--nbv-error-text', c.errorText);
+        container.style.setProperty('--nbv-link', c.link);
+        container.style.setProperty('--nbv-max-width', theme.page.maxWidth);
+        container.style.setProperty('--nbv-code-font', theme.code.font);
+        container.style.setProperty('--nbv-cell-spacing', theme.cells.spacing + 'px');
+
+        if (c.scheme === 'dark') container.classList.add('nbv-dark');
+        if (theme.cells.leftBar) container.classList.add('nbv-left-bar');
+        if (theme.cells.borders) container.classList.add('nbv-cell-borders');
     }
 
     // ── Main ────────────────────────────────────────────────────────────
 
-    function renderNotebook(container, notebook, _opts) {
+    function renderNotebook(container, notebook, theme) {
         container.innerHTML = '';
         container.classList.add('nbv-container');
+        applyThemeVars(container, theme);
+
+        if (theme.page.header) {
+            renderHeader(container, notebook);
+        }
+
+        const cellsWrapper = document.createElement('div');
+        cellsWrapper.className = 'nbv-cells';
 
         const cells = notebook.cells || [];
         for (let i = 0; i < cells.length; i++) {
@@ -288,15 +558,51 @@
             let el;
 
             if (cell.cell_type === 'markdown') {
-                el = renderMarkdownCell(source);
+                el = renderMarkdownCell(source, theme, i);
             } else if (cell.cell_type === 'code') {
-                const ec = cell.execution_count;
-                el = renderCodeCell(source, ec, cell.outputs);
+                el = renderCodeCell(source, cell.execution_count, cell.outputs, theme, i);
             } else {
-                el = renderRawCell(source);
+                el = renderRawCell(source, theme, i);
             }
 
-            container.appendChild(el);
+            cellsWrapper.appendChild(el);
+        }
+
+        container.appendChild(cellsWrapper);
+
+        // Expand buttons for collapsible outputs
+        if (theme.output.collapsible) {
+            cellsWrapper.querySelectorAll('.nbv-output-collapsible').forEach((outputEl) => {
+                if (outputEl.scrollHeight > theme.output.maxHeight) {
+                    const expandBtn = document.createElement('button');
+                    expandBtn.className = 'nbv-expand-btn';
+                    expandBtn.textContent = 'Show more';
+                    expandBtn.addEventListener('click', () => {
+                        if (outputEl.classList.contains('nbv-output-expanded')) {
+                            outputEl.classList.remove('nbv-output-expanded');
+                            outputEl.style.maxHeight = theme.output.maxHeight + 'px';
+                            expandBtn.textContent = 'Show more';
+                        } else {
+                            outputEl.classList.add('nbv-output-expanded');
+                            outputEl.style.maxHeight = 'none';
+                            expandBtn.textContent = 'Show less';
+                        }
+                    });
+                    outputEl.parentElement.appendChild(expandBtn);
+                }
+            });
+        }
+
+        // TOC — fixed sidebar outside the container
+        if (theme.markdown.toc) {
+            const toc = buildToc(cellsWrapper);
+            if (toc) {
+                container.classList.add('nbv-has-toc');
+                // Remove any previous TOC
+                const prev = container.parentElement.querySelector('.nbv-toc');
+                if (prev) prev.remove();
+                container.parentElement.insertBefore(toc, container);
+            }
         }
     }
 
@@ -307,9 +613,9 @@
          * Render a notebook into a container.
          * @param {string|HTMLElement} selector - CSS selector or element
          * @param {string|object} source - URL to .ipynb file, or notebook JSON object
-         * @param {object} [opts] - Options (reserved for future use)
+         * @param {string|object} [themeOrOpts] - Theme name (string), theme object, or opts with .theme
          */
-        render: async function (selector, source, opts) {
+        render: async function (selector, source, themeOrOpts) {
             const container = typeof selector === 'string'
                 ? document.querySelector(selector) : selector;
             if (!container) {
@@ -317,9 +623,39 @@
                 return;
             }
 
+            // Resolve theme
+            let theme = DEFAULT_THEME;
+            if (typeof themeOrOpts === 'string') {
+                try {
+                    const resp = await fetch('static/themes/' + themeOrOpts + '.json');
+                    if (resp.ok) {
+                        theme = mergeDeep(DEFAULT_THEME, await resp.json());
+                    } else {
+                        console.warn('[NotebookViewer] Theme not found:', themeOrOpts, '— using default');
+                    }
+                } catch (e) {
+                    console.warn('[NotebookViewer] Failed to load theme:', e.message);
+                }
+            } else if (themeOrOpts && typeof themeOrOpts === 'object') {
+                if (themeOrOpts.colors || themeOrOpts.cells || themeOrOpts.code) {
+                    theme = mergeDeep(DEFAULT_THEME, themeOrOpts);
+                } else if (themeOrOpts.theme) {
+                    if (typeof themeOrOpts.theme === 'string') {
+                        try {
+                            const resp = await fetch('static/themes/' + themeOrOpts.theme + '.json');
+                            if (resp.ok) {
+                                theme = mergeDeep(DEFAULT_THEME, await resp.json());
+                            }
+                        } catch (_) { /* use default */ }
+                    } else {
+                        theme = mergeDeep(DEFAULT_THEME, themeOrOpts.theme);
+                    }
+                }
+            }
+
+            // Resolve notebook
             let notebook;
             if (typeof source === 'string') {
-                // Fetch from URL
                 try {
                     const resp = await fetch(source);
                     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -333,16 +669,21 @@
                 notebook = source;
             }
 
-            renderNotebook(container, notebook, opts || {});
+            renderNotebook(container, notebook, theme);
         },
 
-        /** Render from a notebook JSON object (synchronous). */
-        renderJSON: function (selector, notebook, opts) {
+        renderJSON: function (selector, notebook, themeOrOpts) {
             const container = typeof selector === 'string'
                 ? document.querySelector(selector) : selector;
             if (!container) return;
-            renderNotebook(container, notebook, opts || {});
-        }
+            let theme = DEFAULT_THEME;
+            if (themeOrOpts && typeof themeOrOpts === 'object') {
+                theme = mergeDeep(DEFAULT_THEME, themeOrOpts);
+            }
+            renderNotebook(container, notebook, theme);
+        },
+
+        defaultTheme: DEFAULT_THEME,
     };
 
 })(typeof globalThis !== 'undefined' ? globalThis : window);

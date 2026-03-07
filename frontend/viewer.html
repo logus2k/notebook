@@ -42,18 +42,19 @@
     <script src="static/notebook-viewer.js"></script>
 
     <script>
-        // Read project and notebook from query params:
-        //   /viewer.html?project=Deep+Learning+Advanced+Topics&notebook=jena_climate_v01.ipynb
+        // Query params:
+        //   /viewer?project=ProjectName&notebook=Notebook.ipynb&theme=dark
         const params = new URLSearchParams(window.location.search);
         const project = params.get('project');
         const notebook = params.get('notebook');
+        const theme = params.get('theme') || 'default';
 
         if (project && notebook) {
             const url = `api/projects/${encodeURIComponent(project)}/notebooks/${encodeURIComponent(notebook)}`;
-            NotebookViewer.render('#viewer', url);
+            NotebookViewer.render('#viewer', url, theme);
         } else {
             document.getElementById('viewer').innerHTML =
-                '<p style="padding:24px;color:#888;">Usage: <code>viewer.html?project=ProjectName&amp;notebook=Notebook.ipynb</code></p>';
+                '<p style="padding:24px;color:#888;">Usage: <code>viewer?project=ProjectName&amp;notebook=Notebook.ipynb&amp;theme=default</code></p>';
         }
     </script>
 </body>
