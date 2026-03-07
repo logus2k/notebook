@@ -204,17 +204,21 @@
         const toc = document.createElement('nav');
         toc.className = 'nbv-toc';
 
-        // Toggle button inside TOC
+        const header = document.createElement('div');
+        header.className = 'nbv-toc-header';
+
         const innerToggle = document.createElement('button');
         innerToggle.className = 'nbv-toc-toggle';
         innerToggle.innerHTML = BURGER_ICON;
         innerToggle.title = 'Collapse table of contents';
-        toc.appendChild(innerToggle);
+        header.appendChild(innerToggle);
 
         const title = document.createElement('div');
         title.className = 'nbv-toc-title';
         title.textContent = 'Table of Contents';
-        toc.appendChild(title);
+        header.appendChild(title);
+
+        toc.appendChild(header);
 
         const list = document.createElement('ul');
         headings.forEach((h) => {

@@ -443,11 +443,19 @@
 /* When TOC is expanded, move toggle inside it */
 .nbv-toc .nbv-toc-toggle {
     position: static;
-    float: right;
     box-shadow: none;
     border: none;
-    margin: -4px -8px 0 0;
     background: transparent;
+    margin: 0;
+    width: auto;
+    height: auto;
+}
+
+.nbv-toc-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
 }
 
 .nbv-toc-title {
@@ -456,7 +464,6 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--nbv-text-muted, #888);
-    margin-bottom: 8px;
 }
 
 .nbv-toc ul {
