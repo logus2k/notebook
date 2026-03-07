@@ -25,7 +25,8 @@
         "lineNumbers": true,
         "prompt": true,
         "copyButton": true,
-        "font": "\"JetBrains Mono\", \"Fira Code\", \"Consolas\", monospace"
+        "font": "\"JetBrains Mono\", \"Fira Code\", \"Consolas\", monospace",
+        "highlightTheme": "tomorrow"
     },
     "output": {
         "copyButton": true,

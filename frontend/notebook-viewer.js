@@ -679,6 +679,14 @@
         if (c.scheme === 'dark') container.classList.add('nbv-dark');
         if (theme.cells.leftBar) container.classList.add('nbv-left-bar');
         if (theme.cells.borders) container.classList.add('nbv-cell-borders');
+
+        // Swap highlight.js theme if specified
+        if (theme.code.highlightTheme) {
+            const existing = document.querySelector('link[href*="vendor/"][href$=".min.css"]:not([href*="katex"])');
+            if (existing) {
+                existing.href = existing.href.replace(/\/[^/]+\.min\.css$/, '/' + theme.code.highlightTheme + '.min.css');
+            }
+        }
     }
 
     // ── Main ────────────────────────────────────────────────────────────
