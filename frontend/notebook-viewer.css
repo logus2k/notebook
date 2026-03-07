@@ -206,7 +206,7 @@
     align-items: center;
     justify-content: center;
     background: var(--nbv-bg, rgba(255, 255, 255, 0.9));
-    border: 1px solid var(--nbv-cell-border, #ddd);
+    border: none;
     border-radius: 4px;
     cursor: pointer;
     color: var(--nbv-text-muted, #888);
