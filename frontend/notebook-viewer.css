@@ -388,8 +388,9 @@
     border: 1px solid var(--nbv-cell-border, #e8e8e8);
     border-radius: 6px;
     z-index: 5;
-    max-height: calc(100vh - 48px);
-    overflow-y: auto;
+    max-height: calc(100vh - 24px);
+    overflow-y: scroll;
+    overscroll-behavior: contain;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
     transition: width 0.25s ease, padding 0.25s ease, opacity 0.2s ease;
     padding-bottom: 24px;
