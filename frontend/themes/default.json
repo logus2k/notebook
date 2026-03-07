@@ -29,7 +29,7 @@
     },
     "output": {
         "copyButton": true,
-        "collapsible": true,
+        "collapsible": false,
         "maxHeight": 500,
         "imageShadow": false
     },

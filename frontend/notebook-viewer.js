@@ -36,7 +36,7 @@
             font: '"JetBrains Mono", "Fira Code", "Consolas", monospace',
         },
         output: {
-            copyButton: true, collapsible: true, maxHeight: 500, imageShadow: false,
+            copyButton: true, collapsible: false, maxHeight: 500, imageShadow: false,
         },
         markdown: { toc: false, anchorLinks: true },
         page: { maxWidth: '960px', header: true, printStyles: true },
@@ -195,12 +195,22 @@
 
     // ── TOC builder ─────────────────────────────────────────────────────
 
-    function buildToc(container) {
+    const BURGER_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+
+    function buildToc(container, nbvContainer) {
         const headings = container.querySelectorAll('.nbv-markdown h1, .nbv-markdown h2, .nbv-markdown h3');
         if (headings.length === 0) return null;
 
         const toc = document.createElement('nav');
         toc.className = 'nbv-toc';
+
+        // Toggle button inside TOC
+        const innerToggle = document.createElement('button');
+        innerToggle.className = 'nbv-toc-toggle';
+        innerToggle.innerHTML = BURGER_ICON;
+        innerToggle.title = 'Collapse table of contents';
+        toc.appendChild(innerToggle);
+
         const title = document.createElement('div');
         title.className = 'nbv-toc-title';
         title.textContent = 'Table of Contents';
@@ -217,7 +227,30 @@
             list.appendChild(li);
         });
         toc.appendChild(list);
-        return toc;
+
+        // External toggle button (visible when TOC is collapsed)
+        const outerToggle = document.createElement('button');
+        outerToggle.className = 'nbv-toc-toggle';
+        outerToggle.innerHTML = BURGER_ICON;
+        outerToggle.title = 'Show table of contents';
+        outerToggle.style.display = 'none';
+
+        function collapse() {
+            toc.classList.add('nbv-toc-collapsed');
+            nbvContainer.classList.add('nbv-toc-hidden');
+            outerToggle.style.display = '';
+        }
+
+        function expand() {
+            toc.classList.remove('nbv-toc-collapsed');
+            nbvContainer.classList.remove('nbv-toc-hidden');
+            outerToggle.style.display = 'none';
+        }
+
+        innerToggle.addEventListener('click', collapse);
+        outerToggle.addEventListener('click', expand);
+
+        return { toc, outerToggle };
     }
 
     // ── Rendering ───────────────────────────────────────────────────────
@@ -595,13 +628,14 @@
 
         // TOC — fixed sidebar outside the container
         if (theme.markdown.toc) {
-            const toc = buildToc(cellsWrapper);
-            if (toc) {
+            const result = buildToc(cellsWrapper, container);
+            if (result) {
                 container.classList.add('nbv-has-toc');
-                // Remove any previous TOC
-                const prev = container.parentElement.querySelector('.nbv-toc');
-                if (prev) prev.remove();
-                container.parentElement.insertBefore(toc, container);
+                // Remove any previous TOC elements
+                const parent = container.parentElement;
+                parent.querySelectorAll('.nbv-toc, .nbv-toc-toggle').forEach(el => el.remove());
+                parent.insertBefore(result.outerToggle, container);
+                parent.insertBefore(result.toc, container);
             }
         }
     }
