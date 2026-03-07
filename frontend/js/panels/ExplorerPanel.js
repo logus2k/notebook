@@ -996,16 +996,17 @@ export class ExplorerPanel {
             allowProposedApi: true,
         });
         term.open(termContainer);
-        // Fit rows to available height (keep cols fixed at 120)
-        const fitRows = () => {
+        // Fit cols and rows to available space
+        const fitTerminal = () => {
             const dims = term._core._renderService.dimensions;
-            if (!dims || !dims.css?.cell?.height) return;
+            if (!dims || !dims.css?.cell?.height || !dims.css?.cell?.width) return;
+            const cols = Math.max(20, Math.floor(termArea.clientWidth / dims.css.cell.width));
             const rows = Math.max(4, Math.floor(termArea.clientHeight / dims.css.cell.height));
-            if (rows !== term.rows) term.resize(120, rows);
+            if (rows !== term.rows || cols !== term.cols) term.resize(cols, rows);
         };
-        const resizeObs = new ResizeObserver(() => fitRows());
+        const resizeObs = new ResizeObserver(() => fitTerminal());
         resizeObs.observe(termArea);
-        fitRows();
+        fitTerminal();
 
         let hasError = false;
         try {
@@ -1087,15 +1088,15 @@ export class ExplorerPanel {
             allowProposedApi: true,
         });
 
-        // Fit rows to container height, keep cols fixed at 120 (matches backend PTY)
-        const fitRows = () => {
+        // Fit cols and rows to container
+        const fitTerminal = () => {
             const core = term._core;
             if (!core?._renderService) return;
-            const cellHeight = core._renderService.dimensions.css.cell.height;
-            if (!cellHeight) return;
-            const availableHeight = termContainer.clientHeight;
-            const rows = Math.max(1, Math.floor(availableHeight / cellHeight));
-            if (rows !== term.rows) term.resize(120, rows);
+            const dims = core._renderService.dimensions;
+            if (!dims?.css?.cell?.height || !dims?.css?.cell?.width) return;
+            const cols = Math.max(20, Math.floor(termContainer.clientWidth / dims.css.cell.width));
+            const rows = Math.max(1, Math.floor(termContainer.clientHeight / dims.css.cell.height));
+            if (rows !== term.rows || cols !== term.cols) term.resize(cols, rows);
         };
 
         let termOpened = false;
@@ -1134,10 +1135,10 @@ export class ExplorerPanel {
                         term.open(termContainer);
                         termOpened = true;
                     }
-                    const resizeObs = new ResizeObserver(() => fitRows());
+                    const resizeObs = new ResizeObserver(() => fitTerminal());
                     resizeObs.observe(panel.content);
                     panel.__resizeObs = resizeObs;
-                    fitRows();
+                    fitTerminal();
                 },
             });
             this._installPanel = floatingPanel;
