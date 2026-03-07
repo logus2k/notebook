@@ -1,5 +1,5 @@
 {
-    "name": "Presentation",
+    "name": "Presentation with TOC",
     "colors": {
         "scheme": "light",
         "background": "#ffffff",
@@ -34,7 +34,7 @@
         "imageShadow": true
     },
     "markdown": {
-        "toc": false,
+        "toc": true,
         "anchorLinks": true
     },
     "page": {
