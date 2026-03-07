@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 from app.managers.venv_manager import VenvManager
@@ -67,11 +68,21 @@ async def list_packages_new(runtime_id: str, name: str):
 @router.post("/envs/{runtime_id:path}/{name}/packages")
 async def install_packages_new(runtime_id: str, name: str, req: PackagesRequest):
     try:
-        return await venv_mgr.env_manager.install_packages(
-            runtime_id, name, req.packages
-        )
-    except (FileNotFoundError, ValueError, RuntimeError) as e:
+        async def generate():
+            async for line in venv_mgr.env_manager.install_packages_stream(
+                runtime_id, name, req.packages
+            ):
+                yield line
+        return StreamingResponse(generate(), media_type="text/plain")
+    except (FileNotFoundError, ValueError) as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/envs/{runtime_id:path}/{name}/packages/cancel")
+async def cancel_install(runtime_id: str, name: str):
+    if await venv_mgr.env_manager.cancel_install(runtime_id, name):
+        return {"status": "cancelled"}
+    raise HTTPException(status_code=404, detail="No active installation found")
 
 
 @router.delete("/envs/{runtime_id:path}/{name}/packages")

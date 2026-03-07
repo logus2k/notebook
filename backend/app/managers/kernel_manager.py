@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Optional
 from dataclasses import dataclass, field
@@ -66,9 +67,15 @@ class KernelManagerService:
             language=kernel_language,
         )
 
+        # Set kernel working directory to the project's notebooks folder
+        from app.config import PROJECTS_DIR
+        kernel_cwd = os.path.join(PROJECTS_DIR, project_id, "notebooks") if project_id else None
+        if not kernel_cwd or not os.path.isdir(kernel_cwd):
+            kernel_cwd = None
+
         # Run blocking kernel start in executor to avoid blocking the event loop
         await asyncio.get_event_loop().run_in_executor(
-            None, km.start_kernel
+            None, lambda: km.start_kernel(cwd=kernel_cwd) if kernel_cwd else km.start_kernel()
         )
 
         # Give kernel process a moment to either start or crash

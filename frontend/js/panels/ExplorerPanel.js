@@ -1002,12 +1002,54 @@ export class ExplorerPanel {
         const tokens = this._parseInstallInput(textarea.value);
         if (!tokens.length) return;
 
-        installBtn.disabled = true;
-        installBtn.textContent = 'Installing...';
+        // Swap Install for Cancel button
+        installBtn.style.display = 'none';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'explorer-btn danger';
+        cancelBtn.textContent = 'Cancel';
+        installBtn.parentNode.insertBefore(cancelBtn, installBtn.nextSibling);
+
+        // Set up xterm.js terminal in the log area
         logArea.className = 'package-install-log visible';
-        logArea.textContent = `> pip install ${tokens.join(' ')}\n\nInstalling...`;
+        logArea.textContent = '';
+        const termContainer = document.createElement('div');
+        termContainer.className = 'package-install-term';
+        logArea.appendChild(termContainer);
+
+        const term = new Terminal({
+            convertEol: false,
+            cursorBlink: false,
+            disableStdin: true,
+            fontSize: 12,
+            fontFamily: 'var(--font-mono), monospace',
+            theme: {
+                background: '#1e1e1e',
+                foreground: '#d4d4d4',
+                cursor: 'transparent',
+            },
+            scrollback: 5000,
+        });
+        const fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+        term.open(termContainer);
+        fitAddon.fit();
+
+        // Re-fit on panel resize
+        const resizeObs = new ResizeObserver(() => fitAddon.fit());
+        resizeObs.observe(termContainer);
+
+        term.writeln(`\x1b[1m> pip install ${tokens.join(' ')}\x1b[0m\r\n`);
 
         const apiBase = `api/envs/${runtimeId}/${envName}/packages`;
+        let hasError = false;
+        let cancelled = false;
+
+        cancelBtn.addEventListener('click', async () => {
+            cancelled = true;
+            cancelBtn.disabled = true;
+            cancelBtn.textContent = 'Cancelling...';
+            await fetch(`${apiBase}/cancel`, { method: 'POST' }).catch(() => {});
+        });
 
         try {
             const resp = await fetch(apiBase, {
@@ -1015,23 +1057,38 @@ export class ExplorerPanel {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ packages: tokens })
             });
-            const result = await resp.json();
 
             if (!resp.ok) {
-                logArea.className = 'package-install-log visible error';
-                logArea.textContent = `> pip install ${tokens.join(' ')}\n\n${result.detail || 'Install failed'}`;
+                const result = await resp.json().catch(() => ({}));
+                term.writeln(`\r\n\x1b[31m${result.detail || 'Install failed'}\x1b[0m`);
+                hasError = true;
             } else {
-                logArea.className = 'package-install-log visible';
-                logArea.textContent = `> pip install ${tokens.join(' ')}\n\n${result.output || 'Done'}`;
-                textarea.value = '';
-                this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const text = decoder.decode(value, { stream: true });
+                    if (text.includes('[ERROR]')) hasError = true;
+                    term.write(text);
+                }
+                if (!hasError && !cancelled) {
+                    textarea.value = '';
+                    // Brief pause so user can see final output before refreshing
+                    await new Promise(r => setTimeout(r, 800));
+                    this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
+                }
             }
         } catch (err) {
-            logArea.className = 'package-install-log visible error';
-            logArea.textContent = `Error: ${err.message}`;
+            term.writeln(`\r\n\x1b[31mError: ${err.message}\x1b[0m`);
+            hasError = true;
         } finally {
-            installBtn.disabled = false;
-            installBtn.textContent = 'Install';
+            if (cancelled) {
+                term.writeln('\r\n\x1b[33m[Cancelled]\x1b[0m');
+            }
+            resizeObs.disconnect();
+            cancelBtn.remove();
+            installBtn.style.display = '';
         }
     }
 

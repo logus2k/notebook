@@ -81,6 +81,7 @@ class EnvironmentManager:
                  registry: Optional[RuntimeRegistry] = None):
         self._environments_dir = environments_dir
         self._registry = registry or RuntimeRegistry()
+        self._install_procs = {}  # key: "runtime_id:env_name" -> asyncio.subprocess.Process
         self._migrate_flat_environments()
         self._repair_environments()
 
@@ -370,6 +371,8 @@ class EnvironmentManager:
 
     async def delete_env(self, runtime_id: str, name: str) -> dict:
         self._validate_name(name)
+        # Cancel any running install before deleting
+        await self.cancel_install(runtime_id, name)
         env_path = self._env_path(runtime_id, name)
         if not os.path.exists(env_path):
             raise FileNotFoundError(f"Environment not found: {name}")
@@ -439,6 +442,74 @@ class EnvironmentManager:
                 f"pip install failed:\n{stderr.decode()}\n{stdout.decode()}"
             )
         return {"installed": packages, "output": stdout.decode()}
+
+    async def install_packages_stream(self, runtime_id: str, name: str,
+                                       packages: list[str]):
+        """Yield pip output lines as they happen."""
+        runtime = self._registry.get_runtime(runtime_id)
+        if not runtime or "package_manager" not in runtime:
+            raise ValueError(f"No package manager for runtime: {runtime_id}")
+        env_path = self._env_path(runtime_id, name)
+        if not os.path.exists(env_path):
+            raise FileNotFoundError(f"Environment not found: {name}")
+        pm = runtime["package_manager"]
+        cmd = self._registry.resolve_template(
+            pm["install_cmd"],
+            env_path=env_path,
+            executable=runtime["executable"],
+        )
+        proc_key = f"{runtime_id}:{name}"
+
+        # Use a pty so pip thinks it's in a real terminal (enables progress bars)
+        import pty
+        import subprocess
+        master_fd, slave_fd = pty.openpty()
+        # Set terminal width so pip formats progress bars reasonably
+        import struct, fcntl, termios
+        winsize = struct.pack('HHHH', 24, 120, 0, 0)
+        fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
+
+        proc = await asyncio.create_subprocess_exec(
+            *cmd, *packages,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            stdin=subprocess.DEVNULL,
+            env={**os.environ, "PYTHONUNBUFFERED": "1", "TERM": "xterm-256color"},
+        )
+        os.close(slave_fd)
+        self._install_procs[proc_key] = proc
+
+        loop = asyncio.get_event_loop()
+        try:
+            while True:
+                try:
+                    chunk = await loop.run_in_executor(
+                        None, lambda: os.read(master_fd, 4096)
+                    )
+                    if not chunk:
+                        break
+                    yield chunk.decode(errors="replace")
+                except OSError:
+                    break
+            await proc.wait()
+            if proc.returncode != 0:
+                yield f"\n[ERROR] pip install exited with code {proc.returncode}\n"
+        finally:
+            os.close(master_fd)
+            self._install_procs.pop(proc_key, None)
+
+    async def cancel_install(self, runtime_id: str, name: str) -> bool:
+        proc_key = f"{runtime_id}:{name}"
+        proc = self._install_procs.get(proc_key)
+        if proc and proc.returncode is None:
+            proc.terminate()
+            try:
+                await asyncio.wait_for(proc.wait(), timeout=5)
+            except asyncio.TimeoutError:
+                proc.kill()
+                await proc.wait()
+            return True
+        return False
 
     async def remove_packages(self, runtime_id: str, name: str,
                               packages: list[str]) -> dict:

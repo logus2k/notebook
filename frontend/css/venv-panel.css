@@ -186,26 +186,23 @@
 /* Install log area */
 .package-install-log {
     display: none;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    padding: 8px;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius);
-    max-height: 150px;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    word-break: break-word;
     margin-bottom: 8px;
-    border-left: 3px solid var(--accent-green);
+    border-radius: var(--radius);
+    overflow: hidden;
 }
 
 .package-install-log.visible {
     display: block;
 }
 
-.package-install-log.error {
-    border-left-color: var(--accent-red);
-    background: rgba(224, 69, 69, 0.05);
+.package-install-term {
+    height: 200px;
+    border-radius: var(--radius);
+}
+
+.package-install-term .xterm {
+    height: 100%;
+    padding: 4px;
 }
 
 /* Filter input */
