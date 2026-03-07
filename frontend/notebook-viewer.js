@@ -90,6 +90,31 @@
         return btn;
     }
 
+    function createImageCopyBtn(img) {
+        const btn = document.createElement('button');
+        btn.className = 'nbv-copy-btn';
+        btn.innerHTML = COPY_ICON;
+        btn.title = 'Copy image';
+        btn.addEventListener('click', async (ev) => {
+            ev.stopPropagation();
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ]);
+                btn.innerHTML = CHECK_ICON;
+                setTimeout(() => { btn.innerHTML = COPY_ICON; }, 1500);
+            } catch {
+                window.open(img.src, '_blank');
+            }
+        });
+        return btn;
+    }
+
     // ── ANSI → HTML ─────────────────────────────────────────────────────
 
     const ANSI_COLORS = [
@@ -545,6 +570,7 @@
             img.className = 'nbv-image' + (theme.output.imageShadow ? ' nbv-image-shadow' : '');
             img.src = 'data:image/png;base64,' + textValue(data['image/png']);
             div.appendChild(img);
+            if (theme.output.copyButton) div.appendChild(createImageCopyBtn(img));
             return div;
         }
         if (data['image/jpeg']) {
@@ -554,6 +580,7 @@
             img.className = 'nbv-image' + (theme.output.imageShadow ? ' nbv-image-shadow' : '');
             img.src = 'data:image/jpeg;base64,' + textValue(data['image/jpeg']);
             div.appendChild(img);
+            if (theme.output.copyButton) div.appendChild(createImageCopyBtn(img));
             return div;
         }
         if (data['image/svg+xml']) {

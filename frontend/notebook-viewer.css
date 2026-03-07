@@ -336,6 +336,11 @@
 /* Images */
 .nbv-image-wrapper {
     margin: 4px 0;
+    position: relative;
+}
+
+.nbv-image-wrapper:hover .nbv-copy-btn {
+    opacity: 1;
 }
 
 .nbv-image {
