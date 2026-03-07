@@ -382,7 +382,7 @@
     position: fixed;
     top: 12px;
     left: 16px;
-    width: 250px;
+    width: 300px;
     box-sizing: border-box;
     background: var(--nbv-bg, #ffffff);
     border: 1px solid var(--nbv-cell-border, #e8e8e8);
@@ -415,7 +415,7 @@
 
 /* Shift the main container right to make room for the TOC */
 .nbv-has-toc {
-    margin-left: 290px;
+    margin-left: 350px;
     transition: margin-left 0.25s ease;
 }
 
@@ -471,7 +471,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--nbv-text-muted, #888);
+    color: #333333;
 }
 
 .nbv-toc ul {
@@ -482,7 +482,7 @@
 
 .nbv-toc li {
     margin: 1px 0;
-    border-radius: 4px;
+    border-radius: 3px;
     transition: background 0.12s;
 }
 
@@ -501,6 +501,9 @@
     display: block;
     padding: 3px 8px;
     transition: color 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .nbv-toc a:hover {
@@ -522,21 +525,18 @@
 .nbv-toc-resizer::after {
     content: '';
     position: absolute;
-    top: 50%;
+    top: 0;
     left: 3px;
-    width: 2px;
-    height: 32px;
-    transform: translateY(-50%);
-    background: var(--nbv-cell-border, #ddd);
-    border-radius: 1px;
+    width: 0;
+    height: 100%;
+    border-left: 0.5px solid #cecece;
     opacity: 0;
-    transition: opacity 0.15s, background 0.15s;
+    transition: opacity 0.15s;
 }
 
 .nbv-toc-resizer:hover::after,
 .nbv-toc-resizer.nbv-dragging::after {
     opacity: 1;
-    background: var(--nbv-text-muted, #888);
 }
 
 /* TOC scrollbar */

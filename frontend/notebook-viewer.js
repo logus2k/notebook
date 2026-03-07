@@ -195,7 +195,7 @@
 
     // ── TOC builder ─────────────────────────────────────────────────────
 
-    const BURGER_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+    const BURGER_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
 
     function buildToc(container, nbvContainer) {
         const headings = container.querySelectorAll('.nbv-markdown h1, .nbv-markdown h2, .nbv-markdown h3');
@@ -243,16 +243,29 @@
         outerToggle.title = 'Show table of contents';
         outerToggle.style.display = 'none';
 
+        let savedWidth = null;
+
         function collapse() {
+            savedWidth = wrapper.style.width || null;
+            wrapper.style.width = '';
+            nbvContainer.style.marginLeft = '';
             wrapper.classList.add('nbv-toc-collapsed');
             nbvContainer.classList.add('nbv-toc-hidden');
             outerToggle.style.display = '';
+            isCollapsed = true;
+            positionResizer();
         }
 
         function expand() {
             wrapper.classList.remove('nbv-toc-collapsed');
             nbvContainer.classList.remove('nbv-toc-hidden');
             outerToggle.style.display = 'none';
+            isCollapsed = false;
+            if (savedWidth) {
+                wrapper.style.width = savedWidth;
+                nbvContainer.style.marginLeft = (parseFloat(savedWidth) + 50) + 'px';
+            }
+            requestAnimationFrame(positionResizer);
         }
 
         innerToggle.addEventListener('click', collapse);
@@ -265,18 +278,27 @@
         let dragging = false;
         let startX, startWidth;
 
+        let isCollapsed = false;
+
         function positionResizer() {
-            const rect = wrapper.getBoundingClientRect();
-            resizer.style.left = (rect.right + 10) + 'px';
-            resizer.style.top = rect.top + 'px';
-            resizer.style.height = rect.height + 'px';
+            if (isCollapsed) {
+                // Position to the right of the burger toggle (16px left + 32px width + 10px gap)
+                resizer.style.left = '58px';
+                resizer.style.top = '12px';
+                resizer.style.height = '32px';
+            } else {
+                const rect = wrapper.getBoundingClientRect();
+                resizer.style.left = (rect.right + 10) + 'px';
+                resizer.style.top = rect.top + 'px';
+                resizer.style.height = rect.height + 'px';
+            }
         }
 
         resizer.addEventListener('mousedown', (e) => {
             e.preventDefault();
             dragging = true;
             startX = e.clientX;
-            startWidth = wrapper.getBoundingClientRect().width;
+            startWidth = isCollapsed ? 0 : wrapper.getBoundingClientRect().width;
             resizer.classList.add('nbv-dragging');
             wrapper.style.transition = 'none';
             nbvContainer.style.transition = 'none';
@@ -284,9 +306,29 @@
 
         window.addEventListener('mousemove', (e) => {
             if (!dragging) return;
-            const newWidth = Math.max(150, Math.min(500, startWidth + (e.clientX - startX)));
-            wrapper.style.width = newWidth + 'px';
-            nbvContainer.style.marginLeft = (newWidth + 40) + 'px';
+            const rawWidth = startWidth + (e.clientX - startX);
+            if (rawWidth < 80) {
+                // Snap to collapsed visual
+                if (!isCollapsed) {
+                    wrapper.classList.add('nbv-toc-collapsed');
+                    nbvContainer.classList.add('nbv-toc-hidden');
+                }
+                wrapper.style.width = '';
+                wrapper.style.opacity = '';
+                nbvContainer.style.marginLeft = '';
+            } else {
+                // Expanding from collapsed
+                if (isCollapsed || wrapper.classList.contains('nbv-toc-collapsed')) {
+                    wrapper.classList.remove('nbv-toc-collapsed');
+                    nbvContainer.classList.remove('nbv-toc-hidden');
+                    outerToggle.style.display = 'none';
+                    isCollapsed = false;
+                }
+                const newWidth = Math.max(100, Math.min(500, rawWidth));
+                wrapper.style.width = newWidth + 'px';
+                wrapper.style.opacity = '';
+                nbvContainer.style.marginLeft = (newWidth + 50) + 'px';
+            }
             positionResizer();
         });
 
@@ -296,11 +338,20 @@
             resizer.classList.remove('nbv-dragging');
             wrapper.style.transition = '';
             nbvContainer.style.transition = '';
+            // If at collapsed state, finalize
+            if (wrapper.classList.contains('nbv-toc-collapsed')) {
+                isCollapsed = true;
+                outerToggle.style.display = '';
+                positionResizer();
+            } else {
+                isCollapsed = false;
+            }
         });
 
-        // Keep resizer aligned on scroll/resize
+        // Keep resizer aligned on scroll/resize/transition
         window.addEventListener('scroll', positionResizer, { passive: true });
         window.addEventListener('resize', positionResizer, { passive: true });
+        wrapper.addEventListener('transitionend', positionResizer);
         requestAnimationFrame(positionResizer);
 
         return { wrapper, outerToggle, resizer };
