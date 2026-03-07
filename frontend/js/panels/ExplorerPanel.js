@@ -1005,6 +1005,12 @@ export class ExplorerPanel {
         const tokens = this._parseInstallInput(textarea.value);
         if (!tokens.length) return;
 
+        // Close any previous terminal panel
+        if (this._installPanel) {
+            try { this._installPanel.close(); } catch (e) {}
+            this._installPanel = null;
+        }
+
         // Swap Install for Cancel button
         installBtn.style.display = 'none';
         const cancelBtn = document.createElement('button');
@@ -1014,7 +1020,7 @@ export class ExplorerPanel {
 
         // Create terminal (opened once, moved between panels)
         const termContainer = document.createElement('div');
-        termContainer.style.cssText = 'width:100%;height:100%;';
+        termContainer.style.cssText = 'width:100%;height:100%;background:#1e1e20;';
 
         const term = new Terminal({
             convertEol: false,
@@ -1055,21 +1061,23 @@ export class ExplorerPanel {
                 ]).catch(() => {});
             }
             floatingPanel = jsPanel.create({
-                headerTitle: `Installing – ${envName}`,
+                headerTitle: `Terminal - ${envName} installation`,
                 theme: 'none',
                 borderRadius: '5px',
                 border: '1px solid var(--border-color)',
                 boxShadow: 3,
+                setStatus: 'normalized',
                 position: { my: 'center', at: 'center' },
                 panelSize: { width: 700, height: 400 },
                 headerControls: { minimize: 'remove', smallify: 'remove', normalize: 'remove', maximize: 'remove' },
                 onclosed: () => {
                     floatingPanel = null;
+                    this._installPanel = null;
                     terminalBtn.textContent = 'Open Terminal';
                 },
                 callback: (panel) => {
-                    panel.content.style.overflow = 'hidden';
-                    panel.content.style.background = '#1e1e20';
+                    panel.classList.add('terminal-panel');
+                    panel.style.background = '#1e1e20';
                     // Prevent wheel events from scrolling the page behind
                     panel.addEventListener('wheel', (e) => e.stopPropagation(), { passive: false });
                     panel.content.appendChild(termContainer);
@@ -1083,6 +1091,7 @@ export class ExplorerPanel {
                     fitRows();
                 },
             });
+            this._installPanel = floatingPanel;
             terminalBtn.textContent = 'Close Terminal';
         };
 
@@ -1109,11 +1118,23 @@ export class ExplorerPanel {
         let hasError = false;
         let cancelled = false;
 
-        cancelBtn.addEventListener('click', async () => {
+        const doCancel = async () => {
+            if (cancelled) return;
             cancelled = true;
             cancelBtn.disabled = true;
             cancelBtn.textContent = 'Cancelling...';
             await fetch(`${apiBase}/cancel`, { method: 'POST' }).catch(() => {});
+        };
+
+        cancelBtn.addEventListener('click', doCancel);
+
+        // Ctrl+C in the terminal triggers cancel
+        term.attachCustomKeyEventHandler((e) => {
+            if (e.type === 'keydown' && e.ctrlKey && e.key === 'c') {
+                doCancel();
+                return false;
+            }
+            return true;
         });
 
         try {

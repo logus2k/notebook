@@ -236,8 +236,34 @@ html:has(.hide-bg-color) {
     margin: 25px 0 90px;
 }
 
+.xterm-viewport {
+    background: transparent !important;
+    z-index: 1;
+    pointer-events: auto;
+}
+
+.xterm .xterm-screen {
+    pointer-events: none;
+}
+
+.xterm-viewport::-webkit-scrollbar {
+    width: 8px;
+}
+
 .xterm-viewport::-webkit-scrollbar-track {
     margin: 0;
+    background: #1e1e20;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb {
+    background: #6096e5ad;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb:hover,
+.xterm-viewport::-webkit-scrollbar-thumb:active {
+    background: #4a7bd0cc;
 }
 
 ::-webkit-scrollbar-thumb {
