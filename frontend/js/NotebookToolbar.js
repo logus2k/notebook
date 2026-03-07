@@ -30,9 +30,10 @@ export class NotebookToolbar {
         this._container.innerHTML = '';
 
         // Left: title/logo
-        const title = document.createElement('span');
+        const title = document.createElement('img');
         title.className = 'toolbar-title';
-        title.textContent = 'noted';
+        title.src = 'static/images/noted.png';
+        title.alt = 'noted';
         this._container.appendChild(title);
 
         // Center: action buttons (absolute positioned)

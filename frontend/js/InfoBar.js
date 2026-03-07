@@ -42,7 +42,7 @@ export class InfoBar {
 
         const sep = document.createElement('span');
         sep.className = 'info-bar-separator';
-        sep.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="#202020"><polygon points="8,4 20,12 8,20"/></svg>';
+        sep.textContent = '|';
 
         this._notebookLabel = document.createElement('span');
         this._notebookLabel.className = 'info-bar-text';
