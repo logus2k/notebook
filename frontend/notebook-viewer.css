@@ -420,7 +420,7 @@
 }
 
 .nbv-has-toc.nbv-toc-hidden {
-    margin-left: 48px;
+    margin-left: 68px;
 }
 
 /* Toggle button */
@@ -482,8 +482,9 @@
 
 .nbv-toc li {
     margin: 1px 0;
-    border-radius: 3px;
-    transition: background 0.12s;
+    border-radius: 2px;
+    border: 0.5px solid transparent;
+    transition: background 0.12s, border-color 0.12s;
 }
 
 .nbv-toc li:hover {
@@ -491,6 +492,7 @@
 }
 
 .nbv-toc li.nbv-toc-active {
+    border-color: #99999933;
     background: #7ae58c96;
 }
 
