@@ -74,20 +74,9 @@ class ExecutionBridge:
             # Register handler so the iopub listener can dispatch to it
             self._pending.setdefault(session_id, {})[msg_id] = handler
 
-            # Wait for completion (with timeout)
+            # Wait for completion (no timeout — training can take hours)
             try:
-                await asyncio.wait_for(handler.done.wait(), timeout=300)
-            except asyncio.TimeoutError:
-                logger.warning(f"Execution timeout for cell {cell_index}, session {session_id}")
-                await self._sio.emit("cell:output", {
-                    "cell_index": cell_index,
-                    "output": {
-                        "output_type": "error",
-                        "ename": "TimeoutError",
-                        "evalue": "Cell execution timed out (300s)",
-                        "traceback": ["Cell execution timed out (300s)"]
-                    }
-                }, room=room)
+                await handler.done.wait()
             finally:
                 # Clean up handler
                 pending = self._pending.get(session_id, {})
@@ -147,6 +136,7 @@ class ExecutionBridge:
 
                 cell_index = handler.cell_index
                 room = handler.room
+                logger.info(f"IOPub msg: type={msg_type}, cell={cell_index}")
 
                 if msg_type == "execute_input":
                     handler.execution_count = content.get("execution_count")
@@ -162,12 +152,14 @@ class ExecutionBridge:
                     }, room=room)
 
                 elif msg_type == "display_data":
+                    transient = content.get("transient", {}) or msg.get("transient", {})
                     await self._sio.emit("cell:output", {
                         "cell_index": cell_index,
                         "output": {
                             "output_type": "display_data",
                             "data": content.get("data", {}),
-                            "metadata": content.get("metadata", {})
+                            "metadata": content.get("metadata", {}),
+                            "transient": transient
                         }
                     }, room=room)
 
@@ -191,6 +183,26 @@ class ExecutionBridge:
                             "ename": content.get("ename", ""),
                             "evalue": content.get("evalue", ""),
                             "traceback": content.get("traceback", [])
+                        }
+                    }, room=room)
+
+                elif msg_type == "update_display_data":
+                    await self._sio.emit("cell:output", {
+                        "cell_index": cell_index,
+                        "output": {
+                            "output_type": "update_display_data",
+                            "data": content.get("data", {}),
+                            "metadata": content.get("metadata", {}),
+                            "transient": content.get("transient", {})
+                        }
+                    }, room=room)
+
+                elif msg_type == "clear_output":
+                    await self._sio.emit("cell:output", {
+                        "cell_index": cell_index,
+                        "output": {
+                            "output_type": "clear_output",
+                            "wait": content.get("wait", False)
                         }
                     }, room=room)
 

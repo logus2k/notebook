@@ -25,6 +25,12 @@ export class ExplorerPanel {
         this._autoLoad = false;
         this._currentProject = null;
         this._currentNotebook = null;
+        // Active install operations: key = "runtimeId:envName"
+        // value = { panel, doCancel, cancelled, done, installing }
+        this._activeInstalls = {};
+        // Persistent terminals per environment: key = "runtimeId:envName"
+        // value = { term, termContainer, termOpened, panel, openPanel, closePanel, fitTerminal }
+        this._envTerminals = {};
     }
 
     setActiveVenv(name) {
@@ -63,6 +69,8 @@ export class ExplorerPanel {
         this._navigateToEnvs = navigateToEnvs;
 
         if (this._panel) {
+            // Panel exists but may be hidden — show it and bring to front
+            this._panel.style.display = '';
             this._panel.front();
             this._applyNavigation();
             return;
@@ -78,10 +86,11 @@ export class ExplorerPanel {
             position: 'center',
             panelSize: { width: 900, height: 574 },
             headerControls: { minimize: 'remove', smallify: 'remove', normalize: 'remove', maximize: 'remove' },
-            onclosed: () => {
-                this._panel = null;
-                this._tree = null;
-            },
+            onbeforeclose: [() => {
+                // Don't destroy — just hide so state is preserved
+                this._panel.style.display = 'none';
+                return false; // prevent jsPanel from removing the DOM
+            }],
             callback: (panel) => {
                 this._panel = panel;
                 panel.content.style.padding = '0';
@@ -96,9 +105,7 @@ export class ExplorerPanel {
 
     close() {
         if (this._panel) {
-            this._panel.close();
-            this._panel = null;
-            this._tree = null;
+            this._panel.style.display = 'none';
         }
     }
 
@@ -490,10 +497,16 @@ export class ExplorerPanel {
 
         const termArea = document.createElement('div');
         termArea.className = 'env-create-term';
+        termArea.style.display = 'flex';
 
         createBtn.addEventListener('click', () => this._createEnv(nameInput, runtimeSelect, createBtn, errorEl, termArea));
         form.appendChild(createBtn);
         form.appendChild(termArea);
+
+        // Make form expand so terminal fills remaining space
+        form.style.flex = '1';
+        form.style.minHeight = '0';
+        container.style.overflowY = 'hidden';
 
         nameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') createBtn.click();
@@ -501,6 +514,47 @@ export class ExplorerPanel {
 
         container.appendChild(form);
         nameInput.focus();
+
+        // Initialize inline terminal immediately
+        this._initCreateTerminal(termArea);
+    }
+
+    /** Initialize the inline terminal for the env creation form. */
+    async _initCreateTerminal(termArea) {
+        const termContainer = document.createElement('div');
+        termContainer.style.cssText = 'width:100%;height:100%;background:#1e1e20;';
+        termArea.appendChild(termContainer);
+
+        await Promise.all([
+            document.fonts.load('12px "MesloLGS NF"'),
+            document.fonts.load('bold 12px "MesloLGS NF"'),
+        ]).catch(() => {});
+
+        const term = new Terminal({
+            convertEol: false,
+            cursorBlink: false,
+            disableStdin: true,
+            fontSize: 12,
+            fontFamily: '"MesloLGS NF", "JetBrains Mono", "Fira Code", "Consolas", monospace',
+            theme: { background: '#1e1e20', foreground: '#d4d4d4', cursor: 'transparent' },
+            cols: 120, scrollback: 1000, allowProposedApi: true,
+        });
+        term.open(termContainer);
+        term.writeln('\x1b[2mWaiting for commands...\x1b[0m');
+
+        const fitTerminal = () => {
+            const dims = term._core._renderService.dimensions;
+            if (!dims || !dims.css?.cell?.height || !dims.css?.cell?.width) return;
+            const cols = Math.max(20, Math.floor(termArea.clientWidth / dims.css.cell.width));
+            const rows = Math.max(4, Math.floor(termArea.clientHeight / dims.css.cell.height));
+            if (rows !== term.rows || cols !== term.cols) term.resize(cols, rows);
+        };
+        const resizeObs = new ResizeObserver(() => fitTerminal());
+        resizeObs.observe(termArea);
+        fitTerminal();
+
+        // Store on the termArea element so _createEnv can reuse it
+        termArea._term = term;
     }
 
     _showProjectDetail(projectId) {
@@ -770,7 +824,7 @@ export class ExplorerPanel {
             installBtn.textContent = 'Install';
 
             installBtn.addEventListener('click', () =>
-                this._doInstall(textarea, installBtn, terminalBtn, envName, runtimeId)
+                this._doInstall(textarea, installBtn, envName, runtimeId)
             );
 
             textarea.addEventListener('keydown', (e) => {
@@ -780,10 +834,15 @@ export class ExplorerPanel {
                 }
             });
 
+            const termKey = `${runtimeId}:${envName}`;
             const terminalBtn = document.createElement('button');
             terminalBtn.className = 'explorer-btn inverted';
-            terminalBtn.textContent = 'Open Terminal';
-            terminalBtn.style.display = 'none';
+            terminalBtn.dataset.termToggle = termKey;
+
+            // Determine initial button state
+            const existingTerm = this._envTerminals[termKey];
+            terminalBtn.textContent = existingTerm?.panel ? 'Close Terminal' : 'Open Terminal';
+            terminalBtn.onclick = () => this._toggleEnvTerminal(termKey, envName);
 
             const countLabel = document.createElement('span');
             countLabel.className = 'package-count';
@@ -791,6 +850,19 @@ export class ExplorerPanel {
 
             installRow.append(countLabel, terminalBtn, installBtn);
             pkgSection.appendChild(installRow);
+
+            // Reconnect cancel button if an install is actively running
+            const activeInstall = this._activeInstalls[termKey];
+            if (activeInstall && !activeInstall.done) {
+                if (!activeInstall.cancelled) {
+                    installBtn.style.display = 'none';
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.className = 'explorer-btn danger';
+                    cancelBtn.textContent = 'Cancel Installation';
+                    cancelBtn.addEventListener('click', () => activeInstall.doCancel());
+                    installRow.appendChild(cancelBtn);
+                }
+            }
 
             // Filter
             if (packages.length > 10) {
@@ -862,6 +934,15 @@ export class ExplorerPanel {
             if (!confirm(`Delete environment "${envName}"?`)) return;
             try {
                 await fetch(`api/envs/${runtimeId}/${envName}`, { method: 'DELETE' });
+                // Clean up persistent terminal for this env
+                const delKey = `${runtimeId}:${envName}`;
+                const termState = this._envTerminals[delKey];
+                if (termState) {
+                    if (termState.panel) try { termState.panel.close(); } catch (e) {}
+                    if (termState.termOpened) termState.term.dispose();
+                    delete this._envTerminals[delKey];
+                }
+                delete this._activeInstalls[delKey];
                 if (this._callbacks.onVenvDeleted) {
                     this._callbacks.onVenvDeleted(envName);
                 }
@@ -969,44 +1050,10 @@ export class ExplorerPanel {
         createBtn.disabled = true;
         createBtn.textContent = 'Creating...';
 
-        // Set up inline terminal — expand form to fill available space
-        termArea.innerHTML = '';
-        termArea.style.display = 'flex';
-        termArea.parentElement.style.flex = '1';
-        termArea.parentElement.style.minHeight = '0';
-        this._detailEl.style.overflowY = 'hidden';
-        const termContainer = document.createElement('div');
-        termContainer.style.cssText = 'width:100%;height:100%;background:#1e1e20;';
-        termArea.appendChild(termContainer);
-
-        await Promise.all([
-            document.fonts.load('12px "MesloLGS NF"'),
-            document.fonts.load('bold 12px "MesloLGS NF"'),
-        ]).catch(() => {});
-
-        const term = new Terminal({
-            convertEol: false,
-            cursorBlink: false,
-            disableStdin: true,
-            fontSize: 12,
-            fontFamily: '"MesloLGS NF", "JetBrains Mono", "Fira Code", "Consolas", monospace',
-            theme: { background: '#1e1e20', foreground: '#d4d4d4', cursor: 'transparent' },
-            cols: 120,
-            scrollback: 1000,
-            allowProposedApi: true,
-        });
-        term.open(termContainer);
-        // Fit cols and rows to available space
-        const fitTerminal = () => {
-            const dims = term._core._renderService.dimensions;
-            if (!dims || !dims.css?.cell?.height || !dims.css?.cell?.width) return;
-            const cols = Math.max(20, Math.floor(termArea.clientWidth / dims.css.cell.width));
-            const rows = Math.max(4, Math.floor(termArea.clientHeight / dims.css.cell.height));
-            if (rows !== term.rows || cols !== term.cols) term.resize(cols, rows);
-        };
-        const resizeObs = new ResizeObserver(() => fitTerminal());
-        resizeObs.observe(termArea);
-        fitTerminal();
+        // Reuse the existing inline terminal
+        const term = termArea._term;
+        if (!term) return;
+        term.clear();
 
         let hasError = false;
         try {
@@ -1049,26 +1096,12 @@ export class ExplorerPanel {
         }
     }
 
-    // --- Install helper ---
+    // --- Persistent environment terminal ---
 
-    async _doInstall(textarea, installBtn, terminalBtn, envName, runtimeId) {
-        const tokens = this._parseInstallInput(textarea.value);
-        if (!tokens.length) return;
+    /** Get or create a persistent terminal for an environment. */
+    _getOrCreateEnvTerminal(termKey, envName) {
+        if (this._envTerminals[termKey]) return this._envTerminals[termKey];
 
-        // Close any previous terminal panel
-        if (this._installPanel) {
-            try { this._installPanel.close(); } catch (e) {}
-            this._installPanel = null;
-        }
-
-        // Swap Install for Cancel button
-        installBtn.style.display = 'none';
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'explorer-btn danger';
-        cancelBtn.textContent = 'Cancel Installation';
-        installBtn.parentNode.insertBefore(cancelBtn, installBtn.nextSibling);
-
-        // Create terminal (opened once, moved between panels)
         const termContainer = document.createElement('div');
         termContainer.style.cssText = 'width:100%;height:100%;background:#1e1e20;';
 
@@ -1078,17 +1111,10 @@ export class ExplorerPanel {
             disableStdin: true,
             fontSize: 12,
             fontFamily: '"MesloLGS NF", "JetBrains Mono", "Fira Code", "Consolas", monospace',
-            theme: {
-                background: '#1e1e20',
-                foreground: '#d4d4d4',
-                cursor: 'transparent',
-            },
-            cols: 120,
-            scrollback: 5000,
-            allowProposedApi: true,
+            theme: { background: '#1e1e20', foreground: '#d4d4d4', cursor: 'transparent' },
+            cols: 120, scrollback: 5000, allowProposedApi: true,
         });
 
-        // Fit cols and rows to container
         const fitTerminal = () => {
             const core = term._core;
             if (!core?._renderService) return;
@@ -1099,41 +1125,39 @@ export class ExplorerPanel {
             if (rows !== term.rows || cols !== term.cols) term.resize(cols, rows);
         };
 
-        let termOpened = false;
-        let floatingPanel = null;
-        const openPanel = async () => {
-            if (floatingPanel) { floatingPanel.front(); return; }
-            // Ensure MesloLGS NF (regular + bold) is loaded before creating the terminal
-            if (!termOpened) {
+        const state = { term, termContainer, termOpened: false, panel: null, hasContent: false };
+
+        state.openPanel = async () => {
+            if (state.panel) { state.panel.front(); return; }
+            if (!state.termOpened) {
                 await Promise.all([
                     document.fonts.load('12px "MesloLGS NF"'),
                     document.fonts.load('bold 12px "MesloLGS NF"'),
                 ]).catch(() => {});
             }
-            floatingPanel = jsPanel.create({
-                headerTitle: `Terminal - ${envName} installation`,
-                theme: 'none',
-                borderRadius: '5px',
-                border: '1px solid var(--border-color)',
-                boxShadow: 3,
+            const floatingPanel = jsPanel.create({
+                headerTitle: `Terminal - ${envName}`,
+                theme: 'none', borderRadius: '5px',
+                border: '1px solid var(--border-color)', boxShadow: 3,
                 setStatus: 'normalized',
                 position: { my: 'center', at: 'center' },
                 panelSize: { width: 700, height: 400 },
                 headerControls: { minimize: 'remove', smallify: 'remove', normalize: 'remove', maximize: 'remove' },
                 onclosed: () => {
-                    floatingPanel = null;
-                    this._installPanel = null;
-                    terminalBtn.textContent = 'Open Terminal';
+                    state.panel = null;
+                    this._syncTermToggleBtn(termKey);
                 },
                 callback: (panel) => {
                     panel.classList.add('terminal-panel');
                     panel.style.background = '#1e1e20';
-                    // Prevent wheel events from scrolling the page behind
                     panel.addEventListener('wheel', (e) => e.stopPropagation(), { passive: false });
                     panel.content.appendChild(termContainer);
-                    if (!termOpened) {
+                    if (!state.termOpened) {
                         term.open(termContainer);
-                        termOpened = true;
+                        state.termOpened = true;
+                        if (!state.hasContent) {
+                            term.writeln('\x1b[2mWaiting for commands...\x1b[0m');
+                        }
                     }
                     const resizeObs = new ResizeObserver(() => fitTerminal());
                     resizeObs.observe(panel.content);
@@ -1141,47 +1165,90 @@ export class ExplorerPanel {
                     fitTerminal();
                 },
             });
-            this._installPanel = floatingPanel;
-            terminalBtn.textContent = 'Close Terminal';
+            state.panel = floatingPanel;
+            this._syncTermToggleBtn(termKey);
         };
 
-        const closePanel = () => {
-            if (!floatingPanel) return;
-            if (floatingPanel.__resizeObs) floatingPanel.__resizeObs.disconnect();
-            floatingPanel.close();
-            floatingPanel = null;
-            terminalBtn.textContent = 'Open Terminal';
+        state.closePanel = () => {
+            if (!state.panel) return;
+            if (state.panel.__resizeObs) state.panel.__resizeObs.disconnect();
+            state.panel.close();
+            state.panel = null;
+            this._syncTermToggleBtn(termKey);
         };
 
-        // Show terminal toggle button and open the panel
-        terminalBtn.style.display = '';
-        terminalBtn.textContent = 'Close Terminal';
-        terminalBtn.onclick = () => {
-            if (floatingPanel) closePanel();
-            else openPanel();
-        };
-        await openPanel();
+        this._envTerminals[termKey] = state;
+        return state;
+    }
+
+    /** Toggle the terminal panel for an environment. */
+    _toggleEnvTerminal(termKey, envName) {
+        const state = this._getOrCreateEnvTerminal(termKey, envName);
+        if (state.panel) {
+            state.closePanel();
+        } else {
+            state.openPanel();
+        }
+    }
+
+    /** Sync the terminal toggle button text with panel state. */
+    _syncTermToggleBtn(termKey) {
+        const btn = this._detailEl?.querySelector?.(`[data-term-toggle="${termKey}"]`);
+        if (!btn) return;
+        const state = this._envTerminals[termKey];
+        btn.textContent = state?.panel ? 'Close Terminal' : 'Open Terminal';
+    }
+
+    // --- Install helper ---
+
+    async _doInstall(textarea, installBtn, envName, runtimeId) {
+        const tokens = this._parseInstallInput(textarea.value);
+        if (!tokens.length) return;
+        const termKey = `${runtimeId}:${envName}`;
+
+        // Get or create the persistent terminal for this env
+        const termState = this._getOrCreateEnvTerminal(termKey, envName);
+        const { term } = termState;
+
+        // Mark that the terminal has real content now
+        if (!termState.hasContent) {
+            // Clear the "Waiting for commands..." placeholder
+            if (termState.termOpened) term.clear();
+            termState.hasContent = true;
+        }
+
+        // Track install state
+        const installState = { cancelled: false, done: false, doCancel: null };
+        this._activeInstalls[termKey] = installState;
+
+        // Swap Install for Cancel button
+        installBtn.style.display = 'none';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'explorer-btn danger';
+        cancelBtn.textContent = 'Cancel Installation';
+        installBtn.parentNode.insertBefore(cancelBtn, installBtn.nextSibling);
+
+        // Open terminal panel
+        await termState.openPanel();
 
         term.writeln(`\x1b[1m> pip install ${tokens.join(' ')}\x1b[0m\r\n`);
 
         const apiBase = `api/envs/${runtimeId}/${envName}/packages`;
         let hasError = false;
-        let cancelled = false;
 
-        const doCancel = async () => {
-            if (cancelled) return;
-            cancelled = true;
+        installState.doCancel = async () => {
+            if (installState.cancelled) return;
+            installState.cancelled = true;
             cancelBtn.disabled = true;
             cancelBtn.textContent = 'Cancelling...';
             await fetch(`${apiBase}/cancel`, { method: 'POST' }).catch(() => {});
         };
 
-        cancelBtn.addEventListener('click', doCancel);
+        cancelBtn.addEventListener('click', installState.doCancel);
 
-        // Ctrl+C in the terminal triggers cancel
         term.attachCustomKeyEventHandler((e) => {
             if (e.type === 'keydown' && e.ctrlKey && e.key === 'c') {
-                doCancel();
+                installState.doCancel();
                 return false;
             }
             return true;
@@ -1208,12 +1275,9 @@ export class ExplorerPanel {
                     if (text.includes('[ERROR]')) hasError = true;
                     term.write(text);
                 }
-                if (!hasError && !cancelled) {
+                if (!hasError && !installState.cancelled) {
                     textarea.value = '';
-                    // Brief pause so user can see final output before refreshing
-                    await new Promise(r => setTimeout(r, 800));
-                    closePanel();
-                    term.dispose();
+                    // Refresh package list
                     this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
                     return;
                 }
@@ -1222,12 +1286,15 @@ export class ExplorerPanel {
             term.writeln(`\r\n\x1b[31mError: ${err.message}\x1b[0m`);
             hasError = true;
         } finally {
-            if (cancelled) {
+            if (installState.cancelled) {
                 term.writeln('\r\n\x1b[33m[Cancelled]\x1b[0m');
             }
-            cancelBtn.remove();
-            installBtn.style.display = '';
-            // Keep terminal open so user can review output; toggle still works
+            installState.done = true;
+            // Restore Install button if it's still in the DOM
+            if (cancelBtn.parentNode) {
+                cancelBtn.remove();
+                installBtn.style.display = '';
+            }
         }
     }
 
