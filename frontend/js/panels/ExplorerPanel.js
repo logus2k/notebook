@@ -487,8 +487,13 @@ export class ExplorerPanel {
         const createBtn = document.createElement('button');
         createBtn.className = 'explorer-btn primary';
         createBtn.textContent = 'Create Environment';
-        createBtn.addEventListener('click', () => this._createEnv(nameInput, runtimeSelect, createBtn, errorEl));
+
+        const termArea = document.createElement('div');
+        termArea.className = 'env-create-term';
+
+        createBtn.addEventListener('click', () => this._createEnv(nameInput, runtimeSelect, createBtn, errorEl, termArea));
         form.appendChild(createBtn);
+        form.appendChild(termArea);
 
         nameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') createBtn.click();
@@ -954,7 +959,7 @@ export class ExplorerPanel {
         }
     }
 
-    async _createEnv(nameInput, runtimeSelect, createBtn, errorEl) {
+    async _createEnv(nameInput, runtimeSelect, createBtn, errorEl, termArea) {
         const name = nameInput.value.trim();
         if (!name) { nameInput.focus(); return; }
         const runtimeId = runtimeSelect.value;
@@ -963,6 +968,46 @@ export class ExplorerPanel {
 
         createBtn.disabled = true;
         createBtn.textContent = 'Creating...';
+
+        // Set up inline terminal — expand form to fill available space
+        termArea.innerHTML = '';
+        termArea.style.display = 'flex';
+        termArea.parentElement.style.flex = '1';
+        termArea.parentElement.style.minHeight = '0';
+        this._detailEl.style.overflowY = 'hidden';
+        const termContainer = document.createElement('div');
+        termContainer.style.cssText = 'width:100%;height:100%;background:#1e1e20;';
+        termArea.appendChild(termContainer);
+
+        await Promise.all([
+            document.fonts.load('12px "MesloLGS NF"'),
+            document.fonts.load('bold 12px "MesloLGS NF"'),
+        ]).catch(() => {});
+
+        const term = new Terminal({
+            convertEol: false,
+            cursorBlink: false,
+            disableStdin: true,
+            fontSize: 12,
+            fontFamily: '"MesloLGS NF", "JetBrains Mono", "Fira Code", "Consolas", monospace',
+            theme: { background: '#1e1e20', foreground: '#d4d4d4', cursor: 'transparent' },
+            cols: 120,
+            scrollback: 1000,
+            allowProposedApi: true,
+        });
+        term.open(termContainer);
+        // Fit rows to available height (keep cols fixed at 120)
+        const fitRows = () => {
+            const dims = term._core._renderService.dimensions;
+            if (!dims || !dims.css?.cell?.height) return;
+            const rows = Math.max(4, Math.floor(termArea.clientHeight / dims.css.cell.height));
+            if (rows !== term.rows) term.resize(120, rows);
+        };
+        const resizeObs = new ResizeObserver(() => fitRows());
+        resizeObs.observe(termArea);
+        fitRows();
+
+        let hasError = false;
         try {
             const resp = await fetch('api/envs', {
                 method: 'POST',
@@ -970,29 +1015,33 @@ export class ExplorerPanel {
                 body: JSON.stringify({ runtime_id: runtimeId, name })
             });
             if (!resp.ok) {
-                const err = await resp.json();
+                const err = await resp.json().catch(() => ({}));
                 throw new Error(err.detail || 'Failed to create environment');
             }
-            // Find display name from runtimes
-            const rt = (this._runtimes || []).find(r => r.runtime_id === runtimeId);
-            const displayName = rt ? rt.display_name : runtimeId;
-            // Add to tree under the correct runtime node
-            const runtimeNode = this._tree.findKey(`runtime:${runtimeId}`);
-            if (runtimeNode) {
-                runtimeNode.addChildren([{
-                    title: name,
-                    key: `env:${runtimeId}:${name}`,
-                    icon: 'fa-solid fa-cube',
-                }]);
-                runtimeNode.setExpanded(true);
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const text = decoder.decode(value, { stream: true });
+                if (text.includes('[ERROR]')) hasError = true;
+                term.write(text);
             }
-            nameInput.value = '';
-            // Show the new env's detail
-            this._showEnvDetail(name, runtimeId, displayName);
-            const newNode = this._tree.findKey(`env:${runtimeId}:${name}`);
-            if (newNode) newNode.setActive(true, { noEvents: true });
+            if (!hasError) {
+                const runtimeNode = this._tree.findKey(`runtime:${runtimeId}`);
+                if (runtimeNode) {
+                    runtimeNode.addChildren([{
+                        title: name,
+                        key: `env:${runtimeId}:${name}`,
+                        icon: 'fa-solid fa-cube',
+                    }]);
+                    runtimeNode.setExpanded(true);
+                }
+                nameInput.value = '';
+            }
         } catch (err) {
             errorEl.textContent = err.message;
+            hasError = true;
         } finally {
             createBtn.disabled = false;
             createBtn.textContent = 'Create Environment';

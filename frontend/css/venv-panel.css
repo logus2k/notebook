@@ -139,6 +139,16 @@
     outline: none;
 }
 
+/* Inline terminal for env creation */
+.env-create-term {
+    display: none;
+    flex: 1;
+    min-height: 120px;
+    margin-top: 8px;
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
 /* Package detail section */
 .package-detail {
     width: 100%;

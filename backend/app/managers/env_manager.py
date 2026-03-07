@@ -369,6 +369,83 @@ class EnvironmentManager:
 
         return {"name": name, "runtime_id": runtime_id, "created": True}
 
+    async def create_env_stream(self, runtime_id: str, name: str):
+        """Create an environment with streaming output via PTY."""
+        self._validate_name(name)
+        runtime = self._registry.get_runtime(runtime_id)
+        if not runtime:
+            raise ValueError(f"Unknown runtime: {runtime_id}")
+
+        env_path = self._env_path(runtime_id, name)
+        if os.path.exists(env_path):
+            raise FileExistsError(f"Environment already exists: {name}")
+
+        os.makedirs(os.path.dirname(env_path), exist_ok=True)
+
+        import pty, subprocess, struct, fcntl, termios
+
+        async def _run_with_pty(cmd, step_label):
+            yield f"\x1b[1m> {step_label}\x1b[0m\r\n"
+            master_fd, slave_fd = pty.openpty()
+            winsize = struct.pack('HHHH', 24, 120, 0, 0)
+            fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
+            clean_env = {k: v for k, v in os.environ.items()
+                         if k not in ("PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV")}
+            clean_env.update({"PYTHONUNBUFFERED": "1", "TERM": "xterm-256color",
+                              "SETUPTOOLS_USE_DISTUTILS": "stdlib"})
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=slave_fd, stderr=slave_fd,
+                stdin=subprocess.DEVNULL,
+                env=clean_env,
+            )
+            os.close(slave_fd)
+            loop = asyncio.get_event_loop()
+            try:
+                while True:
+                    try:
+                        chunk = await loop.run_in_executor(
+                            None, lambda: os.read(master_fd, 4096)
+                        )
+                        if not chunk:
+                            break
+                        yield chunk.decode(errors="replace")
+                    except OSError:
+                        break
+                await proc.wait()
+                if proc.returncode != 0:
+                    yield f"\r\n\x1b[31m[ERROR] Step failed with code {proc.returncode}\x1b[0m\r\n"
+                    raise RuntimeError(f"Step failed: {step_label}")
+            finally:
+                os.close(master_fd)
+
+        try:
+            # Create venv
+            create_cmd = self._registry.resolve_template(
+                runtime["env_create_cmd"],
+                executable=runtime["executable"],
+                env_path=env_path,
+            )
+            async for chunk in _run_with_pty(create_cmd, " ".join(create_cmd)):
+                yield chunk
+
+            # Post-create commands
+            for post_cmd_template in runtime.get("env_post_create_cmds", []):
+                post_cmd = self._registry.resolve_template(
+                    post_cmd_template,
+                    executable=runtime["executable"],
+                    env_path=env_path,
+                )
+                async for chunk in _run_with_pty(post_cmd, " ".join(post_cmd)):
+                    yield chunk
+
+            yield "\r\n\x1b[32m[Done] Environment created successfully.\x1b[0m\r\n"
+        except RuntimeError:
+            # Cleanup on failure
+            if os.path.exists(env_path):
+                shutil.rmtree(env_path)
+            return
+
     async def delete_env(self, runtime_id: str, name: str) -> dict:
         self._validate_name(name)
         # Cancel any running install before deleting
@@ -469,12 +546,15 @@ class EnvironmentManager:
         winsize = struct.pack('HHHH', 24, 120, 0, 0)
         fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
 
+        clean_env = {k: v for k, v in os.environ.items()
+                     if k not in ("PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV")}
+        clean_env.update({"PYTHONUNBUFFERED": "1", "TERM": "xterm-256color"})
         proc = await asyncio.create_subprocess_exec(
             *cmd, *packages,
             stdout=slave_fd,
             stderr=slave_fd,
             stdin=subprocess.DEVNULL,
-            env={**os.environ, "PYTHONUNBUFFERED": "1", "TERM": "xterm-256color"},
+            env=clean_env,
         )
         os.close(slave_fd)
         self._install_procs[proc_key] = proc

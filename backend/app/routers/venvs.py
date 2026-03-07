@@ -39,14 +39,23 @@ def list_envs_new():
 
 @router.post("/envs")
 async def create_env_new(req: CreateEnvRequest):
+    # Validate before starting stream (generator errors can't become HTTP errors)
+    mgr = venv_mgr.env_manager
     try:
-        return await venv_mgr.env_manager.create_env(
-            req.runtime_id, req.name, requirements=req.requirements
-        )
-    except FileExistsError as e:
-        raise HTTPException(status_code=409, detail=str(e))
-    except (ValueError, RuntimeError) as e:
+        mgr._validate_name(req.name)
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    runtime = mgr._registry.get_runtime(req.runtime_id)
+    if not runtime:
+        raise HTTPException(status_code=400, detail=f"Unknown runtime: {req.runtime_id}")
+    import os
+    env_path = mgr._env_path(req.runtime_id, req.name)
+    if os.path.exists(env_path):
+        raise HTTPException(status_code=409, detail=f"Environment already exists: {req.name}")
+    return StreamingResponse(
+        mgr.create_env_stream(req.runtime_id, req.name),
+        media_type="text/plain",
+    )
 
 
 @router.delete("/envs/{runtime_id:path}/{name}")
