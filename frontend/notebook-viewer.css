@@ -175,6 +175,7 @@
     font-family: var(--nbv-code-font);
     font-size: 13px;
     line-height: 1.5;
+    padding: 0;
 }
 
 /* Line numbers */
@@ -190,7 +191,7 @@
 
 .nbv-line-numbers span {
     font-family: var(--nbv-code-font);
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.5;
     padding: 0 8px 0 12px;
     color: var(--nbv-text-muted, #999);
