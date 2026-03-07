@@ -173,9 +173,12 @@
 }
 
 .package-install-actions button {
-    margin-left: auto;
     font-size: 12px;
     padding: 5px 12px;
+}
+
+.package-install-actions .package-count {
+    margin-right: auto;
 }
 
 .package-count {
@@ -203,6 +206,14 @@
 .package-install-term .xterm {
     height: 100%;
     padding: 4px;
+    overflow-x: auto;
+}
+
+/* Log actions bar (Open New Window button) */
+.package-log-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 4px 0;
 }
 
 /* Filter input */

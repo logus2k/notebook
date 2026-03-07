@@ -476,6 +476,7 @@ export class ExplorerPanel {
 
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
+        nameInput.spellcheck = false;
         nameInput.placeholder = 'Environment name (e.g. ml-env)';
         form.appendChild(nameInput);
 
@@ -751,6 +752,7 @@ export class ExplorerPanel {
             // Install area
             const textarea = document.createElement('textarea');
             textarea.className = 'package-install-textarea';
+            textarea.spellcheck = false;
             textarea.rows = 2;
             textarea.placeholder = 'Package names, pip commands, or requirements.txt content';
             pkgSection.appendChild(textarea);
@@ -762,11 +764,8 @@ export class ExplorerPanel {
             installBtn.className = 'explorer-btn primary';
             installBtn.textContent = 'Install';
 
-            const logArea = document.createElement('div');
-            logArea.className = 'package-install-log';
-
             installBtn.addEventListener('click', () =>
-                this._doInstall(textarea, installBtn, logArea, envName, runtimeId)
+                this._doInstall(textarea, installBtn, terminalBtn, envName, runtimeId)
             );
 
             textarea.addEventListener('keydown', (e) => {
@@ -776,13 +775,17 @@ export class ExplorerPanel {
                 }
             });
 
+            const terminalBtn = document.createElement('button');
+            terminalBtn.className = 'explorer-btn inverted';
+            terminalBtn.textContent = 'Open Terminal';
+            terminalBtn.style.display = 'none';
+
             const countLabel = document.createElement('span');
             countLabel.className = 'package-count';
             countLabel.textContent = `${packages.length} packages`;
 
-            installRow.append(countLabel, installBtn);
+            installRow.append(countLabel, terminalBtn, installBtn);
             pkgSection.appendChild(installRow);
-            pkgSection.appendChild(logArea);
 
             // Filter
             if (packages.length > 10) {
@@ -998,7 +1001,7 @@ export class ExplorerPanel {
 
     // --- Install helper ---
 
-    async _doInstall(textarea, installBtn, logArea, envName, runtimeId) {
+    async _doInstall(textarea, installBtn, terminalBtn, envName, runtimeId) {
         const tokens = this._parseInstallInput(textarea.value);
         if (!tokens.length) return;
 
@@ -1006,37 +1009,99 @@ export class ExplorerPanel {
         installBtn.style.display = 'none';
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'explorer-btn danger';
-        cancelBtn.textContent = 'Cancel';
+        cancelBtn.textContent = 'Cancel Installation';
         installBtn.parentNode.insertBefore(cancelBtn, installBtn.nextSibling);
 
-        // Set up xterm.js terminal in the log area
-        logArea.className = 'package-install-log visible';
-        logArea.textContent = '';
+        // Create terminal (opened once, moved between panels)
         const termContainer = document.createElement('div');
-        termContainer.className = 'package-install-term';
-        logArea.appendChild(termContainer);
+        termContainer.style.cssText = 'width:100%;height:100%;';
 
         const term = new Terminal({
             convertEol: false,
             cursorBlink: false,
             disableStdin: true,
             fontSize: 12,
-            fontFamily: 'var(--font-mono), monospace',
+            fontFamily: '"MesloLGS NF", "JetBrains Mono", "Fira Code", "Consolas", monospace',
             theme: {
-                background: '#1e1e1e',
+                background: '#1e1e20',
                 foreground: '#d4d4d4',
                 cursor: 'transparent',
             },
+            cols: 120,
             scrollback: 5000,
+            allowProposedApi: true,
         });
-        const fitAddon = new FitAddon.FitAddon();
-        term.loadAddon(fitAddon);
-        term.open(termContainer);
-        fitAddon.fit();
 
-        // Re-fit on panel resize
-        const resizeObs = new ResizeObserver(() => fitAddon.fit());
-        resizeObs.observe(termContainer);
+        // Fit rows to container height, keep cols fixed at 120 (matches backend PTY)
+        const fitRows = () => {
+            const core = term._core;
+            if (!core?._renderService) return;
+            const cellHeight = core._renderService.dimensions.css.cell.height;
+            if (!cellHeight) return;
+            const availableHeight = termContainer.clientHeight;
+            const rows = Math.max(1, Math.floor(availableHeight / cellHeight));
+            if (rows !== term.rows) term.resize(120, rows);
+        };
+
+        let termOpened = false;
+        let floatingPanel = null;
+        const openPanel = async () => {
+            if (floatingPanel) { floatingPanel.front(); return; }
+            // Ensure MesloLGS NF (regular + bold) is loaded before creating the terminal
+            if (!termOpened) {
+                await Promise.all([
+                    document.fonts.load('12px "MesloLGS NF"'),
+                    document.fonts.load('bold 12px "MesloLGS NF"'),
+                ]).catch(() => {});
+            }
+            floatingPanel = jsPanel.create({
+                headerTitle: `Installing – ${envName}`,
+                theme: 'none',
+                borderRadius: '5px',
+                border: '1px solid var(--border-color)',
+                boxShadow: 3,
+                position: { my: 'center', at: 'center' },
+                panelSize: { width: 700, height: 400 },
+                headerControls: { minimize: 'remove', smallify: 'remove', normalize: 'remove', maximize: 'remove' },
+                onclosed: () => {
+                    floatingPanel = null;
+                    terminalBtn.textContent = 'Open Terminal';
+                },
+                callback: (panel) => {
+                    panel.content.style.overflow = 'hidden';
+                    panel.content.style.background = '#1e1e20';
+                    // Prevent wheel events from scrolling the page behind
+                    panel.addEventListener('wheel', (e) => e.stopPropagation(), { passive: false });
+                    panel.content.appendChild(termContainer);
+                    if (!termOpened) {
+                        term.open(termContainer);
+                        termOpened = true;
+                    }
+                    const resizeObs = new ResizeObserver(() => fitRows());
+                    resizeObs.observe(panel.content);
+                    panel.__resizeObs = resizeObs;
+                    fitRows();
+                },
+            });
+            terminalBtn.textContent = 'Close Terminal';
+        };
+
+        const closePanel = () => {
+            if (!floatingPanel) return;
+            if (floatingPanel.__resizeObs) floatingPanel.__resizeObs.disconnect();
+            floatingPanel.close();
+            floatingPanel = null;
+            terminalBtn.textContent = 'Open Terminal';
+        };
+
+        // Show terminal toggle button and open the panel
+        terminalBtn.style.display = '';
+        terminalBtn.textContent = 'Close Terminal';
+        terminalBtn.onclick = () => {
+            if (floatingPanel) closePanel();
+            else openPanel();
+        };
+        await openPanel();
 
         term.writeln(`\x1b[1m> pip install ${tokens.join(' ')}\x1b[0m\r\n`);
 
@@ -1076,7 +1141,10 @@ export class ExplorerPanel {
                     textarea.value = '';
                     // Brief pause so user can see final output before refreshing
                     await new Promise(r => setTimeout(r, 800));
+                    closePanel();
+                    term.dispose();
                     this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
+                    return;
                 }
             }
         } catch (err) {
@@ -1086,9 +1154,9 @@ export class ExplorerPanel {
             if (cancelled) {
                 term.writeln('\r\n\x1b[33m[Cancelled]\x1b[0m');
             }
-            resizeObs.disconnect();
             cancelBtn.remove();
             installBtn.style.display = '';
+            // Keep terminal open so user can review output; toggle still works
         }
     }
 

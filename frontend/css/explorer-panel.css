@@ -140,6 +140,16 @@
     cursor: wait;
 }
 
+.explorer-btn.inverted {
+    background: #5c5c5c;
+    color: #ffffff;
+    border-color: var(--text-primary);
+}
+
+.explorer-btn.inverted:hover {
+    opacity: 0.85;
+}
+
 .explorer-btn.danger {
     color: #fff;
     border-color: transparent;
