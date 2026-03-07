@@ -638,13 +638,20 @@
 
         const info = document.createElement('div');
         info.className = 'nbv-header-info';
-        const parts = [];
-        if (langInfo.name) parts.push(langInfo.name);
-        if (langInfo.version) parts.push('v' + langInfo.version);
-        if (kernelInfo.display_name) parts.push(kernelInfo.display_name);
-        const cellCount = (notebook.cells || []).length;
-        parts.push(cellCount + ' cell' + (cellCount !== 1 ? 's' : ''));
-        info.textContent = parts.join('  |  ');
+
+        const infoLeft = document.createElement('span');
+        infoLeft.className = 'nbv-header-info-left';
+        const projectName = params.get('project') || '';
+        infoLeft.textContent = projectName;
+        info.appendChild(infoLeft);
+
+        const infoRight = document.createElement('span');
+        infoRight.className = 'nbv-header-info-right';
+        const langName = langInfo.name ? langInfo.name.charAt(0).toUpperCase() + langInfo.name.slice(1) : '';
+        const langVersion = langInfo.version || '';
+        infoRight.textContent = langName + (langVersion ? ' ' + langVersion : '');
+        info.appendChild(infoRight);
+
         header.appendChild(info);
 
         container.appendChild(header);
