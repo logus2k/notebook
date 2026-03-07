@@ -756,6 +756,10 @@
                         for (const h of headingEls) {
                             if (h.el.getBoundingClientRect().top <= 60) active = h;
                         }
+                        // If scrolled to bottom, activate the last heading
+                        if ((window.innerHeight + window.scrollY) >= document.body.scrollHeight - 2) {
+                            active = headingEls[headingEls.length - 1];
+                        }
                         tocLinks.forEach(a => a.parentElement.classList.remove('nbv-toc-active'));
                         active.li.classList.add('nbv-toc-active');
                     };
