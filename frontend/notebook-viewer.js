@@ -799,13 +799,36 @@
                         for (const h of headingEls) {
                             if (h.el.getBoundingClientRect().top <= 60) active = h;
                         }
-                        // If scrolled to bottom, activate the last heading
                         const sh = scrollHost === document.documentElement ? document.body : scrollHost;
+                        // If scrolled to top, activate the first heading
+                        if (sh.scrollTop < 2) {
+                            active = headingEls[0];
+                        }
+                        // If scrolled to bottom, activate the last heading
                         if (Math.abs((sh.scrollTop + sh.clientHeight) - sh.scrollHeight) < 2) {
                             active = headingEls[headingEls.length - 1];
                         }
                         tocLinks.forEach(a => a.parentElement.classList.remove('nbv-toc-active'));
                         active.li.classList.add('nbv-toc-active');
+                        const tocEl = active.li.closest('.nbv-toc');
+                        if (tocEl) {
+                            if (active === headingEls[0]) {
+                                tocEl.scrollTop = 0;
+                            } else {
+                                const liRect = active.li.getBoundingClientRect();
+                                const tocRect = tocEl.getBoundingClientRect();
+                                const styles = getComputedStyle(tocEl);
+                                const padTop = parseFloat(styles.paddingTop);
+                                const padBottom = parseFloat(styles.paddingBottom);
+                                const visibleTop = tocRect.top + padTop;
+                                const visibleBottom = tocRect.bottom - padBottom;
+                                if (liRect.top < visibleTop) {
+                                    tocEl.scrollTop += liRect.top - visibleTop;
+                                } else if (liRect.bottom > visibleBottom) {
+                                    tocEl.scrollTop += liRect.bottom - visibleBottom;
+                                }
+                            }
+                        }
                     };
                     (scrollHost || window).addEventListener('scroll', updateActive, { passive: true });
                     updateActive();
