@@ -175,3 +175,36 @@
 .output-clear button:hover {
     color: var(--text-secondary);
 }
+
+/* Copy button for text outputs */
+.output-copy-wrapper {
+    position: relative;
+}
+
+.output-copy-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 26px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    color: #888;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s, background 0.15s;
+    z-index: 1;
+}
+
+.output-copy-wrapper:hover .output-copy-btn {
+    opacity: 1;
+}
+
+.output-copy-btn:hover {
+    background: #c8e6c0;
+    color: #333;
+}

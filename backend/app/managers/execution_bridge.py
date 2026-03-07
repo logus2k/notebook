@@ -94,6 +94,19 @@ class ExecutionBridge:
                 }
             }, room=room)
         finally:
+            # Always emit cell:execute_complete so the frontend never
+            # gets stuck on "Running..." — even if the iopub loop crashed
+            # before it could send the status:idle completion signal.
+            if not handler.execution_count:
+                logger.warning(
+                    f"Cell {cell_index} completed without execution_count "
+                    f"(iopub listener may have crashed)"
+                )
+            await self._sio.emit("cell:execute_complete", {
+                "cell_index": cell_index,
+                "execution_count": handler.execution_count
+            }, room=room)
+
             # If no more pending executions, mark kernel idle
             if not self._pending.get(session_id):
                 self._kernel_manager.update_status(session_id, "idle")
@@ -124,106 +137,118 @@ class ExecutionBridge:
                         break
                     continue
 
-                parent_msg_id = msg.get("parent_header", {}).get("msg_id")
-                msg_type = msg.get("msg_type", "")
-                content = msg.get("content", {})
-
-                # Find the handler for this message
-                pending = self._pending.get(session_id, {})
-                handler = pending.get(parent_msg_id)
-                if not handler:
-                    continue
-
-                cell_index = handler.cell_index
-                room = handler.room
-                logger.info(f"IOPub msg: type={msg_type}, cell={cell_index}")
-
-                if msg_type == "execute_input":
-                    handler.execution_count = content.get("execution_count")
-
-                elif msg_type == "stream":
-                    await self._sio.emit("cell:output", {
-                        "cell_index": cell_index,
-                        "output": {
-                            "output_type": "stream",
-                            "name": content.get("name", "stdout"),
-                            "text": content.get("text", "")
-                        }
-                    }, room=room)
-
-                elif msg_type == "display_data":
-                    transient = content.get("transient", {}) or msg.get("transient", {})
-                    await self._sio.emit("cell:output", {
-                        "cell_index": cell_index,
-                        "output": {
-                            "output_type": "display_data",
-                            "data": content.get("data", {}),
-                            "metadata": content.get("metadata", {}),
-                            "transient": transient
-                        }
-                    }, room=room)
-
-                elif msg_type == "execute_result":
-                    handler.execution_count = content.get("execution_count")
-                    await self._sio.emit("cell:output", {
-                        "cell_index": cell_index,
-                        "output": {
-                            "output_type": "execute_result",
-                            "data": content.get("data", {}),
-                            "metadata": content.get("metadata", {}),
-                            "execution_count": handler.execution_count
-                        }
-                    }, room=room)
-
-                elif msg_type == "error":
-                    await self._sio.emit("cell:output", {
-                        "cell_index": cell_index,
-                        "output": {
-                            "output_type": "error",
-                            "ename": content.get("ename", ""),
-                            "evalue": content.get("evalue", ""),
-                            "traceback": content.get("traceback", [])
-                        }
-                    }, room=room)
-
-                elif msg_type == "update_display_data":
-                    await self._sio.emit("cell:output", {
-                        "cell_index": cell_index,
-                        "output": {
-                            "output_type": "update_display_data",
-                            "data": content.get("data", {}),
-                            "metadata": content.get("metadata", {}),
-                            "transient": content.get("transient", {})
-                        }
-                    }, room=room)
-
-                elif msg_type == "clear_output":
-                    await self._sio.emit("cell:output", {
-                        "cell_index": cell_index,
-                        "output": {
-                            "output_type": "clear_output",
-                            "wait": content.get("wait", False)
-                        }
-                    }, room=room)
-
-                elif msg_type == "status":
-                    if content.get("execution_state") == "idle":
-                        logger.info(f"Execution complete for cell {cell_index}, session {session_id}")
-                        await self._sio.emit("cell:execute_complete", {
-                            "cell_index": cell_index,
-                            "execution_count": handler.execution_count
-                        }, room=room)
-                        handler.done.set()
+                # Process each message in its own try/except so one bad
+                # message never kills the listener (e.g. serialization
+                # errors on large display_data payloads).
+                try:
+                    await self._dispatch_iopub_msg(session_id, msg)
+                except Exception as e:
+                    parent_msg_id = msg.get("parent_header", {}).get("msg_id")
+                    msg_type = msg.get("msg_type", "")
+                    logger.error(
+                        f"Error dispatching IOPub {msg_type} for session "
+                        f"{session_id}, parent={parent_msg_id}: {e}",
+                        exc_info=True,
+                    )
 
         except asyncio.CancelledError:
             logger.info(f"IOPub listener cancelled for session {session_id}")
         except Exception as e:
-            logger.error(f"IOPub listener error for session {session_id}: {e}")
+            logger.error(f"IOPub listener fatal error for session {session_id}: {e}", exc_info=True)
             # Signal all pending handlers so they don't hang
             for handler in list(self._pending.get(session_id, {}).values()):
                 handler.done.set()
         finally:
             self._iopub_tasks.pop(session_id, None)
+
+    async def _dispatch_iopub_msg(self, session_id: str, msg: dict):
+        """Dispatch a single iopub message to the appropriate cell handler."""
+        parent_msg_id = msg.get("parent_header", {}).get("msg_id")
+        msg_type = msg.get("msg_type", "")
+        content = msg.get("content", {})
+
+        # Find the handler for this message
+        pending = self._pending.get(session_id, {})
+        handler = pending.get(parent_msg_id)
+        if not handler:
+            return
+
+        cell_index = handler.cell_index
+        room = handler.room
+        logger.info(f"IOPub msg: type={msg_type}, cell={cell_index}")
+
+        if msg_type == "execute_input":
+            handler.execution_count = content.get("execution_count")
+
+        elif msg_type == "stream":
+            await self._sio.emit("cell:output", {
+                "cell_index": cell_index,
+                "output": {
+                    "output_type": "stream",
+                    "name": content.get("name", "stdout"),
+                    "text": content.get("text", "")
+                }
+            }, room=room)
+
+        elif msg_type == "display_data":
+            transient = content.get("transient", {}) or msg.get("transient", {})
+            await self._sio.emit("cell:output", {
+                "cell_index": cell_index,
+                "output": {
+                    "output_type": "display_data",
+                    "data": content.get("data", {}),
+                    "metadata": content.get("metadata", {}),
+                    "transient": transient
+                }
+            }, room=room)
+
+        elif msg_type == "execute_result":
+            handler.execution_count = content.get("execution_count")
+            await self._sio.emit("cell:output", {
+                "cell_index": cell_index,
+                "output": {
+                    "output_type": "execute_result",
+                    "data": content.get("data", {}),
+                    "metadata": content.get("metadata", {}),
+                    "execution_count": handler.execution_count
+                }
+            }, room=room)
+
+        elif msg_type == "error":
+            await self._sio.emit("cell:output", {
+                "cell_index": cell_index,
+                "output": {
+                    "output_type": "error",
+                    "ename": content.get("ename", ""),
+                    "evalue": content.get("evalue", ""),
+                    "traceback": content.get("traceback", [])
+                }
+            }, room=room)
+
+        elif msg_type == "update_display_data":
+            await self._sio.emit("cell:output", {
+                "cell_index": cell_index,
+                "output": {
+                    "output_type": "update_display_data",
+                    "data": content.get("data", {}),
+                    "metadata": content.get("metadata", {}),
+                    "transient": content.get("transient", {})
+                }
+            }, room=room)
+
+        elif msg_type == "clear_output":
+            await self._sio.emit("cell:output", {
+                "cell_index": cell_index,
+                "output": {
+                    "output_type": "clear_output",
+                    "wait": content.get("wait", False)
+                }
+            }, room=room)
+
+        elif msg_type == "status":
+            if content.get("execution_state") == "idle":
+                logger.info(f"Execution complete for cell {cell_index}, session {session_id}")
+                handler.done.set()
 
     def stop_iopub_listener(self, session_id: str):
         task = self._iopub_tasks.pop(session_id, None)

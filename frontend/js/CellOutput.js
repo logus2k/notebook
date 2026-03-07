@@ -183,6 +183,10 @@ export class CellOutput {
     }
 
     addOutput(output) {
+        console.debug('[CellOutput] addOutput:', output.output_type,
+            output.output_type === 'stream' ? `(${output.name})` : '',
+            output.output_type === 'display_data' ? Object.keys(output.data || {}) : '');
+
         const executing = this._el.querySelector('.output-executing');
         if (executing) executing.remove();
 
@@ -241,8 +245,9 @@ export class CellOutput {
             const div = document.createElement('div');
             div.className = `output-stream ${name === 'stderr' ? 'stderr' : ''}`;
             div.innerHTML = ansiToHtml(this._lastStreamText);
-            this._el.appendChild(div);
+            // _lastStreamEl points to the inner div so merges keep working
             this._lastStreamEl = div;
+            this._el.appendChild(this._wrapWithCopyBtn(div));
         }
         this._outputs.push(output);
     }
@@ -298,20 +303,20 @@ export class CellOutput {
         const div = document.createElement('div');
         div.className = `output-stream ${output.name === 'stderr' ? 'stderr' : ''}`;
         div.innerHTML = ansiToHtml(textValue(output.text));
-        return div;
+        return this._wrapWithCopyBtn(div);
     }
 
     _renderResult(output) {
         const data = output.data || {};
         if (data['text/latex']) return this._renderLatex(textValue(data['text/latex']));
-        if (data['text/html']) return this._renderHTML(textValue(data['text/html']));
+        if (data['text/html']) return this._wrapWithCopyBtn(this._renderHTML(textValue(data['text/html'])));
         if (data['image/png']) return this._renderImage(textValue(data['image/png']), 'image/png');
         if (data['image/svg+xml']) return this._renderSVG(textValue(data['image/svg+xml']));
 
         const div = document.createElement('div');
         div.className = 'output-result';
         div.textContent = textValue(data['text/plain']);
-        return div;
+        return this._wrapWithCopyBtn(div);
     }
 
     _renderDisplay(output) {
@@ -339,14 +344,14 @@ export class CellOutput {
         } else if (data['image/svg+xml']) {
             container.appendChild(this._renderSVG(textValue(data['image/svg+xml'])));
         } else if (data['text/html']) {
-            container.appendChild(this._renderHTML(textValue(data['text/html'])));
+            container.appendChild(this._wrapWithCopyBtn(this._renderHTML(textValue(data['text/html']))));
         } else if (data['application/json']) {
-            container.appendChild(this._renderJSON(data['application/json']));
+            container.appendChild(this._wrapWithCopyBtn(this._renderJSON(data['application/json'])));
         } else if (data['text/plain']) {
             const div = document.createElement('div');
             div.className = 'output-result';
             div.textContent = textValue(data['text/plain']);
-            container.appendChild(div);
+            container.appendChild(this._wrapWithCopyBtn(div));
         }
         return container;
     }
@@ -367,7 +372,7 @@ export class CellOutput {
             tb.innerHTML = ansiToHtml(output.traceback.join('\n'));
             div.appendChild(tb);
         }
-        return div;
+        return this._wrapWithCopyBtn(div);
     }
 
     _renderImage(base64Data, mimeType) {
@@ -415,5 +420,29 @@ export class CellOutput {
         div.className = 'output-json';
         div.textContent = JSON.stringify(jsonData, null, 2);
         return div;
+    }
+
+    /** Wrap a text output element with a hover copy button. */
+    _wrapWithCopyBtn(el) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'output-copy-wrapper';
+        wrapper.appendChild(el);
+
+        const btn = document.createElement('button');
+        btn.className = 'output-copy-btn';
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#202020" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" fill="#a8d8a0"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+        btn.title = 'Copy output';
+        btn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            const text = el.textContent || '';
+            navigator.clipboard.writeText(text).then(() => {
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2a7a2a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 6"/></svg>';
+                setTimeout(() => {
+                    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#202020" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" fill="#a8d8a0"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+                }, 1500);
+            });
+        });
+        wrapper.appendChild(btn);
+        return wrapper;
     }
 }

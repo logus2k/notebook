@@ -407,5 +407,10 @@ async def index():
     return FileResponse(f"{FRONTEND_DIR}/index.html")
 
 
+@app.get("/viewer")
+async def viewer():
+    return FileResponse(f"{FRONTEND_DIR}/viewer.html")
+
+
 # Wrap FastAPI with Socket.IO ASGI app
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app)

@@ -27,6 +27,10 @@ export class NotebookEditor {
         this._undoStack = [];
         this._maxUndoSize = 20;
 
+        // Sequential execution queue (for Run All / Run Above / Run Below)
+        this._execQueue = [];       // array of cell indices to execute
+        this._execRunning = false;  // true while queue is being processed
+
         this._setupClientListeners();
         this._setupContainerListeners();
     }
@@ -194,28 +198,51 @@ export class NotebookEditor {
     }
 
     runAll() {
-        for (let i = 0; i < this._cells.length; i++) {
-            const cell = this._cells[i];
-            if (cell.cellType === 'code') {
-                cell._onRun();
-            }
-        }
+        this._runSequential(0, this._cells.length);
     }
 
     runAbove(index) {
-        for (let i = 0; i < index; i++) {
-            if (this._cells[i].cellType === 'code') {
-                this._cells[i]._onRun();
-            }
-        }
+        this._runSequential(0, index);
     }
 
     runBelow(index) {
-        for (let i = index; i < this._cells.length; i++) {
-            if (this._cells[i].cellType === 'code') {
-                this._cells[i]._onRun();
+        this._runSequential(index, this._cells.length);
+    }
+
+    /** Queue code cells in [from, to) range for sequential execution. */
+    _runSequential(from, to) {
+        const indices = [];
+        for (let i = from; i < to; i++) {
+            if (this._cells[i]?.cellType === 'code') {
+                indices.push(i);
             }
         }
+        if (!indices.length) return;
+        this._execQueue = indices;
+        this._execRunning = true;
+        this._execNext();
+    }
+
+    /** Execute the next cell in the queue. */
+    _execNext() {
+        if (!this._execQueue.length) {
+            this._execRunning = false;
+            return;
+        }
+        const idx = this._execQueue.shift();
+        const cell = this._cells[idx];
+        if (cell) {
+            cell._onRun();
+        } else {
+            // Cell was deleted mid-run, skip to next
+            this._execNext();
+        }
+    }
+
+    /** Cancel remaining queued executions (e.g. on error). */
+    _cancelExecQueue() {
+        this._execQueue = [];
+        this._execRunning = false;
     }
 
     clearAllOutputs() {
@@ -1056,6 +1083,18 @@ export class NotebookEditor {
         const cell = this._cells[data.cell_index];
         if (cell) {
             cell.onExecuteComplete(data.execution_count);
+
+            // Drive sequential execution queue
+            if (this._execRunning) {
+                const hadError = cell._data.outputs?.some(
+                    o => o.output_type === 'error'
+                );
+                if (hadError) {
+                    this._cancelExecQueue();
+                } else {
+                    this._execNext();
+                }
+            }
         }
     }
 
