@@ -49,7 +49,7 @@
         const notebook = params.get('notebook');
 
         if (project && notebook) {
-            const url = `/api/projects/${encodeURIComponent(project)}/notebooks/${encodeURIComponent(notebook)}`;
+            const url = `api/projects/${encodeURIComponent(project)}/notebooks/${encodeURIComponent(notebook)}`;
             NotebookViewer.render('#viewer', url);
         } else {
             document.getElementById('viewer').innerHTML =
