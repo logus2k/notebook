@@ -1,3 +1,5 @@
+import { getTerminalTheme, onTerminalThemeChange } from '../TerminalThemes.js';
+
 /**
  * ExplorerPanel - Unified jsPanel with Wunderbaum tree (left) and detail pane (right).
  * Two root branches: Projects (with notebooks) and Environments.
@@ -522,7 +524,8 @@ export class ExplorerPanel {
     /** Initialize the inline terminal for the env creation form. */
     async _initCreateTerminal(termArea) {
         const termContainer = document.createElement('div');
-        termContainer.style.cssText = 'width:100%;height:100%;background:#1e1e20;';
+        const inlineTheme = getTerminalTheme();
+        termContainer.style.cssText = `width:100%;height:100%;background:${inlineTheme.background};`;
         termArea.appendChild(termContainer);
 
         await Promise.all([
@@ -536,8 +539,12 @@ export class ExplorerPanel {
             disableStdin: true,
             fontSize: 12,
             fontFamily: '"MesloLGS NF", "JetBrains Mono", "Fira Code", "Consolas", monospace',
-            theme: { background: '#1e1e20', foreground: '#d4d4d4', cursor: 'transparent' },
+            theme: { ...inlineTheme, cursor: 'transparent' },
             cols: 120, scrollback: 1000, allowProposedApi: true,
+        });
+        onTerminalThemeChange((t) => {
+            term.options.theme = { ...t, cursor: 'transparent' };
+            termContainer.style.background = t.background;
         });
         term.open(termContainer);
         term.writeln('\x1b[2mWaiting for commands...\x1b[0m');
@@ -1103,7 +1110,8 @@ export class ExplorerPanel {
         if (this._envTerminals[termKey]) return this._envTerminals[termKey];
 
         const termContainer = document.createElement('div');
-        termContainer.style.cssText = 'width:100%;height:100%;background:#1e1e20;';
+        const persistTheme = getTerminalTheme();
+        termContainer.style.cssText = `width:100%;height:100%;background:${persistTheme.background};`;
 
         const term = new Terminal({
             convertEol: false,
@@ -1111,8 +1119,12 @@ export class ExplorerPanel {
             disableStdin: true,
             fontSize: 12,
             fontFamily: '"MesloLGS NF", "JetBrains Mono", "Fira Code", "Consolas", monospace',
-            theme: { background: '#1e1e20', foreground: '#d4d4d4', cursor: 'transparent' },
+            theme: { ...persistTheme, cursor: 'transparent' },
             cols: 120, scrollback: 5000, allowProposedApi: true,
+        });
+        onTerminalThemeChange((t) => {
+            term.options.theme = { ...t, cursor: 'transparent' };
+            termContainer.style.background = t.background;
         });
 
         const fitTerminal = () => {

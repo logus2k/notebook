@@ -73,9 +73,25 @@ class KernelManagerService:
         if not kernel_cwd or not os.path.isdir(kernel_cwd):
             kernel_cwd = None
 
+        # Build a clean environment for the kernel subprocess.
+        # The server process may lack GPU library paths, so we ensure
+        # CUDA/WSL driver paths are included in LD_LIBRARY_PATH.
+        kernel_env = os.environ.copy()
+        gpu_lib_paths = [
+            "/usr/lib/wsl/lib",
+            "/usr/local/cuda/lib64",
+        ]
+        existing_ld = kernel_env.get("LD_LIBRARY_PATH", "")
+        extra = ":".join(p for p in gpu_lib_paths if os.path.isdir(p))
+        if extra:
+            kernel_env["LD_LIBRARY_PATH"] = f"{extra}:{existing_ld}" if existing_ld else extra
+
         # Run blocking kernel start in executor to avoid blocking the event loop
+        kw = {"env": kernel_env}
+        if kernel_cwd:
+            kw["cwd"] = kernel_cwd
         await asyncio.get_event_loop().run_in_executor(
-            None, lambda: km.start_kernel(cwd=kernel_cwd) if kernel_cwd else km.start_kernel()
+            None, lambda: km.start_kernel(**kw)
         )
 
         # Give kernel process a moment to either start or crash

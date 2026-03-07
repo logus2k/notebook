@@ -1,4 +1,5 @@
 import { CellEditor, editorThemes } from '../CellEditor.js';
+import { terminalThemes, setTerminalTheme } from '../TerminalThemes.js';
 
 /**
  * DisplaySettingsPanel - jsPanel floating window for display settings.
@@ -118,6 +119,30 @@ export class DisplaySettingsPanel {
 
         themeRow.append(themeLabel, themeSelect);
         container.appendChild(themeRow);
+
+        // Terminal theme selector
+        const termRow = document.createElement('div');
+        termRow.className = 'settings-toggle-row';
+
+        const termLabel = document.createElement('label');
+        termLabel.textContent = 'Terminal Theme';
+
+        const termSelect = document.createElement('select');
+        termSelect.className = 'settings-theme-select';
+        const savedTermTheme = localStorage.getItem('notebook-terminal-theme') || 'Adventure';
+        for (const name of Object.keys(terminalThemes)) {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            if (name === savedTermTheme) opt.selected = true;
+            termSelect.appendChild(opt);
+        }
+        termSelect.addEventListener('change', () => {
+            setTerminalTheme(termSelect.value);
+        });
+
+        termRow.append(termLabel, termSelect);
+        container.appendChild(termRow);
 
         // Display toggles
         const toggles = [
