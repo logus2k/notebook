@@ -201,6 +201,9 @@
         const headings = container.querySelectorAll('.nbv-markdown h1, .nbv-markdown h2, .nbv-markdown h3');
         if (headings.length === 0) return null;
 
+        const wrapper = document.createElement('div');
+        wrapper.className = 'nbv-toc-wrapper';
+
         const toc = document.createElement('nav');
         toc.className = 'nbv-toc';
 
@@ -231,6 +234,7 @@
             list.appendChild(li);
         });
         toc.appendChild(list);
+        wrapper.appendChild(toc);
 
         // External toggle button (visible when TOC is collapsed)
         const outerToggle = document.createElement('button');
@@ -240,13 +244,13 @@
         outerToggle.style.display = 'none';
 
         function collapse() {
-            toc.classList.add('nbv-toc-collapsed');
+            wrapper.classList.add('nbv-toc-collapsed');
             nbvContainer.classList.add('nbv-toc-hidden');
             outerToggle.style.display = '';
         }
 
         function expand() {
-            toc.classList.remove('nbv-toc-collapsed');
+            wrapper.classList.remove('nbv-toc-collapsed');
             nbvContainer.classList.remove('nbv-toc-hidden');
             outerToggle.style.display = 'none';
         }
@@ -254,7 +258,52 @@
         innerToggle.addEventListener('click', collapse);
         outerToggle.addEventListener('click', expand);
 
-        return { toc, outerToggle };
+        // Resize handle (sits outside toc as a sibling so it's not inside the scroll area)
+        const resizer = document.createElement('div');
+        resizer.className = 'nbv-toc-resizer';
+
+        let dragging = false;
+        let startX, startWidth;
+
+        function positionResizer() {
+            const rect = wrapper.getBoundingClientRect();
+            resizer.style.left = (rect.right + 10) + 'px';
+            resizer.style.top = rect.top + 'px';
+            resizer.style.height = rect.height + 'px';
+        }
+
+        resizer.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            dragging = true;
+            startX = e.clientX;
+            startWidth = wrapper.getBoundingClientRect().width;
+            resizer.classList.add('nbv-dragging');
+            wrapper.style.transition = 'none';
+            nbvContainer.style.transition = 'none';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            const newWidth = Math.max(150, Math.min(500, startWidth + (e.clientX - startX)));
+            wrapper.style.width = newWidth + 'px';
+            nbvContainer.style.marginLeft = (newWidth + 40) + 'px';
+            positionResizer();
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (!dragging) return;
+            dragging = false;
+            resizer.classList.remove('nbv-dragging');
+            wrapper.style.transition = '';
+            nbvContainer.style.transition = '';
+        });
+
+        // Keep resizer aligned on scroll/resize
+        window.addEventListener('scroll', positionResizer, { passive: true });
+        window.addEventListener('resize', positionResizer, { passive: true });
+        requestAnimationFrame(positionResizer);
+
+        return { wrapper, outerToggle, resizer };
     }
 
     // ── Rendering ───────────────────────────────────────────────────────
@@ -635,11 +684,33 @@
             const result = buildToc(cellsWrapper, container);
             if (result) {
                 container.classList.add('nbv-has-toc');
-                // Remove any previous TOC elements
                 const parent = container.parentElement;
-                parent.querySelectorAll('.nbv-toc, .nbv-toc-toggle').forEach(el => el.remove());
+                parent.querySelectorAll('.nbv-toc-wrapper, .nbv-toc-toggle, .nbv-toc-resizer').forEach(el => el.remove());
                 parent.insertBefore(result.outerToggle, container);
-                parent.insertBefore(result.toc, container);
+                parent.insertBefore(result.wrapper, container);
+                parent.insertBefore(result.resizer, container);
+
+                // Track active heading on scroll
+                const tocLinks = result.wrapper.querySelectorAll('a');
+                const headingEls = [];
+                tocLinks.forEach(a => {
+                    const id = a.getAttribute('href').slice(1);
+                    const el = document.getElementById(id);
+                    if (el) headingEls.push({ el, li: a.parentElement });
+                });
+
+                if (headingEls.length > 0) {
+                    const updateActive = () => {
+                        let active = headingEls[0];
+                        for (const h of headingEls) {
+                            if (h.el.getBoundingClientRect().top <= 60) active = h;
+                        }
+                        tocLinks.forEach(a => a.parentElement.classList.remove('nbv-toc-active'));
+                        active.li.classList.add('nbv-toc-active');
+                    };
+                    window.addEventListener('scroll', updateActive, { passive: true });
+                    updateActive();
+                }
             }
         }
     }
