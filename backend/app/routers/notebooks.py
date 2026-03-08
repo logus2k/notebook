@@ -17,6 +17,7 @@ class CreateProjectRequest(BaseModel):
 class CreateNotebookRequest(BaseModel):
     name: str
     content: Optional[dict] = None
+    external_path: Optional[str] = None
 
 
 class RenameProjectRequest(BaseModel):
@@ -90,10 +91,10 @@ def notebook_summary(project_id: str, notebook_name: str):
 @router.post("/projects/{project_id}/notebooks")
 def create_notebook(project_id: str, req: CreateNotebookRequest):
     try:
-        return notebook_mgr.create_notebook(project_id, req.name, req.content)
+        return notebook_mgr.create_notebook(project_id, req.name, req.content, req.external_path)
     except FileExistsError as e:
         raise HTTPException(status_code=409, detail=str(e))
-    except ValueError as e:
+    except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 

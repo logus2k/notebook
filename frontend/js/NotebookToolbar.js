@@ -32,7 +32,7 @@ export class NotebookToolbar {
         // Left: title/logo
         const title = document.createElement('img');
         title.className = 'toolbar-title';
-        title.src = 'static/images/noted.png';
+        title.src = 'static/images/noted_logo7.png';
         title.alt = 'noted';
         this._container.appendChild(title);
 

@@ -4,7 +4,15 @@ A collaborative Jupyter-compatible notebook platform with real-time multi-user e
 
 ## Quick Start
 
-Pull and run with a single command:
+### With GPU support
+
+Requires an NVIDIA GPU and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+
+```bash
+docker run -d -p 8123:8123 -v noted_data:/app/data --gpus all --name noted logus2k/noted
+```
+
+### CPU only
 
 ```bash
 docker run -d -p 8123:8123 -v noted_data:/app/data --name noted logus2k/noted
@@ -12,15 +20,7 @@ docker run -d -p 8123:8123 -v noted_data:/app/data --name noted logus2k/noted
 
 Open [http://localhost:8123](http://localhost:8123) in your browser.
 
-### GPU Support
-
-On hosts with an NVIDIA GPU and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed:
-
-```bash
-docker run -d -p 8123:8123 -v noted_data:/app/data --gpus all --name noted logus2k/noted
-```
-
-GPU is auto-detected at runtime -- the same image works on both GPU and CPU-only hosts.
+The same image works on both GPU and CPU-only hosts -- GPU is auto-detected at runtime.
 
 ## Features
 
@@ -41,8 +41,16 @@ GPU is auto-detected at runtime -- the same image works on both GPU and CPU-only
 
 ### Docker Compose
 
+With GPU support (default):
+
 ```bash
 docker compose up -d --build
+```
+
+CPU only:
+
+```bash
+docker compose -f docker-compose.cpu.yml up -d --build
 ```
 
 ### Run locally
@@ -68,6 +76,7 @@ backend/
       execution_bridge.py   Kernel output streaming
       collaboration.py      Multi-user rooms and cell locking
       notebook_manager.py   .ipynb file storage
+      external_projects.py  External projects config singleton
     routers/
       notebooks.py          REST API for projects/notebooks
       venvs.py              REST API for runtimes and environments
@@ -104,11 +113,13 @@ frontend/
 scripts/
   entrypoint.sh             Container entrypoint
   create_runtime_configs.sh Auto-generates runtime descriptors
+  link_external_projects.sh Links external notebook directories
 
 data/
   projects/                 Notebooks organized by project
   environments/             Virtual environments grouped by runtime
   runtimes/                 Auto-generated runtime.json descriptors
+  projects.txt             External projects config (optional)
 ```
 
 ### Tech Stack
@@ -123,6 +134,51 @@ data/
 | Icons | Font Awesome |
 | Markdown | Marked, Highlight.js, KaTeX |
 | Container | Docker, NVIDIA CUDA 13.1 runtime |
+
+## External Projects
+
+You can link existing notebook directories from your host machine into noted. This lets you work on notebooks that live in other projects (e.g. VS Code workspaces) without copying them.
+
+### 1. Mount host directories into the container
+
+Add volume mounts for the directories containing your notebooks:
+
+```bash
+docker run -d -p 8123:8123 \
+  -v noted_data:/app/data \
+  -v ~/projects:/workspace/projects \
+  -v ~/courses:/workspace/courses \
+  --gpus all --name noted logus2k/noted
+```
+
+### 2. Create a config file
+
+Create `data/projects.txt` in your noted data volume. This is an INI-style file where each section is a project name and lines underneath are container-internal paths to scan for `.ipynb` files:
+
+```ini
+# My ML research project
+[ML Research]
+/workspace/projects/ml-research
+/workspace/projects/ml-research/experiments/*
+
+# University course notebooks
+[Deep Learning Course]
+/workspace/courses/dl/notebooks
+```
+
+A project can have multiple source paths. Lines starting with `#` are comments. Append `/*` to a path to scan it recursively (all subdirectories); without it, only notebooks in the immediate directory are linked.
+
+### 3. Restart the container
+
+On each startup, noted reads `projects.txt` and symlinks all `.ipynb` files from the configured paths into its project structure. Stale symlinks are cleaned up automatically.
+
+### How it works
+
+- Symlinks are created inside the container, so this works on all host OSes (Linux, macOS, Windows)
+- noted never modifies your host directory structure -- it only reads/writes `.ipynb` file contents
+- Real (non-symlink) files in a project's notebooks directory are never touched
+- If a configured path doesn't exist, it is skipped with a warning
+- New notebooks created on the host appear after restarting the container
 
 ## Keyboard Shortcuts
 

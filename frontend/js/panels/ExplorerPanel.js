@@ -33,6 +33,8 @@ export class ExplorerPanel {
         // Persistent terminals per environment: key = "runtimeId:envName"
         // value = { term, termContainer, termOpened, panel, openPanel, closePanel, fitTerminal }
         this._envTerminals = {};
+        // Project metadata from API (keyed by project id)
+        this._projectsData = {};
     }
 
     setActiveVenv(name) {
@@ -174,6 +176,12 @@ export class ExplorerPanel {
         const projects = await projectsResp.json();
         this._runtimes = await runtimesResp.json();
         const envs = await envsResp.json();
+
+        // Store project metadata for external project support
+        this._projectsData = {};
+        for (const p of projects) {
+            this._projectsData[p.id] = p;
+        }
 
         // Group envs by runtime_id
         const envsByRuntime = {};
@@ -583,7 +591,36 @@ export class ExplorerPanel {
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
         nameInput.placeholder = 'Notebook name (without .ipynb)';
+        nameInput.spellcheck = false;
         form.appendChild(nameInput);
+
+        // Location selector for external projects
+        const projData = this._projectsData[projectId];
+        let locationSelect = null;
+        if (projData?.external && projData.external_paths?.length) {
+            const locLabel = document.createElement('label');
+            locLabel.textContent = 'Save location';
+            form.appendChild(locLabel);
+
+            locationSelect = document.createElement('select');
+
+            const internalOpt = document.createElement('option');
+            internalOpt.value = '';
+            internalOpt.textContent = 'Internal (noted storage)';
+            locationSelect.appendChild(internalOpt);
+
+            for (const p of projData.external_paths) {
+                const opt = document.createElement('option');
+                opt.value = p;
+                // Show last two path components for readability
+                const parts = p.split('/').filter(Boolean);
+                opt.textContent = parts.length > 1
+                    ? `.../${parts.slice(-2).join('/')}`
+                    : p;
+                locationSelect.appendChild(opt);
+            }
+            form.appendChild(locationSelect);
+        }
 
         const errorEl = document.createElement('div');
         errorEl.className = 'explorer-form-error';
@@ -592,7 +629,10 @@ export class ExplorerPanel {
         const createBtn = document.createElement('button');
         createBtn.className = 'explorer-btn primary';
         createBtn.textContent = 'Create Notebook';
-        createBtn.addEventListener('click', () => this._createNotebook(projectId, nameInput, createBtn, errorEl));
+        createBtn.addEventListener('click', () => {
+            const extPath = locationSelect ? locationSelect.value : null;
+            this._createNotebook(projectId, nameInput, createBtn, errorEl, extPath);
+        });
         form.appendChild(createBtn);
 
         nameInput.addEventListener('keydown', (e) => {
@@ -1007,17 +1047,19 @@ export class ExplorerPanel {
         }
     }
 
-    async _createNotebook(projectId, nameInput, createBtn, errorEl) {
+    async _createNotebook(projectId, nameInput, createBtn, errorEl, externalPath = null) {
         const name = nameInput.value.trim();
         if (!name) { nameInput.focus(); return; }
         errorEl.textContent = '';
         createBtn.disabled = true;
         createBtn.textContent = 'Creating...';
         try {
+            const body = { name };
+            if (externalPath) body.external_path = externalPath;
             const resp = await fetch(`api/projects/${encodeURIComponent(projectId)}/notebooks`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name })
+                body: JSON.stringify(body)
             });
             if (!resp.ok) {
                 const err = await resp.json();

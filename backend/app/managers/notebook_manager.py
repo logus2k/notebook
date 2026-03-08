@@ -5,6 +5,7 @@ import uuid
 import hashlib
 from typing import Optional
 from app.config import PROJECTS_DIR
+from app.managers.external_projects import ExternalProjectsConfig
 
 
 class NotebookManager:
@@ -144,16 +145,21 @@ class NotebookManager:
         return project_id, notebook_name
 
     def list_projects(self) -> list[dict]:
+        ext_config = ExternalProjectsConfig()
         projects = []
         if not os.path.exists(PROJECTS_DIR):
             return projects
         for name in sorted(os.listdir(PROJECTS_DIR)):
             project_path = os.path.join(PROJECTS_DIR, name)
             if os.path.isdir(project_path):
-                projects.append({
+                proj = {
                     "id": name,
-                    "notebooks_count": len(self.list_notebooks(name))
-                })
+                    "notebooks_count": len(self.list_notebooks(name)),
+                    "external": ext_config.is_external(name),
+                }
+                if proj["external"]:
+                    proj["external_paths"] = ext_config.get_paths(name)
+                projects.append(proj)
         return projects
 
     def create_project(self, project_id: str) -> dict:
@@ -244,7 +250,8 @@ class NotebookManager:
         return wire
 
     def create_notebook(self, project_id: str, notebook_name: str,
-                        content: Optional[dict] = None) -> dict:
+                        content: Optional[dict] = None,
+                        external_path: Optional[str] = None) -> dict:
         notebook_name = self._validate_notebook_name(notebook_name)
         notebooks_dir = self._project_notebooks_dir(project_id)
         os.makedirs(notebooks_dir, exist_ok=True)
@@ -252,8 +259,24 @@ class NotebookManager:
         if os.path.exists(filepath):
             raise FileExistsError(f"Notebook already exists: {notebook_name}")
         notebook = content if content else self._empty_notebook(notebook_name)
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(notebook, f, indent=2)
+
+        if external_path:
+            # Validate the path is a known external path for this project
+            ext_config = ExternalProjectsConfig()
+            allowed = ext_config.get_paths(project_id)
+            if external_path not in allowed:
+                raise ValueError(f"Path not configured for project: {external_path}")
+            if not os.path.isdir(external_path):
+                raise FileNotFoundError(f"External path not found: {external_path}")
+            # Write to external directory and symlink into noted
+            ext_file = os.path.join(external_path, notebook_name)
+            with open(ext_file, "w", encoding="utf-8") as f:
+                json.dump(notebook, f, indent=2)
+            os.symlink(ext_file, filepath)
+        else:
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(notebook, f, indent=2)
+
         return {"name": notebook_name, "created": True}
 
     def update_notebook(self, project_id: str, notebook_name: str,
