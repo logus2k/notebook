@@ -37,7 +37,10 @@ export class NotebookToolbar {
         this._connectedUsers = {};
         this._servicePanels = {};
         this._postItIndex = new PostItIndexPanel(callbacks.getCells || (() => []));
-        this._tocPanel = new TocPanel(callbacks.getCells || (() => []));
+        this._tocPanel = new TocPanel(
+            callbacks.getCells || (() => []),
+            callbacks.onSelectCell || null
+        );
 
         this._build();
         this._setupListeners();

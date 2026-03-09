@@ -45,7 +45,7 @@
     border-radius: 4px;
 }
 
-.cell.selected:focus {
+.cell:focus {
     outline: none;
 }
 

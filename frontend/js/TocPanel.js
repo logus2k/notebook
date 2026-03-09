@@ -8,8 +8,9 @@ export class TocPanel {
     /**
      * @param {function} getCells - Returns the current cells array
      */
-    constructor(getCells) {
+    constructor(getCells, onSelectCell) {
         this._getCells = getCells;
+        this._onSelectCell = onSelectCell || null;
         this._visible = false;
         this._wrapper = null;
         this._list = null;
@@ -29,11 +30,7 @@ export class TocPanel {
         this._wrapper.className = 'toc-wrapper';
         this._wrapper.style.display = 'none';
 
-        // TOC content (scrollable)
-        const toc = document.createElement('div');
-        toc.className = 'toc-nav';
-
-        // Header
+        // Header (outside scrollable area so it spans full width)
         const header = document.createElement('div');
         header.className = 'toc-header';
 
@@ -42,7 +39,11 @@ export class TocPanel {
         title.textContent = 'Table of Contents';
         header.appendChild(title);
 
-        toc.appendChild(header);
+        this._wrapper.appendChild(header);
+
+        // TOC content (scrollable)
+        const toc = document.createElement('div');
+        toc.className = 'toc-nav';
 
         // List container
         this._list = document.createElement('ul');
@@ -173,7 +174,7 @@ export class TocPanel {
                     const level = parseInt(h.tagName[1]);
                     const text = h.textContent.replace(/#$/, '').trim();
                     if (text) {
-                        this._addEntry(level, text, cell, h);
+                        this._addEntry(level, text, cell, i, h);
                     }
                 }
                 if (hEls.length > 0) continue;
@@ -186,7 +187,7 @@ export class TocPanel {
             for (const line of lines) {
                 const match = line.match(/^(#{1,6})\s+(.+)/);
                 if (match) {
-                    this._addEntry(match[1].length, match[2].trim(), cell, null);
+                    this._addEntry(match[1].length, match[2].trim(), cell, i, null);
                 }
             }
         }
@@ -199,7 +200,7 @@ export class TocPanel {
         }
     }
 
-    _addEntry(level, text, cell, headingEl) {
+    _addEntry(level, text, cell, cellIndex, headingEl) {
         const li = document.createElement('li');
         li.className = `toc-h${level}`;
 
@@ -211,18 +212,18 @@ export class TocPanel {
             if (headingEl) {
                 headingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } else {
-                cell.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                cell.element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-            cell.focusCell();
+            if (this._onSelectCell) {
+                this._onSelectCell(cellIndex);
+            }
         });
 
         li.appendChild(a);
         this._list.appendChild(li);
 
-        if (headingEl) {
-            this._headingEls.push({ el: headingEl, li });
-            this._tocLinks.push(a);
-        }
+        this._headingEls.push({ el: headingEl || cell.element, li, isCell: !headingEl });
+        this._tocLinks.push(a);
     }
 
     _setupScrollTracking() {

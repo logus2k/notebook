@@ -102,6 +102,7 @@ class App {
                 onExport: () => this._editor.export(),
                 onSettingsToggle: () => this._displaySettingsPanel.toggle(),
                 getCells: () => this._editor.cells,
+                onSelectCell: (index) => this._editor.selection.selectCell(index),
             }
         );
 

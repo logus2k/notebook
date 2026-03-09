@@ -32,12 +32,15 @@
     display: flex;
     align-items: center;
     gap: 9px;
-    margin-bottom: 11px;
+    padding: 6px 12px;
+    background: #ffe39eed;
+    border-radius: 5px 5px 0 0;
+    flex-shrink: 0;
 }
 
 .toc-title {
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: #333333;
@@ -59,12 +62,13 @@
 
 .toc-nav li:hover {
     background: #7ae58c44;
+    text-shadow: 0 0 0.5px currentColor;
 }
 
 .toc-nav li.toc-active {
     border-color: #99999933;
     background: #7ae58c96;
-    font-weight: 500;
+    text-shadow: 0 0 0.5px currentColor;
 }
 
 .toc-nav a {
@@ -134,7 +138,7 @@
 
 .toc-nav::-webkit-scrollbar-track {
     background: transparent;
-    margin: 36px 0 14px;
+    margin: 26px 0 14px;
 }
 
 .toc-nav::-webkit-scrollbar-thumb {
