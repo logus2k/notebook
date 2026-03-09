@@ -14,6 +14,7 @@ from app.managers.execution_bridge import ExecutionBridge
 from app.managers.collaboration import CollaborationManager
 from app.managers.notebook_manager import NotebookManager
 from app.managers.venv_manager import VenvManager
+from app.managers.terminal_manager import TerminalManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ collab_mgr = CollaborationManager(sio)
 execution_bridge = ExecutionBridge(kernel_mgr, sio)
 notebook_mgr = NotebookManager()
 venv_mgr = VenvManager()
+terminal_mgr = TerminalManager(sio)
 
 # Track client context: sid -> {project_id, notebook_path, user_name}
 client_context: dict[str, dict] = {}
@@ -47,6 +49,7 @@ async def lifespan(app: FastAPI):
     await kernel_mgr.start()
     logger.info("Notebook server started")
     yield
+    await terminal_mgr.kill_all()
     await kernel_mgr.stop()
     logger.info("Notebook server stopped")
 
@@ -396,6 +399,72 @@ async def on_heartbeat(sid, data):
     session = kernel_mgr.get_session_by_sid(sid)
     if session:
         kernel_mgr.heartbeat(session.session_id)
+
+
+# --- Terminal events ---
+
+@sio.on("terminal:start")
+async def on_terminal_start(sid, data):
+    session_id = data.get("session_id")
+    cmd = data.get("cmd")
+    cwd = data.get("cwd")
+    env = data.get("env")
+    cols = data.get("cols", 120)
+    rows = data.get("rows", 24)
+
+    logger.info(f"Terminal start request: session_id={session_id}, cmd={cmd}, cwd={cwd}, env_keys={list(env.keys()) if env else None}")
+
+    if not session_id or not cmd:
+        await sio.emit("error", {
+            "message": "session_id and cmd required",
+            "code": "INVALID_REQUEST",
+        }, to=sid)
+        return
+
+    # Kill existing session with same id
+    existing = terminal_mgr.get_session(session_id)
+    if existing:
+        await terminal_mgr.kill_session(session_id)
+
+    try:
+        await terminal_mgr.create_session(
+            session_id, sid, cmd, cwd=cwd, env=env, cols=cols, rows=rows,
+        )
+        await sio.emit("terminal:started", {
+            "session_id": session_id,
+        }, to=sid)
+    except Exception as e:
+        logger.error(f"Terminal start failed: {e}")
+        await sio.emit("error", {
+            "message": f"Terminal start failed: {e}",
+            "code": "TERMINAL_ERROR",
+        }, to=sid)
+
+
+@sio.on("terminal:input")
+async def on_terminal_input(sid, data):
+    session_id = data.get("session_id")
+    text = data.get("data", "")
+    session = terminal_mgr.get_session(session_id)
+    if session:
+        session.write(text)
+
+
+@sio.on("terminal:resize")
+async def on_terminal_resize(sid, data):
+    session_id = data.get("session_id")
+    cols = data.get("cols", 120)
+    rows = data.get("rows", 24)
+    session = terminal_mgr.get_session(session_id)
+    if session:
+        session.resize(cols, rows)
+
+
+@sio.on("terminal:kill")
+async def on_terminal_kill(sid, data):
+    session_id = data.get("session_id")
+    if session_id:
+        await terminal_mgr.kill_session(session_id)
 
 
 # --- Static files ---

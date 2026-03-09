@@ -25,7 +25,9 @@ RUN apt-get update && \
         # pip bootstrap
         python3-pip \
         # curl for health checks
-        curl && \
+        curl \
+        # PortAudio for Aider voice coding
+        libportaudio2 && \
     rm -rf /var/lib/apt/lists/*
 
 # Ensure pip is available for each Python version
@@ -39,6 +41,9 @@ WORKDIR /app
 COPY backend/requirements.txt backend/requirements.txt
 RUN python3.12 -m pip install --no-cache-dir --break-system-packages \
     -r backend/requirements.txt
+
+# Aider AI coding assistant (OpenAI-compatible, works with local LLMs)
+RUN python3.12 -m pip install --no-cache-dir --break-system-packages aider-chat
 
 # ── Stage 2: App image — copies application code onto the cached base ──
 # Fast rebuild (~1s) on every code change.

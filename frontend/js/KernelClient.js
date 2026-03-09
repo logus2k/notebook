@@ -64,6 +64,7 @@ export class KernelClient {
 
     get connected() { return this._connected; }
     get sid() { return this._socket ? this._socket.id : null; }
+    get socket() { return this._socket; }
 
     // --- Notebook ---
 
