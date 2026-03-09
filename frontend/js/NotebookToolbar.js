@@ -5,7 +5,16 @@ const ICONS = {
     save:      `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" fill="#4caf50"/><polygon points="17 21 17 13 7 13 7 21" fill="#fff2bc"/><polyline points="7 3 7 8 15 8" fill="#cecece"/></svg>`,
     download:  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
     settings:  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="#c4a07a"/><circle cx="12" cy="12" r="3" fill="#fff2bc"/></svg>`,
+    mlflow:    `<img src="static/images/mlflow.png" width="18" height="18" style="display:block"/>`,
+    airflow:   `<img src="static/images/airflow.png" width="18" height="18" style="display:block"/>`,
+    minio:     `<img src="static/images/minio.png" width="18" height="18" style="display:block"/>`,
 };
+
+const SERVICES = [
+    { key: 'airflow', icon: 'airflow', title: 'Airflow', url: '/airflow' },
+    { key: 'mlflow',  icon: 'mlflow',  title: 'MLflow',  url: '/mlflow' },
+    { key: 'minio',   icon: 'minio',   title: 'MinIO',   url: '/minio' },
+];
 
 /**
  * NotebookToolbar - Navigation, file actions, settings, connected users.
@@ -21,6 +30,7 @@ export class NotebookToolbar {
         this._client = kernelClient;
         this._callbacks = callbacks;
         this._connectedUsers = {};
+        this._servicePanels = {};
 
         this._build();
         this._setupListeners();
@@ -63,6 +73,17 @@ export class NotebookToolbar {
         });
         settingsBtn.className = 'toolbar-settings-btn';
         actionsGroup.appendChild(settingsBtn);
+
+        // Service buttons (MLflow, Airflow, MinIO) — after settings with separator
+        const servicesSep = document.createElement('div');
+        servicesSep.className = 'toolbar-separator';
+        actionsGroup.appendChild(servicesSep);
+        for (const svc of SERVICES) {
+            actionsGroup.appendChild(this._iconButton(ICONS[svc.icon], svc.title, () => {
+                this._openServicePanel(svc);
+            }));
+        }
+
         this._container.appendChild(actionsGroup);
 
         // Spacer
@@ -104,6 +125,42 @@ export class NotebookToolbar {
             avatar.title = name;
             this._usersEl.appendChild(avatar);
         }
+    }
+
+    // --- Service panels ---
+
+    _openServicePanel(svc) {
+        if (this._servicePanels[svc.key]) {
+            this._servicePanels[svc.key].front();
+            return;
+        }
+
+        const panel = jsPanel.create({
+            id: `service-panel-${svc.key}`,
+            headerTitle: svc.title,
+            theme: 'none',
+            borderRadius: '5px',
+            border: '1px solid var(--border-color)',
+            boxShadow: 3,
+            position: 'center',
+            panelSize: { width: '80vw', height: '80vh' },
+            headerControls: { minimize: 'remove', smallify: 'remove', normalize: 'remove', maximize: 'remove' },
+            onclosed: () => {
+                delete this._servicePanels[svc.key];
+            },
+            callback: (panel) => {
+                const content = panel.content;
+                content.style.padding = '0';
+                content.style.overflow = 'hidden';
+
+                const iframe = document.createElement('iframe');
+                iframe.src = svc.url;
+                iframe.style.cssText = 'width:100%;height:100%;border:none;';
+                content.appendChild(iframe);
+            },
+        });
+
+        this._servicePanels[svc.key] = panel;
     }
 
     // --- Helpers ---

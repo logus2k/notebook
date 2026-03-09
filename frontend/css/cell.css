@@ -442,6 +442,7 @@
     background: transparent;
     font-family: var(--font-mono);
     font-size: 13px;
+    line-height: 1.5;
 }
 
 .cell-editor .cm-editor .cm-content {
@@ -454,8 +455,7 @@
     background: transparent;
     border-right: 1px solid transparent;
     color: var(--text-muted);
-    font-size: 11px;
-    padding: 1px 5px 0px 15px;
+    padding: 0 5px 0px 15px;
     border-radius: 0px 0px 0px 6px;
     transition: background 0.15s, border-color 0.15s;
 }
@@ -473,6 +473,8 @@
 .cell-editor .cm-editor .cm-lineNumbers .cm-gutterElement {
     text-align: right;
     padding: 0 4px 0 4px;
+    font-size: 11px;
+    line-height: 19.5px;
     color: transparent;
     transition: color 0.15s;
 }

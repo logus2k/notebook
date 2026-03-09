@@ -93,3 +93,10 @@
     background: #c8e6c0;
     color: var(--text-primary);
 }
+
+.toolbar-separator {
+    width: 1px;
+    height: 18px;
+    background: #c0a86066;
+    margin: 0 4px;
+}
