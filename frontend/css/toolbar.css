@@ -100,3 +100,7 @@
     background: #c0a86066;
     margin: 0 4px;
 }
+
+.toolbar-btn-active {
+    background: #a8dda0;
+}

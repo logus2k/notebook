@@ -63,7 +63,7 @@ export class TocPanel {
         app.appendChild(this._wrapper);
         app.appendChild(this._resizer);
 
-        this._notebookContainer = document.getElementById('notebook-container');
+        this._contentArea = document.getElementById('content-area');
     }
 
     _setupResize() {
@@ -77,7 +77,7 @@ export class TocPanel {
             startWidth = this._wrapper.getBoundingClientRect().width;
             this._resizer.classList.add('toc-dragging');
             this._wrapper.style.transition = 'none';
-            this._notebookContainer.style.transition = 'none';
+            this._contentArea.style.transition = 'none';
         });
 
         window.addEventListener('mousemove', (e) => {
@@ -93,7 +93,7 @@ export class TocPanel {
             dragging = false;
             this._resizer.classList.remove('toc-dragging');
             this._wrapper.style.transition = '';
-            this._notebookContainer.style.transition = '';
+            this._contentArea.style.transition = '';
             this._savedWidth = this._wrapper.style.width || null;
         });
 
@@ -116,13 +116,13 @@ export class TocPanel {
     }
 
     _updateContainerMargin() {
-        if (!this._notebookContainer) return;
+        if (!this._contentArea) return;
         if (!this._visible) {
-            this._notebookContainer.style.marginLeft = '';
+            this._contentArea.style.marginLeft = '';
         } else {
             const left = parseInt(getComputedStyle(this._wrapper).left) || 16;
             const margin = left + this._getTargetWidth() + 20;
-            this._notebookContainer.style.marginLeft = margin + 'px';
+            this._contentArea.style.marginLeft = margin + 'px';
         }
     }
 
@@ -210,9 +210,9 @@ export class TocPanel {
         a.addEventListener('click', (e) => {
             e.preventDefault();
             if (headingEl) {
-                headingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                headingEl.scrollIntoView({ behavior: 'instant', block: 'start' });
             } else {
-                cell.element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                cell.element.scrollIntoView({ behavior: 'instant', block: 'start' });
             }
             if (this._onSelectCell) {
                 this._onSelectCell(cellIndex);

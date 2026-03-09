@@ -96,14 +96,57 @@ html, body {
     height: 100vh;
 }
 
-#notebook-container {
+#content-area {
     flex: 1;
+    display: flex;
+    overflow: hidden;
+    transition: margin-left 0.25s ease;
+}
+
+#notebook-container {
     overflow-y: scroll;
     padding: 16px 10px 16px 10px;
-    max-width: calc(var(--notebook-max-width, 960px) + 28px);
-    margin: 0 auto;
-    width: 100%;
-    transition: margin-left 0.25s ease;
+    width: 988px;
+    min-width: 400px;
+    flex-shrink: 1;
+}
+
+#notebook-resizer {
+    width: 6px;
+    margin: 0 5px;
+    cursor: col-resize;
+    flex-shrink: 0;
+    position: relative;
+}
+
+#notebook-resizer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 2px;
+    width: 0;
+    height: 100%;
+    border-left: 1px solid #cecece;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+#notebook-resizer:hover::after,
+#notebook-resizer.dragging::after {
+    opacity: 1;
+}
+
+#right-panel {
+    flex: 1;
+    overflow: hidden;
+    min-width: 300px;
+    display: none;
+    flex-direction: column;
+    background: var(--bg-primary, #ffffff);
+    border: 1px solid var(--border-color, #e8e8e8);
+    border-radius: 6px;
+    margin: 16px 16px 16px 0;
+    box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
 }
 
 button {

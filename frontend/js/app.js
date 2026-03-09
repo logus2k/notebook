@@ -4,6 +4,7 @@ import { NotebookToolbar } from './NotebookToolbar.js';
 import { InfoBar } from './InfoBar.js';
 import { ExplorerPanel } from './panels/ExplorerPanel.js';
 import { DisplaySettingsPanel } from './panels/DisplaySettingsPanel.js';
+import { NotebookResizer } from './NotebookResizer.js';
 
 /**
  * App - Entry point. Wires together all components.
@@ -21,17 +22,15 @@ class App {
         this._activeVenv = null; // { name, runtimeId, displayName } or null
         this._userName = this._generateUserName();
         this._kernelRunning = false;
+        this._chatVisible = false;
     }
 
     async init() {
         // Make panels more opaque while dragging (default 0.8 → 0.95)
         jsPanel.defaults.dragit.opacity = 0.95;
 
-        // Restore saved cell width
-        const savedWidth = localStorage.getItem('notebook-cell-width');
-        if (savedWidth) {
-            document.documentElement.style.setProperty('--notebook-max-width', `${savedWidth}px`);
-        }
+        // Initialize notebook resizer (restores saved width)
+        this._notebookResizer = new NotebookResizer();
 
         // Restore display toggles
         const toggleMap = {
@@ -101,6 +100,7 @@ class App {
                 onSave: () => this._editor.save(),
                 onExport: () => this._editor.export(),
                 onSettingsToggle: () => this._displaySettingsPanel.toggle(),
+                onChatToggle: () => this._toggleChatPanel(),
                 getCells: () => this._editor.cells,
                 onSelectCell: (index) => this._editor.selection.selectCell(index),
             }
@@ -373,6 +373,12 @@ class App {
             return;
         }
         this._client.startKernel(this._activeVenv.runtimeId, this._activeVenv.name);
+    }
+
+    _toggleChatPanel() {
+        const panel = document.getElementById('right-panel');
+        this._chatVisible = !this._chatVisible;
+        panel.style.display = this._chatVisible ? 'flex' : 'none';
     }
 
     _generateUserName() {
