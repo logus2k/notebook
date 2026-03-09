@@ -5,6 +5,8 @@ import { InfoBar } from './InfoBar.js';
 import { ExplorerPanel } from './panels/ExplorerPanel.js';
 import { DisplaySettingsPanel } from './panels/DisplaySettingsPanel.js';
 import { NotebookResizer } from './NotebookResizer.js';
+import { ChatPanel } from './ChatPanel.js';
+import { ChatService } from './ChatService.js';
 
 /**
  * App - Entry point. Wires together all components.
@@ -132,6 +134,13 @@ class App {
 
         // Initialize display settings panel (jsPanel)
         this._displaySettingsPanel = new DisplaySettingsPanel();
+
+        // Initialize chat panel + service
+        this._chatPanel = new ChatPanel(document.getElementById('right-panel'));
+        this._chatService = new ChatService(this._chatPanel);
+        this._chatService.connect().catch(err => {
+            console.error('Chat service connection failed:', err);
+        });
 
         // Initialize unified explorer panel (projects + environments)
         this._explorerPanel = new ExplorerPanel({
