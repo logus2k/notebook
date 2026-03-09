@@ -45,9 +45,9 @@
 .info-bar-separator {
     display: flex;
     align-items: center;
-    margin: 0 2px;
+    margin: 0 4px;
     flex-shrink: 0;
-    /* opacity: 0.5; */
+    opacity: 0.5;
 }
 
 .info-bar-label {

@@ -1,3 +1,6 @@
+import { POST_IT_ICON_TOOLBAR } from './CellPostIt.js';
+import { PostItIndexPanel } from './PostItIndexPanel.js';
+
 const S = 'stroke="#202020" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"';
 const ICONS = {
     folder:    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" fill="#e6b800"/></svg>`,
@@ -31,6 +34,7 @@ export class NotebookToolbar {
         this._callbacks = callbacks;
         this._connectedUsers = {};
         this._servicePanels = {};
+        this._postItIndex = new PostItIndexPanel(callbacks.getCells || (() => []));
 
         this._build();
         this._setupListeners();
@@ -67,6 +71,15 @@ export class NotebookToolbar {
             if (this._callbacks.onExport) this._callbacks.onExport();
         });
         actionsGroup.appendChild(this._exportBtn);
+
+        this._postItBtn = this._iconButton(POST_IT_ICON_TOOLBAR, 'Notes index', () => {
+            this._postItIndex.toggle();
+        });
+        this._postItBtn.style.position = 'relative';
+        this._notesBadge = document.createElement('span');
+        this._notesBadge.className = 'toolbar-notes-badge';
+        this._postItBtn.appendChild(this._notesBadge);
+        actionsGroup.appendChild(this._postItBtn);
 
         const settingsBtn = this._iconButton(ICONS.settings, 'Settings', () => {
             if (this._callbacks.onSettingsToggle) this._callbacks.onSettingsToggle();
@@ -125,6 +138,18 @@ export class NotebookToolbar {
             avatar.title = name;
             this._usersEl.appendChild(avatar);
         }
+    }
+
+    updateNotesBadge() {
+        const getCells = this._callbacks.getCells || (() => []);
+        const cells = getCells();
+        let count = 0;
+        for (const cell of cells) {
+            const meta = cell._data?.metadata?.noted;
+            if (meta && meta.annotation !== undefined) count++;
+        }
+        this._notesBadge.textContent = count || '';
+        this._notesBadge.style.display = count ? 'inline-block' : 'none';
     }
 
     // --- Service panels ---

@@ -65,6 +65,9 @@ class App {
             this._client
         );
 
+        // Update toolbar badge when cells change
+        this._editor.onCellsChanged = () => this._toolbar?.updateNotesBadge();
+
         // Initialize toolbar (nav icons + file actions + settings + users)
         this._toolbar = new NotebookToolbar(
             document.getElementById('toolbar'),
@@ -78,6 +81,7 @@ class App {
                 onSave: () => this._editor.save(),
                 onExport: () => this._editor.export(),
                 onSettingsToggle: () => this._displaySettingsPanel.toggle(),
+                getCells: () => this._editor.cells,
             }
         );
 

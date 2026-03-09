@@ -1,4 +1,5 @@
 import { CellOutput } from './CellOutput.js';
+import { CellPostIt, POST_IT_ICON_CELL } from './CellPostIt.js';
 
 /**
  * CellEditor - Manages a single notebook cell with CodeMirror editor.
@@ -96,6 +97,12 @@ export class CellEditor {
             this._output.setOutputs(cellData.outputs);
         }
 
+        // Post-it note (persisted in cell.metadata.noted)
+        if (!this._data.metadata) this._data.metadata = {};
+        this._postIt = new CellPostIt(this._el, this._data.metadata, () => {
+            this._notifyChange();
+        });
+
         this._initEditor();
     }
 
@@ -114,6 +121,13 @@ export class CellEditor {
 
     focusCell() { this._el.focus({ preventScroll: true }); }
     focusEditor() { this._editorView?.focus(); }
+
+    /** Notify parent that cell content/metadata changed. */
+    _notifyChange() {
+        if (this._callbacks.onChange) {
+            this._callbacks.onChange(this._index, this._getSource());
+        }
+    }
 
     _buildElement() {
         const cell = document.createElement('div');
@@ -287,10 +301,26 @@ export class CellEditor {
             if (this._callbacks.onRunBelow) this._callbacks.onRunBelow(this._index);
         });
 
+        // Post-it button
+        const postItBtn = document.createElement('button');
+        postItBtn.className = 'cell-header-btn cell-postit-btn';
+        postItBtn.innerHTML = POST_IT_ICON_CELL;
+        postItBtn.title = 'Note this cell';
+        postItBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this._postIt.toggle();
+            postItBtn.classList.toggle('has-note', this._postIt.hasNote());
+        });
+        this._postItBtn = postItBtn;
+        // Highlight if note already exists
+        if (this._data.metadata?.noted?.annotation !== undefined) {
+            postItBtn.classList.add('has-note');
+        }
+
         // Right segment
         const headerRight = document.createElement('div');
         headerRight.className = 'cell-header-right';
-        headerRight.append(lockIndicator, runAboveBtn, runBelowBtn, copyBtn, clearBtn, deleteBtn);
+        headerRight.append(lockIndicator, postItBtn, runAboveBtn, runBelowBtn, copyBtn, clearBtn, deleteBtn);
 
         header.append(headerLeft, headerCenter, headerRight);
 
@@ -573,6 +603,9 @@ export class CellEditor {
 
     destroy() {
         _allEditors.delete(this);
+        if (this._postIt) {
+            this._postIt.destroy();
+        }
         if (this._gutterObserver) {
             this._gutterObserver.disconnect();
             this._gutterObserver = null;
