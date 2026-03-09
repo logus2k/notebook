@@ -103,6 +103,7 @@ html, body {
     max-width: calc(var(--notebook-max-width, 960px) + 28px);
     margin: 0 auto;
     width: 100%;
+    transition: margin-left 0.25s ease;
 }
 
 button {

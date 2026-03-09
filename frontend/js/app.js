@@ -67,7 +67,10 @@ class App {
         );
 
         // Update toolbar badge when cells change
-        this._editor.onCellsChanged = () => this._toolbar?.updateNotesBadge();
+        this._editor.onCellsChanged = () => {
+            this._toolbar?.updateNotesBadge();
+            this._toolbar?.refreshToc();
+        };
 
         // Auto-start kernel if stopped but venv is selected
         this._editor.onEnsureKernel = () => {

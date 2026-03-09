@@ -1,5 +1,6 @@
 import { POST_IT_ICON_TOOLBAR } from './CellPostIt.js';
 import { PostItIndexPanel } from './PostItIndexPanel.js';
+import { TocPanel } from './TocPanel.js';
 
 const S = 'stroke="#202020" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"';
 const ICONS = {
@@ -11,6 +12,7 @@ const ICONS = {
     mlflow:    `<img src="static/images/mlflow.png" width="18" height="18" style="display:block"/>`,
     airflow:   `<img src="static/images/airflow.png" width="18" height="18" style="display:block"/>`,
     minio:     `<img src="static/images/minio.png" width="18" height="18" style="display:block"/>`,
+    toc:       `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><line x1="9" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="9" y1="18" x2="21" y2="18"/><circle cx="4.5" cy="6" r="1.5" fill="#5b9bd5"/><circle cx="4.5" cy="12" r="1.5" fill="#5b9bd5"/><circle cx="4.5" cy="18" r="1.5" fill="#5b9bd5"/></svg>`,
 };
 
 const SERVICES = [
@@ -35,9 +37,13 @@ export class NotebookToolbar {
         this._connectedUsers = {};
         this._servicePanels = {};
         this._postItIndex = new PostItIndexPanel(callbacks.getCells || (() => []));
+        this._tocPanel = new TocPanel(callbacks.getCells || (() => []));
 
         this._build();
         this._setupListeners();
+
+        // Show TOC by default (defer to after layout settles)
+        requestAnimationFrame(() => this._tocPanel.toggle());
     }
 
     _build() {
@@ -46,7 +52,7 @@ export class NotebookToolbar {
         // Left: title/logo
         const title = document.createElement('img');
         title.className = 'toolbar-title';
-        title.src = 'static/images/noted_logo7.png';
+        title.src = 'static/images/noted_logo.png';
         title.alt = 'noted';
         this._container.appendChild(title);
 
@@ -71,6 +77,10 @@ export class NotebookToolbar {
             if (this._callbacks.onExport) this._callbacks.onExport();
         });
         actionsGroup.appendChild(this._exportBtn);
+
+        actionsGroup.appendChild(this._iconButton(ICONS.toc, 'Table of Contents', () => {
+            this._tocPanel.toggle();
+        }));
 
         this._postItBtn = this._iconButton(POST_IT_ICON_TOOLBAR, 'Notes index', () => {
             this._postItIndex.toggle();
@@ -150,6 +160,10 @@ export class NotebookToolbar {
         }
         this._notesBadge.textContent = count || '';
         this._notesBadge.style.display = count ? 'inline-block' : 'none';
+    }
+
+    refreshToc() {
+        this._tocPanel.refresh();
     }
 
     // --- Service panels ---
