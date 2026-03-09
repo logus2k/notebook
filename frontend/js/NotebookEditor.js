@@ -37,6 +37,9 @@ export class NotebookEditor {
         // External change listener
         this._onChangeCallback = null;
 
+        // Callback to ensure kernel is running before execution (returns Promise)
+        this._ensureKernelCallback = null;
+
         // Delegate modules
         this.selection = new NotebookSelection(this);
         this.dragDrop = new NotebookDragDrop(this);
@@ -50,6 +53,7 @@ export class NotebookEditor {
     get projectId() { return this._projectId; }
     get notebookPath() { return this._notebookPath; }
     set onCellsChanged(fn) { this._onChangeCallback = fn; }
+    set onEnsureKernel(fn) { this._ensureKernelCallback = fn; }
 
     _setupContainerListeners() {
         // Open links in new tab
@@ -159,7 +163,7 @@ export class NotebookEditor {
         }
     }
 
-    _runSequential(from, to) {
+    async _runSequential(from, to) {
         const indices = [];
         for (let i = from; i < to; i++) {
             if (this._cells[i]?.cellType === 'code') {
@@ -167,6 +171,10 @@ export class NotebookEditor {
             }
         }
         if (!indices.length) return;
+        if (this._ensureKernelCallback) {
+            const ok = await this._ensureKernelCallback();
+            if (!ok) return;
+        }
         this._execQueue = indices;
         this._execRunning = true;
         this._execNext();
@@ -258,6 +266,7 @@ export class NotebookEditor {
             onBlur: () => {},
             onChange: (idx, source) => this._onCellChange(idx, source),
             onRun: (idx, code) => this._onCellRun(idx, code),
+            onInterrupt: () => this._client.interruptKernel(),
             onDelete: (idx) => this._onCellDelete(idx),
             onAddCell: (idx, type) => this._addCell(idx, type),
             onRunAbove: (idx) => this.runAbove(idx),
@@ -374,7 +383,11 @@ export class NotebookEditor {
         if (this._onChangeCallback) this._onChangeCallback();
     }
 
-    _onCellRun(index, code) {
+    async _onCellRun(index, code) {
+        if (this._ensureKernelCallback) {
+            const ok = await this._ensureKernelCallback();
+            if (!ok) return;
+        }
         this._client.executeCell(index, code);
     }
 

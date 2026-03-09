@@ -318,12 +318,13 @@ async def on_kernel_start(sid, data):
         ctx["runtime_id"] = runtime_id
         ctx["env_name"] = env_name
         project_id = ctx.get("project_id")
+        room_id = f"notebook:{project_id}:{ctx.get('notebook_path', '')}"
+        await sio.emit("kernel:status", {"status": "starting"}, room=room_id)
         session_id = f"{sid}_{uuid.uuid4().hex[:8]}"
         await kernel_mgr.start_kernel(
             session_id, kernel_cmd, kernel_language, display_name,
             project_id, ctx.get("notebook_path", ""), sid,
         )
-        room_id = f"notebook:{project_id}:{ctx.get('notebook_path', '')}"
         await sio.emit("kernel:status", {"status": "idle"}, room=room_id)
 
     except (FileNotFoundError, ValueError) as e:

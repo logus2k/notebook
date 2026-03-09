@@ -173,9 +173,19 @@ export class CellEditor {
         const sidebar = document.createElement('div');
         sidebar.className = 'cell-sidebar';
 
-        const runBtn = this._sidebarBtn('\u25B6', 'Run cell', () => this._onRun());
-        runBtn.className = 'cell-run-btn';
-        sidebar.appendChild(runBtn);
+        this._runBtn = document.createElement('button');
+        this._runBtn.className = 'cell-run-btn';
+        this._runBtn.textContent = '\u25B6';
+        this._runBtn.title = 'Run cell';
+        this._runBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this._executing) {
+                if (this._callbacks.onInterrupt) this._callbacks.onInterrupt();
+            } else {
+                this._onRun();
+            }
+        });
+        sidebar.appendChild(this._runBtn);
 
         const dragHandle = document.createElement('div');
         dragHandle.className = 'cell-drag-handle';
@@ -214,6 +224,10 @@ export class CellEditor {
         const typeBadge = document.createElement('span');
         typeBadge.className = `cell-type-badge ${this._cellType}`;
         typeBadge.textContent = this._cellType;
+
+        const runningBadge = document.createElement('span');
+        runningBadge.className = 'cell-running-badge';
+        runningBadge.textContent = 'RUNNING';
 
         // Left segment
         const headerLeft = document.createElement('div');
@@ -334,7 +348,7 @@ export class CellEditor {
         mdRendered.className = 'cell-markdown-rendered hidden';
         this._mdRenderedEl = mdRendered;
 
-        cell.append(sidebar, header, editorArea, mdRendered);
+        cell.append(sidebar, header, runningBadge, editorArea, mdRendered);
 
         if (this._cellType === 'code') {
             cell.appendChild(this._output.element);
@@ -485,6 +499,9 @@ export class CellEditor {
             this._executing = true;
             this._executeStart = performance.now();
             this._el.classList.add('executing');
+            this._runBtn.textContent = '\u25A0';
+            this._runBtn.title = 'Interrupt execution';
+            this._runBtn.classList.add('stopping');
             this._data.outputs = [];
             this._output.showExecuting();
             if (this._callbacks.onRun) {
@@ -498,6 +515,9 @@ export class CellEditor {
     onExecuteComplete(executionCount) {
         this._executing = false;
         this._el.classList.remove('executing');
+        this._runBtn.textContent = '\u25B6';
+        this._runBtn.title = 'Run cell';
+        this._runBtn.classList.remove('stopping');
         this._executionCount = executionCount;
         this._updateExecutionCount();
         // Clear the "Running..." spinner if no output replaced it

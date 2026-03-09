@@ -20,6 +20,7 @@ class App {
         this._currentNotebook = null;
         this._activeVenv = null; // { name, runtimeId, displayName } or null
         this._userName = this._generateUserName();
+        this._kernelRunning = false;
     }
 
     async init() {
@@ -67,6 +68,22 @@ class App {
 
         // Update toolbar badge when cells change
         this._editor.onCellsChanged = () => this._toolbar?.updateNotesBadge();
+
+        // Auto-start kernel if stopped but venv is selected
+        this._editor.onEnsureKernel = () => {
+            if (this._kernelRunning) return Promise.resolve(true);
+            if (!this._activeVenv) return Promise.resolve(false);
+            return new Promise((resolve) => {
+                const onStatus = (data) => {
+                    if (data.status === 'idle' || data.status === 'busy') {
+                        this._client.off('kernel:status', onStatus);
+                        resolve(true);
+                    }
+                };
+                this._client.on('kernel:status', onStatus);
+                this._client.startKernel(this._activeVenv.runtimeId, this._activeVenv.name);
+            });
+        };
 
         // Initialize toolbar (nav icons + file actions + settings + users)
         this._toolbar = new NotebookToolbar(
@@ -119,10 +136,10 @@ class App {
             onVenvDeleted: (deletedName) => this._onVenvDeleted(deletedName),
         });
 
-        // Track kernel running state for explorer panel
+        // Track kernel running state
         this._client.on('kernel:status', (data) => {
-            const running = data.status === 'idle' || data.status === 'busy';
-            this._explorerPanel.setKernelRunning(running);
+            this._kernelRunning = data.status === 'idle' || data.status === 'busy';
+            this._explorerPanel.setKernelRunning(this._kernelRunning);
         });
 
         // Connect Socket.IO
