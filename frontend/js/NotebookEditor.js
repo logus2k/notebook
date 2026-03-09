@@ -52,6 +52,15 @@ export class NotebookEditor {
     set onCellsChanged(fn) { this._onChangeCallback = fn; }
 
     _setupContainerListeners() {
+        // Open links in new tab
+        this._container.addEventListener('click', (e) => {
+            const a = e.target.closest('a[href]');
+            if (a && this._container.contains(a)) {
+                e.preventDefault();
+                window.open(a.href, '_blank', 'noopener');
+            }
+        });
+
         this._container.addEventListener('mousedown', (e) => {
             if (!e.target.closest('.cell') && !e.target.closest('.add-cell-container')
                 && !e.target.closest('.welcome-screen') && !e.target.closest('.project-browser')) {

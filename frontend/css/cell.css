@@ -591,6 +591,26 @@
     height: auto;
 }
 
+.cell-markdown-rendered a,
+.cell-output a {
+    color: #2563a8;
+    text-decoration: none;
+    border-bottom: 1px solid #2563a840;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.cell-markdown-rendered a:hover,
+.cell-output a:hover {
+    color: #1a4a80;
+    border-bottom-color: #1a4a80;
+}
+
+.cell-markdown-rendered a:visited,
+.cell-output a:visited {
+    color: #6b4fa0;
+    border-bottom-color: #6b4fa040;
+}
+
 /* Image copy button overlay */
 .img-copy-wrapper {
     position: relative;

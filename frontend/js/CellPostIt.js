@@ -65,8 +65,8 @@ export class CellPostIt {
             this._metadata.noted = {};
         }
         this._metadata.noted.annotation = '';
-        // Default position: top-right corner with some margin
-        this._metadata.noted.position = { right: 12, top: 8 };
+        // Default position: top-right, below the cell header
+        this._metadata.noted.position = { right: 20, top: 46 };
         this._createFloating();
         this._onMetadataChange();
         this._openEditPanel();
@@ -98,7 +98,7 @@ export class CellPostIt {
         el.appendChild(img);
 
         // Position from metadata
-        const pos = this._metadata.noted?.position || { right: 12, top: 8 };
+        const pos = this._metadata.noted?.position || { right: 20, top: 46 };
         el.style.top = `${pos.top}px`;
         el.style.right = `${pos.right}px`;
 

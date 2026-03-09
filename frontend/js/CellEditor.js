@@ -303,7 +303,7 @@ export class CellEditor {
 
         // Post-it button
         const postItBtn = document.createElement('button');
-        postItBtn.className = 'cell-header-btn cell-postit-btn';
+        postItBtn.className = 'cell-delete-btn cell-postit-btn';
         postItBtn.innerHTML = POST_IT_ICON_CELL;
         postItBtn.title = 'Note this cell';
         postItBtn.addEventListener('click', (e) => {
