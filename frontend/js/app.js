@@ -7,7 +7,7 @@ import { DisplaySettingsPanel } from './panels/DisplaySettingsPanel.js';
 import { NotebookResizer } from './NotebookResizer.js';
 import { ChatPanel } from './ChatPanel.js';
 import { ChatService } from './ChatService.js';
-import { AiderPanel } from './AiderPanel.js';
+
 
 /**
  * App - Entry point. Wires together all components.
@@ -25,7 +25,7 @@ class App {
         this._activeVenv = null; // { name, runtimeId, displayName } or null
         this._userName = this._generateUserName();
         this._kernelRunning = false;
-        this._chatVisible = false;
+        this._chatVisible = true;
     }
 
     async init() {
@@ -136,7 +136,7 @@ class App {
         // Initialize display settings panel (jsPanel)
         this._displaySettingsPanel = new DisplaySettingsPanel();
 
-        // Initialize tabbed right panel (Assistant + Aider)
+        // Initialize right panel (chat assistant)
         this._initRightPanel();
 
         // Initialize unified explorer panel (projects + environments)
@@ -383,69 +383,10 @@ class App {
 
     _initRightPanel() {
         const rightPanel = document.getElementById('right-panel');
-
-        // Tabs
-        const tabBar = document.createElement('div');
-        tabBar.className = 'right-panel-tabs';
-
-        const tabAssistant = document.createElement('button');
-        tabAssistant.className = 'right-panel-tab active';
-        tabAssistant.textContent = 'Assistant';
-        tabBar.appendChild(tabAssistant);
-
-        const tabAider = document.createElement('button');
-        tabAider.className = 'right-panel-tab';
-        tabAider.textContent = 'Aider';
-        tabBar.appendChild(tabAider);
-
-        rightPanel.appendChild(tabBar);
-
-        // Content area
-        const content = document.createElement('div');
-        content.className = 'right-panel-content';
-
-        // Assistant page
-        const assistantPage = document.createElement('div');
-        assistantPage.className = 'right-panel-page active';
-        this._chatPanel = new ChatPanel(assistantPage);
+        this._chatPanel = new ChatPanel(rightPanel);
         this._chatService = new ChatService(this._chatPanel);
         this._chatService.connect().catch(err => {
             console.error('Chat service connection failed:', err);
-        });
-        content.appendChild(assistantPage);
-
-        // Aider page
-        const aiderPage = document.createElement('div');
-        aiderPage.className = 'right-panel-page';
-        content.appendChild(aiderPage);
-
-        rightPanel.appendChild(content);
-
-        // Tab switching
-        const tabs = [tabAssistant, tabAider];
-        const pages = [assistantPage, aiderPage];
-
-        tabs.forEach((tab, i) => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('active'));
-                pages.forEach(p => p.classList.remove('active'));
-                tab.classList.add('active');
-                pages[i].classList.add('active');
-
-                // Lazy-init Aider panel on first tab switch
-                if (i === 1 && !this._aiderPanel) {
-                    this._aiderPanel = new AiderPanel(aiderPage, this._client.socket, {
-                        apiBase: 'https://logus2k.com/llm/v1',
-                        apiKey: 'not-needed',
-                        model: 'openai/qwen-2.5-7b-instruct-q8',
-                        noGit: true,
-                        yesAlways: true,
-                    });
-                }
-                if (i === 1 && this._aiderPanel) {
-                    this._aiderPanel.focus();
-                }
-            });
         });
     }
 

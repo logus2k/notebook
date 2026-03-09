@@ -46,6 +46,7 @@ export class InteractiveTerminal {
             theme,
             scrollback: 10000,
             allowProposedApi: true,
+            rightClickSelectsWord: true,
         });
 
         onTerminalThemeChange((t) => {
@@ -55,6 +56,41 @@ export class InteractiveTerminal {
 
         this._term.open(this._container);
         this._opened = true;
+
+        // Clipboard: Ctrl+Shift+C to copy, Ctrl+Shift+V to paste
+        this._term.attachCustomKeyEventHandler((ev) => {
+            if (ev.type !== 'keydown') return true;
+            if (ev.ctrlKey && ev.shiftKey && ev.code === 'KeyC') {
+                const sel = this._term.getSelection();
+                if (sel) navigator.clipboard.writeText(sel);
+                return false;
+            }
+            if (ev.ctrlKey && ev.shiftKey && ev.code === 'KeyV') {
+                navigator.clipboard.readText().then(text => {
+                    if (text && this._started) {
+                        this._socket.emit('terminal:input', {
+                            session_id: this._sessionId,
+                            data: text,
+                        });
+                    }
+                });
+                return false;
+            }
+            return true;
+        });
+
+        // Right-click paste
+        this._term.element.addEventListener('contextmenu', (ev) => {
+            ev.preventDefault();
+            navigator.clipboard.readText().then(text => {
+                if (text && this._started) {
+                    this._socket.emit('terminal:input', {
+                        session_id: this._sessionId,
+                        data: text,
+                    });
+                }
+            });
+        });
 
         // User input -> Socket.IO -> PTY
         this._term.onData((data) => {

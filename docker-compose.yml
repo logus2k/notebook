@@ -1,5 +1,5 @@
 services:
-  notebook:
+  noted:
     image: logus2k/noted
     container_name: noted
     build: .

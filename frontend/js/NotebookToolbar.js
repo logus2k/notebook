@@ -126,6 +126,7 @@ export class NotebookToolbar {
             if (this._callbacks.onChatToggle) this._callbacks.onChatToggle();
             this._chatBtn.classList.toggle('toolbar-btn-active');
         });
+        this._chatBtn.classList.add('toolbar-btn-active');
         this._container.appendChild(this._chatBtn);
 
         // Connected users

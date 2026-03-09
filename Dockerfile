@@ -26,9 +26,10 @@ RUN apt-get update && \
         python3-pip \
         # curl for health checks
         curl \
-        # PortAudio for Aider voice coding
         libportaudio2 && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    # Remove broken distutils-precedence.pth (references missing _distutils_hack)
+    rm -f /usr/lib/python3/dist-packages/distutils-precedence.pth
 
 # Ensure pip is available for each Python version
 RUN for py in python3.10 python3.11 python3.12 python3.13 python3.14; do \
@@ -42,8 +43,6 @@ COPY backend/requirements.txt backend/requirements.txt
 RUN python3.12 -m pip install --no-cache-dir --break-system-packages \
     -r backend/requirements.txt
 
-# Aider AI coding assistant (OpenAI-compatible, works with local LLMs)
-RUN python3.12 -m pip install --no-cache-dir --break-system-packages aider-chat
 
 # ── Stage 2: App image — copies application code onto the cached base ──
 # Fast rebuild (~1s) on every code change.

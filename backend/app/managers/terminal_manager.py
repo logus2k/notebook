@@ -1,7 +1,7 @@
 """
 TerminalManager - Manages interactive PTY sessions over Socket.IO.
 
-Each session spawns a process (e.g. aider, bash) in a PTY and relays
+Each session spawns a process (e.g. bash) in a PTY and relays
 stdin/stdout between the browser (via Socket.IO) and the PTY.
 """
 import asyncio

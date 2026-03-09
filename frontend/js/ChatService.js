@@ -88,6 +88,9 @@ export class ChatService {
         });
 
         console.log('[ChatService] Connected to agent server');
+
+        // Auto-greet on first connection
+        this.sendMessage('Hello!');
     }
 
     // --- Text chat ---
