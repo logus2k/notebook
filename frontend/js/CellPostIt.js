@@ -18,6 +18,14 @@ const POST_IT_SVG = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.o
 export const POST_IT_ICON_CELL = `<span style="display:inline-flex;width:14px;height:14px">${POST_IT_SVG}</span>`;
 export const POST_IT_ICON_TOOLBAR = `<span style="display:inline-flex;width:18px;height:18px">${POST_IT_SVG}</span>`;
 
+/** Color presets for post-it notes. */
+const NOTE_COLORS = {
+    yellow: { header: '#ffe680ee', image: 'static/images/post-it-yellow.png', dot: 'rgb(253, 193, 94)' },
+    green:  { header: '#b8e6b0ee', image: 'static/images/post-it-green.png',  dot: '#7ec87a' },
+    red:    { header: '#f0b8b8ee', image: 'static/images/post-it-red.png',    dot: '#e08080' },
+};
+const DEFAULT_COLOR = 'yellow';
+
 /**
  * CellPostIt - Manages the floating post-it note on a single cell.
  * Handles creation, dragging within cell bounds, and opening the edit panel.
@@ -50,6 +58,11 @@ export class CellPostIt {
         return !!(this._metadata.noted && this._metadata.noted.annotation !== undefined);
     }
 
+    /** Get the current note color, defaulting to yellow. */
+    _getColor() {
+        return this._metadata.noted?.color || DEFAULT_COLOR;
+    }
+
     /** Toggle: create note if none, or open existing. */
     toggle() {
         if (this.hasNote()) {
@@ -65,6 +78,7 @@ export class CellPostIt {
             this._metadata.noted = {};
         }
         this._metadata.noted.annotation = '';
+        this._metadata.noted.color = DEFAULT_COLOR;
         // Default position: top-right, below the cell header
         this._metadata.noted.position = { right: 20, top: 46 };
         this._createFloating();
@@ -93,7 +107,8 @@ export class CellPostIt {
         const el = document.createElement('div');
         el.className = 'cell-post-it';
         const img = document.createElement('img');
-        img.src = 'static/images/post-it.png';
+        const color = this._getColor();
+        img.src = NOTE_COLORS[color]?.image || NOTE_COLORS[DEFAULT_COLOR].image;
         img.draggable = false;
         el.appendChild(img);
 
@@ -114,6 +129,16 @@ export class CellPostIt {
         this._floatingEl = el;
         this._cellEl.style.position = 'relative';
         this._cellEl.appendChild(el);
+    }
+
+    /** Update the floating image to match the current color. */
+    _updateFloatingImage() {
+        if (!this._floatingEl) return;
+        const img = this._floatingEl.querySelector('img');
+        if (img) {
+            const color = this._getColor();
+            img.src = NOTE_COLORS[color]?.image || NOTE_COLORS[DEFAULT_COLOR].image;
+        }
     }
 
     /** Make the floating element draggable within the cell bounds. */
@@ -198,9 +223,10 @@ export class CellPostIt {
         const panelTop = Math.max(10, cellRect.top);
 
         const annotation = this._metadata.noted?.annotation || '';
+        const color = this._getColor();
 
         const panel = jsPanel.create({
-            headerTitle: 'Note',
+            headerTitle: '<span class="postit-panel-title-content"></span>',
             theme: 'none',
             borderRadius: '5px',
             border: '1px solid var(--border-color)',
@@ -228,6 +254,13 @@ export class CellPostIt {
                 content.style.flexDirection = 'column';
                 content.style.height = '100%';
 
+                // Set header color
+                const hdr = panel.querySelector('.jsPanel-hdr');
+                if (hdr) hdr.style.background = NOTE_COLORS[color]?.header || NOTE_COLORS[DEFAULT_COLOR].header;
+
+                // Build color circles in title area
+                this._buildColorCircles(panel);
+
                 // Add delete button to header
                 this._addDeleteButton(panel);
 
@@ -250,6 +283,48 @@ export class CellPostIt {
         });
 
         this._panel = panel;
+    }
+
+    /** Build the three color circles in the panel title. */
+    _buildColorCircles(panel) {
+        const titleEl = panel.querySelector('.postit-panel-title-content');
+        if (!titleEl) return;
+
+        const currentColor = this._getColor();
+
+        for (const [name, cfg] of Object.entries(NOTE_COLORS)) {
+            const circle = document.createElement('span');
+            circle.className = 'postit-color-circle';
+            if (name === currentColor) circle.classList.add('active');
+            circle.style.background = cfg.dot;
+            circle.title = name.charAt(0).toUpperCase() + name.slice(1);
+            circle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._setColor(name, panel);
+            });
+            titleEl.appendChild(circle);
+        }
+    }
+
+    /** Change the note color and update panel + floating image. */
+    _setColor(colorName, panel) {
+        if (!this._metadata.noted) this._metadata.noted = {};
+        this._metadata.noted.color = colorName;
+
+        // Update panel header
+        const hdr = panel.querySelector('.jsPanel-hdr');
+        if (hdr) hdr.style.background = NOTE_COLORS[colorName]?.header || NOTE_COLORS[DEFAULT_COLOR].header;
+
+        // Update active circle
+        const circles = panel.querySelectorAll('.postit-color-circle');
+        circles.forEach(c => c.classList.remove('active'));
+        const idx = Object.keys(NOTE_COLORS).indexOf(colorName);
+        if (idx >= 0 && circles[idx]) circles[idx].classList.add('active');
+
+        // Update floating image
+        this._updateFloatingImage();
+
+        this._onMetadataChange();
     }
 
     /** Add a delete icon to the panel header. */

@@ -2,6 +2,13 @@
  * PostItIndexPanel - Lists all cells with post-it notes.
  * Clicking an entry scrolls to and highlights that cell.
  */
+
+const INDEX_DOT_COLORS = {
+    yellow: 'rgb(253, 193, 94)',
+    green:  '#7ec87a',
+    red:    '#e08080',
+};
+
 export class PostItIndexPanel {
     /**
      * @param {function} getCells - Returns the current cells array
@@ -51,7 +58,7 @@ export class PostItIndexPanel {
         for (let i = 0; i < cells.length; i++) {
             const meta = cells[i]._data?.metadata?.noted;
             if (meta && meta.annotation !== undefined) {
-                notedCells.push({ index: i, cell: cells[i], annotation: meta.annotation });
+                notedCells.push({ index: i, cell: cells[i], annotation: meta.annotation, color: meta.color || 'yellow' });
             }
         }
 
@@ -66,9 +73,13 @@ export class PostItIndexPanel {
         const list = document.createElement('div');
         list.className = 'postit-index-list';
 
-        for (const { index, cell, annotation } of notedCells) {
+        for (const { index, cell, annotation, color } of notedCells) {
             const item = document.createElement('div');
             item.className = 'postit-index-item';
+
+            const dot = document.createElement('span');
+            dot.className = 'postit-index-dot';
+            dot.style.background = INDEX_DOT_COLORS[color] || INDEX_DOT_COLORS.yellow;
 
             const cellLabel = document.createElement('span');
             cellLabel.className = 'postit-index-cell';
@@ -80,7 +91,7 @@ export class PostItIndexPanel {
                 ? annotation.substring(0, 80).replace(/\n/g, ' ')
                 : '(empty note)';
 
-            item.append(cellLabel, preview);
+            item.append(dot, cellLabel, preview);
             item.addEventListener('click', () => {
                 cell.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 cell.focusCell();

@@ -27,8 +27,11 @@
     background: #c8e6c0;
 }
 
-.cell-postit-btn.has-note svg path {
+.cell-postit-btn.has-note svg path[fill="#f7e15c"] {
     fill: #f0d060;
+}
+.cell-postit-btn.has-note svg path[fill="#e6b800"] {
+    fill: #d4a020;
 }
 
 /* Notes count badge on toolbar icon */
@@ -54,6 +57,30 @@
 /* Post-it edit panel */
 .postit-panel .jsPanel-hdr {
     background: #ffe680ee !important;
+}
+
+/* Color circles in panel title */
+.postit-panel-title-content {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.postit-color-circle {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+    flex-shrink: 0;
+}
+
+.postit-color-circle:hover {
+    transform: scale(1.15);
+}
+
+.postit-color-circle.active {
+    border-color: #00000044;
 }
 
 .postit-panel-content {
@@ -121,6 +148,13 @@
 
 .postit-index-item:hover {
     background: var(--bg-hover);
+}
+
+.postit-index-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
 }
 
 .postit-index-cell {
