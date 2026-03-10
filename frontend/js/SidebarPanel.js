@@ -14,7 +14,7 @@ export class SidebarPanel {
         this._contentArea = document.getElementById('content-area');
         this._callbacks = callbacks;
         this._header = null;
-        this._titleEl = null;
+        this._tabsEl = null;
         this._contentEl = null;
         this._visible = false;
         this._activeView = null;
@@ -28,16 +28,25 @@ export class SidebarPanel {
     _build() {
         this._panel.innerHTML = '';
 
-        // Header
+        // Header — contains tabs
         this._header = document.createElement('div');
         this._header.className = 'sidebar-header';
 
-        this._titleEl = document.createElement('div');
-        this._titleEl.className = 'sidebar-title';
-        this._titleEl.textContent = 'Explorer';
-        this._header.appendChild(this._titleEl);
+        this._tabsEl = document.createElement('div');
+        this._tabsEl.className = 'sidebar-tabs';
+        this._header.appendChild(this._tabsEl);
 
         this._panel.appendChild(this._header);
+
+        // Title bar — shows the active view's full title
+        this._titleBar = document.createElement('div');
+        this._titleBar.className = 'sidebar-title-bar';
+
+        this._titleEl = document.createElement('div');
+        this._titleEl.className = 'sidebar-title';
+        this._titleBar.appendChild(this._titleEl);
+
+        this._panel.appendChild(this._titleBar);
 
         // Content area
         this._contentEl = document.createElement('div');
@@ -96,10 +105,24 @@ export class SidebarPanel {
      * @param {string} key - View identifier (e.g. 'projects', 'environments')
      * @param {object} view - { title: string, element: HTMLElement }
      */
+    /**
+     * Register a named view that can be shown in the sidebar.
+     * @param {string} key - View identifier (e.g. 'projects', 'toc')
+     * @param {object} view - { tabLabel: string, title: string, element: HTMLElement, onActivate?, onDeactivate? }
+     */
     registerView(key, view) {
         this._views[key] = view;
         view.element.style.display = 'none';
         this._contentEl.appendChild(view.element);
+
+        // Create a tab in the header
+        const tab = document.createElement('div');
+        tab.className = 'sidebar-tab';
+        tab.textContent = view.tabLabel || view.title;
+        tab.dataset.key = key;
+        tab.addEventListener('click', () => this.toggle(key));
+        this._tabsEl.appendChild(tab);
+        view._tab = tab;
     }
 
     /**
@@ -110,15 +133,20 @@ export class SidebarPanel {
         const view = this._views[key];
         if (!view) return;
 
-        // Hide previous view
+        // Deactivate previous view
         if (this._activeView && this._views[this._activeView]) {
-            this._views[this._activeView].element.style.display = 'none';
+            const prev = this._views[this._activeView];
+            prev.element.style.display = 'none';
+            if (prev._tab) prev._tab.classList.remove('active');
+            if (prev.onDeactivate) prev.onDeactivate();
         }
 
         // Show new view
         this._activeView = key;
         this._titleEl.textContent = view.title;
         view.element.style.display = '';
+        if (view._tab) view._tab.classList.add('active');
+        if (view.onActivate) view.onActivate();
 
         if (!this._visible) {
             this._visible = true;
@@ -128,6 +156,8 @@ export class SidebarPanel {
             this._panel.classList.add('sidebar-open');
             this._resizer.classList.add('sidebar-open');
         }
+
+        if (this._callbacks.onViewChange) this._callbacks.onViewChange(key);
     }
 
     /**
@@ -139,9 +169,14 @@ export class SidebarPanel {
         this._resizer.classList.remove('sidebar-open');
 
         if (this._activeView && this._views[this._activeView]) {
-            this._views[this._activeView].element.style.display = 'none';
+            const prev = this._views[this._activeView];
+            prev.element.style.display = 'none';
+            if (prev._tab) prev._tab.classList.remove('active');
+            if (prev.onDeactivate) prev.onDeactivate();
         }
         this._activeView = null;
+
+        if (this._callbacks.onViewChange) this._callbacks.onViewChange(null);
     }
 
     /**
@@ -155,6 +190,18 @@ export class SidebarPanel {
         }
         this.show(key);
         return true;
+    }
+
+    /**
+     * Update a view's title. Refreshes the title bar if that view is active.
+     */
+    updateViewTitle(key, title) {
+        const view = this._views[key];
+        if (!view) return;
+        view.title = title;
+        if (this._activeView === key) {
+            this._titleEl.textContent = title;
+        }
     }
 
     get visible() {

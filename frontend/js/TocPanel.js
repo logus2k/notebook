@@ -1,166 +1,59 @@
 /**
- * TocPanel - Docked Table of Contents sidebar.
+ * TocPanel - Table of Contents for the notebook.
  * Extracts headings from markdown cells and allows navigation.
- * Visibility controlled via toolbar button.
+ * Designed to be registered as a sidebar view (no own wrapper/resizer).
  */
 
 export class TocPanel {
     /**
      * @param {function} getCells - Returns the current cells array
+     * @param {function} [onSelectCell] - Called with cell index on click
      */
     constructor(getCells, onSelectCell) {
         this._getCells = getCells;
         this._onSelectCell = onSelectCell || null;
-        this._visible = false;
-        this._wrapper = null;
-        this._list = null;
-        this._resizer = null;
-        this._savedWidth = null;
-        this._scrollHost = null;
+        this._active = false;
         this._headingEls = [];
         this._tocLinks = [];
+        this._scrollHost = null;
         this._scrollHandler = null;
 
         this._build();
     }
 
     _build() {
-        // Wrapper — fixed sidebar
-        this._wrapper = document.createElement('div');
-        this._wrapper.className = 'toc-wrapper';
-        this._wrapper.style.display = 'none';
+        // The root element that gets registered as a sidebar view
+        this._el = document.createElement('div');
+        this._el.className = 'toc-nav';
 
-        // Header (outside scrollable area so it spans full width)
-        const header = document.createElement('div');
-        header.className = 'toc-header';
-
-        const title = document.createElement('div');
-        title.className = 'toc-title';
-        title.textContent = 'Table of Contents';
-        header.appendChild(title);
-
-        this._wrapper.appendChild(header);
-
-        // TOC content (scrollable)
-        const toc = document.createElement('div');
-        toc.className = 'toc-nav';
-
-        // List container
         this._list = document.createElement('ul');
-        toc.appendChild(this._list);
-
-        this._wrapper.appendChild(toc);
-        this._tocEl = toc;
-
-        // Resize handle
-        this._resizer = document.createElement('div');
-        this._resizer.className = 'toc-resizer';
-        this._resizer.style.display = 'none';
-        this._setupResize();
-
-        // Insert into DOM
-        const app = document.getElementById('app');
-        app.appendChild(this._wrapper);
-        app.appendChild(this._resizer);
-
-        this._contentArea = document.getElementById('content-area');
+        this._el.appendChild(this._list);
     }
 
-    _setupResize() {
-        let dragging = false;
-        let startX, startWidth;
-
-        this._resizer.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            dragging = true;
-            startX = e.clientX;
-            startWidth = this._wrapper.getBoundingClientRect().width;
-            this._resizer.classList.add('toc-dragging');
-            this._wrapper.style.transition = 'none';
-            this._contentArea.style.transition = 'none';
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            if (!dragging) return;
-            const rawWidth = startWidth + (e.clientX - startX);
-            const newWidth = Math.max(100, Math.min(500, rawWidth));
-            this._wrapper.style.width = newWidth + 'px';
-            this._positionResizer();
-        });
-
-        window.addEventListener('mouseup', () => {
-            if (!dragging) return;
-            dragging = false;
-            this._resizer.classList.remove('toc-dragging');
-            this._wrapper.style.transition = '';
-            this._contentArea.style.transition = '';
-            this._savedWidth = this._wrapper.style.width || null;
-        });
-
-        window.addEventListener('resize', () => {
-            if (this._visible) this._positionResizer();
-        });
+    /** The DOM element to register with SidebarPanel */
+    get element() {
+        return this._el;
     }
 
-    _positionResizer() {
-        if (!this._visible) return;
-        const rect = this._wrapper.getBoundingClientRect();
-        this._resizer.style.left = (rect.right + 10) + 'px';
-        this._resizer.style.top = rect.top + 'px';
-        this._resizer.style.height = rect.height + 'px';
-        this._updateContainerMargin();
-    }
-
-    _getTargetWidth() {
-        return parseInt(this._wrapper.style.width) || 360;
-    }
-
-    _updateContainerMargin() {
-        if (!this._contentArea) return;
-        if (!this._visible) {
-            this._contentArea.style.marginLeft = '';
-        } else {
-            // TOC left = icon bar + sidebar + sidebar resizer
-            const iconBar = document.getElementById('icon-bar');
-            const sidebar = document.getElementById('sidebar-panel');
-            const sidebarResizer = document.getElementById('sidebar-resizer');
-            const iconBarWidth = iconBar ? iconBar.offsetWidth : 0;
-            const sidebarWidth = (sidebar && sidebar.classList.contains('sidebar-open')) ? sidebar.offsetWidth : 0;
-            const resizerWidth = (sidebarResizer && sidebarResizer.classList.contains('sidebar-open')) ? sidebarResizer.offsetWidth : 0;
-            const tocLeft = iconBarWidth + sidebarWidth + resizerWidth;
-            this._wrapper.style.left = tocLeft + 'px';
-            const margin = tocLeft + this._getTargetWidth() + 20 - iconBarWidth - sidebarWidth - resizerWidth;
-            this._contentArea.style.marginLeft = Math.max(0, margin) + 'px';
-        }
-    }
-
-    toggle() {
-        if (this._visible) {
-            this._hide();
-        } else {
-            this._show();
-        }
-    }
-
-    _show() {
-        this._visible = true;
-        this._wrapper.style.display = '';
-        this._resizer.style.display = '';
-        if (this._savedWidth) {
-            this._wrapper.style.width = this._savedWidth;
-        }
+    /** Called when the sidebar activates this view */
+    activate() {
+        this._active = true;
         this._renderList();
         this._setupScrollTracking();
-        this._updateContainerMargin();
-        requestAnimationFrame(() => this._positionResizer());
     }
 
-    _hide() {
-        this._visible = false;
-        this._wrapper.style.display = 'none';
-        this._resizer.style.display = 'none';
+    /** Called when the sidebar deactivates this view */
+    deactivate() {
+        this._active = false;
         this._teardownScrollTracking();
-        this._updateContainerMargin();
+    }
+
+    /** Refresh list if currently active */
+    refresh() {
+        if (this._active) {
+            this._renderList();
+            this._setupScrollTracking();
+        }
     }
 
     _renderList() {
@@ -276,7 +169,7 @@ export class TocPanel {
         active.li.classList.add('toc-active');
 
         // Scroll TOC to keep active item visible
-        const tocEl = this._tocEl;
+        const tocEl = this._el;
         const liRect = active.li.getBoundingClientRect();
         const tocRect = tocEl.getBoundingClientRect();
         const padTop = parseFloat(getComputedStyle(tocEl).paddingTop);
@@ -287,14 +180,6 @@ export class TocPanel {
             tocEl.scrollTop += liRect.top - visibleTop;
         } else if (liRect.bottom > visibleBottom) {
             tocEl.scrollTop += liRect.bottom - visibleBottom;
-        }
-    }
-
-    refresh() {
-        if (this._visible) {
-            this._renderList();
-            this._setupScrollTracking();
-            requestAnimationFrame(() => this._positionResizer());
         }
     }
 }

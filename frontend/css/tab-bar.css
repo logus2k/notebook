@@ -3,7 +3,7 @@
     display: flex;
     flex-wrap: wrap;
     /* Align with notebook top bars: left = 10px padding + 36px margin, right = 10px padding + 8px scrollbar */
-    margin: 0 18px 0 46px;
+    margin: 0 20px 0 50px;
     padding: 0 6px;
     gap: 2px;
     align-items: flex-end;
@@ -12,18 +12,18 @@
     z-index: 4;
     /* Fill toolbar height so tabs sit at its bottom edge */
     height: var(--toolbar-height, 37px);
-    border-bottom: 0.5px solid #aeaeae;
+    border-bottom: 0.5px solid #666666;
 }
 
 .tab-bar .tab {
     position: relative;
-    padding: 5px 14px 3px 14px;
+    padding: 7px 14px 3px 14px;
     background-color: #ffecb9;
     cursor: pointer;
     border-radius: 8px 8px 0 0;
     white-space: nowrap;
     color: #1a1a1a;
-    border: 0.5px solid #aeaeae;
+    border: 0.5px solid #666666;
     border-bottom: none;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -40,7 +40,7 @@
     color: #1a1a1a;
     font-weight: 500;
     z-index: 1;
-    padding: 7px 14px 4px 14px;
+    padding: 9px 14px 4px 14px;
     margin-bottom: -1px;
 }
 

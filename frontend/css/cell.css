@@ -373,8 +373,9 @@
     height: 24px;
     padding: 0 0 1.5px 3px;
     font-size: 14px;
-    background: #bce1b99c;
+    background: #ffffff;
     color: var(--accent-green);
+    border: 0.5px solid var(--accent-green);
     border-radius: 50%;
     cursor: pointer;
     flex-shrink: 0;
@@ -408,15 +409,16 @@
     cursor: grab;
     color: var(--text-muted);
     font-size: 16px;
-    border-radius: 4px;
+    border-radius: 2px;
     user-select: none;
     margin-right: 15px;
 }
 
 .cell-drag-handle:hover {
-    background: #c6e2ff;
-    color: #2787fd;
+    background: #6096e5;
+    color: #ffffff;
     border: 1px solid #005ed126;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
 .cell-sidebar-exec-count {

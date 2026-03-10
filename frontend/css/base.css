@@ -68,7 +68,7 @@
     --accent-red: #e04545;
     --accent-yellow: #c89520;
     --accent-orange: #d47a2a;
-    --toolbar-height: 37px;
+    --toolbar-height: 40px;
     --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
     --font-sans: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --radius: 6px;
@@ -85,8 +85,8 @@ html, body {
     height: 100%;
     font-family: var(--font-sans);
     font-size: 14px;
-    background-color: #ffffff00;
-    background-image: url("../images/project-paper.png");
+    background-color: #50505091;
+    background-image: url("../images/low-contrast-linen.png");
     color: var(--text-primary);
     overflow: hidden;
 }
@@ -156,6 +156,8 @@ html, body {
     position: sticky;
     top: 0;
     z-index: 3;
+    border-left: 0.5px solid #aeaeae;
+    border-right: 0.5px solid #aeaeae;
 }
 
 #notebook-second-bar {
@@ -169,10 +171,18 @@ html, body {
     align-items: center;
     justify-content: center;
     padding: 0 4px;
+    border-left: 0.5px solid #aeaeae;
+    border-right: 0.5px solid #aeaeae;
+    border-bottom: 0.5px solid #aeaeae;
 }
 
+
 #notebook-second-bar .second-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 2px;
     margin-right: auto;
+    padding-left: 2px;
 }
 
 #notebook-second-bar .second-bar-right {
@@ -180,6 +190,7 @@ html, body {
     align-items: center;
     gap: 2px;
     margin-left: auto;
+    margin-right: 4px;
 }
 
 #notebook-top-bar .info-bar-text {
@@ -206,7 +217,7 @@ html, body {
 }
 
 #notebook-top-bar .info-bar-kernel {
-    margin-left: 8px;
+    margin-left: auto;
 }
 
 #notebook-resizer {

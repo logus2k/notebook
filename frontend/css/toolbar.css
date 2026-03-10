@@ -9,6 +9,8 @@
     background: #ffde8cd6;
     z-index: 1;
     pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-bottom: 0.5px solid #999999;
 }
 
 /* Toolbar — absolute overlay, not in document flow */
@@ -49,14 +51,14 @@
 }
 
 .user-avatar {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: var(--accent-blue);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 600;
     color: #fff;
 }
@@ -81,8 +83,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     padding: 0;
     background: transparent;
     color: var(--text-secondary);
@@ -101,8 +103,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     padding: 0;
     background: transparent;
     color: var(--text-secondary);
