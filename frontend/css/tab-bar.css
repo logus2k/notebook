@@ -133,6 +133,36 @@ body.resizing #service-tab-container iframe {
     flex: 1;
 }
 
+/* Second bar below service top bar */
+.service-second-bar {
+    height: 26px;
+    background: #fff2bc;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+    font-size: 11px;
+    font-family: var(--font-sans);
+    flex-shrink: 0;
+    border-bottom: 0.5px solid #aeaeae;
+    border-left: 0.5px solid #666666;
+    border-right: 0.5px solid #666666;
+}
+
+.service-second-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: auto;
+}
+
+.service-second-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
 /* Connection status LED */
 .service-status-led {
     width: 7px;

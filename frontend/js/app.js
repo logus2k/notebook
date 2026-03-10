@@ -533,14 +533,14 @@ class App {
             notebookContainer.style.display = 'none';
             serviceContainer.style.display = 'flex';
             serviceContainer.innerHTML = '';
-            serviceContainer.appendChild(this._buildWorkspaceTopBar());
+            serviceContainer.appendChild(this._buildWorkspaceBars());
             serviceContainer.appendChild(this._explorerPanel.detailElement);
         } else if (key === 'settings') {
             // Show settings pane
             notebookContainer.style.display = 'none';
             serviceContainer.style.display = 'flex';
             serviceContainer.innerHTML = '';
-            serviceContainer.appendChild(this._buildSettingsTopBar());
+            serviceContainer.appendChild(this._buildSettingsBars());
             serviceContainer.appendChild(this._displaySettingsPanel.element);
         } else {
             // Show service iframe, hide notebook
@@ -557,12 +557,14 @@ class App {
 
             // Build service top bar + iframe
             serviceContainer.innerHTML = '';
-            serviceContainer.appendChild(this._buildServiceTopBar(key));
+            serviceContainer.appendChild(this._buildServiceBars(key));
             serviceContainer.appendChild(this._serviceIframes[key]);
         }
     }
 
-    _buildServiceTopBar(key) {
+    _buildServiceBars(key) {
+        const frag = document.createDocumentFragment();
+
         const bar = document.createElement('div');
         bar.className = 'service-top-bar';
 
@@ -588,7 +590,9 @@ class App {
         // Check connection status
         this._checkServiceStatus(key, led, statusLabel);
 
-        return bar;
+        frag.appendChild(bar);
+        frag.appendChild(this._buildSecondBar());
+        return frag;
     }
 
     _openWorkspaceTab() {
@@ -609,7 +613,9 @@ class App {
         });
     }
 
-    _buildSettingsTopBar() {
+    _buildSettingsBars() {
+        const frag = document.createDocumentFragment();
+
         const bar = document.createElement('div');
         bar.className = 'service-top-bar';
 
@@ -618,10 +624,14 @@ class App {
         title.textContent = 'Application Settings';
         bar.appendChild(title);
 
-        return bar;
+        frag.appendChild(bar);
+        frag.appendChild(this._buildSecondBar());
+        return frag;
     }
 
-    _buildWorkspaceTopBar() {
+    _buildWorkspaceBars() {
+        const frag = document.createDocumentFragment();
+
         const bar = document.createElement('div');
         bar.className = 'service-top-bar';
 
@@ -631,6 +641,14 @@ class App {
         this._workspaceTitleEl = title;
         bar.appendChild(title);
 
+        frag.appendChild(bar);
+        frag.appendChild(this._buildSecondBar());
+        return frag;
+    }
+
+    _buildSecondBar() {
+        const bar = document.createElement('div');
+        bar.className = 'service-second-bar';
         return bar;
     }
 

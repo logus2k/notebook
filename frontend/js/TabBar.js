@@ -77,6 +77,7 @@ export class TabBar {
      */
     activate(key) {
         if (!this._tabs.has(key)) return;
+        if (this._activeKey === key) return;
         this._activeKey = key;
         this._updateActiveState();
         this._callbacks.onActivateTab?.(key);

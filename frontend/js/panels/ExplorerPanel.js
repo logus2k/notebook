@@ -303,6 +303,7 @@ export class ExplorerPanel {
             if (!envsRoot.isExpanded()) envsRoot.setExpanded(true);
             envsRoot.setActive(true, { noEvents: true });
             this._showEnvsRootDetail();
+            this._fireSectionChange('root-envs');
         }
     }
 
@@ -322,6 +323,7 @@ export class ExplorerPanel {
             const runtimeId = envKey.substring(0, lastColon);
             const envName = envKey.substring(lastColon + 1);
             this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
+            this._fireSectionChange(nodeKey);
         }
     }
 
@@ -342,6 +344,7 @@ export class ExplorerPanel {
         if (nbNode) {
             nbNode.setActive(true, { noEvents: true });
             this._showNotebookDetail(this._currentProject, this._currentNotebook);
+            this._fireSectionChange(nbKey);
         }
     }
 
