@@ -23,31 +23,14 @@ export class TabBar {
         this._tabs = new Map();
         this._activeKey = null;
 
-        // Create the fixed tab bar (appended to body so it escapes overflow: hidden)
+        // Create the tab bar wrapper and insert at the top of the container
         this._barEl = document.createElement('div');
         this._barEl.className = 'tab-bar';
-        document.body.appendChild(this._barEl);
-
-        // Sync position on window resize
-        window.addEventListener('resize', () => this.syncPosition());
+        this._container.insertBefore(this._barEl, this._container.firstChild);
 
         // Add the permanent notebook tab
         this.addTab({ key: 'notebook', label: 'Notebook', type: 'notebook', closable: false });
         this.activate('notebook');
-        // Defer sync so layout has settled
-        requestAnimationFrame(() => this.syncPosition());
-    }
-
-    /**
-     * Sync the fixed tab bar position to match the center-column's horizontal bounds.
-     * Call this after sidebar toggle/resize, notebook resize, or window resize.
-     */
-    syncPosition() {
-        const rect = this._container.getBoundingClientRect();
-        console.log('[TabBar] syncPosition center-column rect:', { left: rect.left, right: rect.right, width: rect.width, windowW: window.innerWidth });
-        // Align with notebook top bars: left = 10px padding + 36px margin, right = 10px padding + 8px scrollbar
-        this._barEl.style.left = (rect.left + 46) + 'px';
-        this._barEl.style.right = (window.innerWidth - rect.right + 18) + 'px';
     }
 
     /**

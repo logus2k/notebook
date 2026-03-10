@@ -38,9 +38,7 @@ class App {
         jsPanel.defaults.dragit.opacity = 0.95;
 
         // Initialize notebook resizer (restores saved width)
-        this._notebookResizer = new NotebookResizer({
-            onResize: () => this._tabBar?.syncPosition(),
-        });
+        this._notebookResizer = new NotebookResizer();
 
         // Initialize icon bar (left vertical strip)
         this._iconBar = new IconBar(
@@ -52,7 +50,7 @@ class App {
 
         // Initialize sidebar panel (between icon bar and content area)
         this._sidebar = new SidebarPanel({
-            onResize: () => { this._toolbar?.refreshToc(); this._tabBar?.syncPosition(); },
+            onResize: () => this._toolbar?.refreshToc(),
         });
 
         // Register sidebar views (content will be populated later)
@@ -260,9 +258,6 @@ class App {
             // Open the Welcome notebook by default
             this._onNotebookChange('Examples', 'Welcome.ipynb');
         }
-
-        // Final sync after layout is fully settled
-        requestAnimationFrame(() => this._tabBar?.syncPosition());
     }
 
     async _onProjectChange(projectId) {
@@ -290,8 +285,6 @@ class App {
         this._editor.setProject(projectId);
         this._editor.setNotebook(notebookName);
         this._tabBar.setNotebookLabel(notebookName.replace(/\.ipynb$/, ''));
-        requestAnimationFrame(() => this._tabBar.syncPosition());
-
         this._editor.openNotebook(projectId, notebookName, this._userName);
 
         // Restore persisted venv for this notebook, validating against API
@@ -452,8 +445,8 @@ class App {
                 this._explorerPanel.close();
                 this._iconBar.clearActive();
             }
-            // Update TOC and tab bar position after sidebar toggle
-            requestAnimationFrame(() => { this._toolbar?.refreshToc(); this._tabBar?.syncPosition(); });
+            // Update TOC position after sidebar toggle
+            requestAnimationFrame(() => this._toolbar?.refreshToc());
         } else if (key === 'mlflow' || key === 'airflow' || key === 'minio') {
             // Open service as a tab in the center pane
             const title = key.charAt(0).toUpperCase() + key.slice(1);

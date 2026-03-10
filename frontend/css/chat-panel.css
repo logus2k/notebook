@@ -5,6 +5,10 @@
     flex-direction: column;
     height: 100%;
     font-family: var(--font-sans);
+    background-color: #ffffff;
+    box-shadow: -4px 0 8px rgba(0, 0, 0, 0.08);
+    border-left: 0.5px solid #aeaeae;
+    border-top: 0.5px solid #aeaeae;
 }
 
 .chat-messages {

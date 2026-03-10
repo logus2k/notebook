@@ -3,10 +3,9 @@
  * Replaces the width slider in DisplaySettingsPanel.
  */
 export class NotebookResizer {
-    constructor({ onResize } = {}) {
+    constructor() {
         this._resizer = document.getElementById('notebook-resizer');
         this._container = document.getElementById('center-column');
-        this._onResize = onResize || null;
 
         // Restore saved width
         const saved = localStorage.getItem('notebook-cell-width');
@@ -58,7 +57,6 @@ export class NotebookResizer {
                 const containerWidth = this._container.getBoundingClientRect().width;
                 const cellWidth = Math.round(containerWidth - 28);
                 localStorage.setItem('notebook-cell-width', String(cellWidth));
-                this._onResize?.();
             };
 
             document.addEventListener('mousemove', onMouseMove);

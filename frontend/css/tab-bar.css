@@ -1,15 +1,17 @@
-/* Tab bar — fixed position so it can overflow upward into the toolbar */
+/* Tab bar — first child of #center-column, sits in the toolbar zone */
 .tab-bar {
     display: flex;
     flex-wrap: wrap;
+    /* Align with notebook top bars: left = 10px padding + 36px margin, right = 10px padding + 8px scrollbar */
+    margin: 0 18px 0 46px;
     padding: 0 6px;
     gap: 2px;
     align-items: flex-end;
     font-size: 0.85em;
-    position: fixed;
-    top: 16px;
-    z-index: 5;
-    pointer-events: auto;
+    flex-shrink: 0;
+    z-index: 4;
+    /* Fill toolbar height so tabs sit at its bottom edge */
+    height: var(--toolbar-height, 37px);
 }
 
 .tab-bar .tab {

@@ -1,11 +1,34 @@
+/* Toolbar background band — absolutely positioned behind toolbar elements */
+#app::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--toolbar-height, 37px);
+    background: #ffde8cd6;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Toolbar — absolute overlay, not in document flow */
 #toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--toolbar-height, 37px);
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 4px 12px;
-    background: #ffde8cd6;
-    flex-shrink: 0;
-    position: relative;
+    z-index: 6;
+    pointer-events: none;
+}
+
+/* Re-enable pointer events on interactive children */
+#toolbar > * {
+    pointer-events: auto;
 }
 
 .toolbar-group {
@@ -40,7 +63,7 @@
 
 .toolbar-title {
     height: 16px;
-    margin-left: 5px;
+    margin-left: 48px;
 }
 
 .toolbar-center {
