@@ -85,7 +85,7 @@ html, body {
     height: 100%;
     font-family: var(--font-sans);
     font-size: 14px;
-    background-color: #50505091;
+    background-color: #90909052;
     background-image: url("../images/low-contrast-linen.png");
     color: var(--text-primary);
     overflow: hidden;
@@ -131,7 +131,7 @@ html, body {
 #center-column {
     display: flex;
     flex-direction: column;
-    width: 988px;
+    width: 1118px;
     min-width: 400px;
     flex-shrink: 1;
     overflow: hidden;
@@ -162,7 +162,7 @@ html, body {
 }
 
 #notebook-second-bar {
-    height: 24px;
+    height: 26px;
     background: #fff2bc;
     margin: 0 0 0 36px;
     display: flex;
@@ -174,7 +174,7 @@ html, body {
     padding: 0 4px;
     border-left: 0.5px solid #666666;
     border-right: 0.5px solid #666666;
-    border-bottom: 0.5px solid #999999;
+    border-bottom: 0.5px solid #666666;
 }
 
 
