@@ -7,6 +7,11 @@
       "name": "Apache Airflow",
       "category": "MLOps",
       "location": "files/airflow.pdf"
+    },
+    {
+      "name": "Airflow Installation",
+      "category": "MLOps",
+      "location": "files/installation.md"
     }
   ]
 }

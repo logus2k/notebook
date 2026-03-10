@@ -3,6 +3,7 @@ import { POST_IT_ICON_CELL } from './CellPostIt.js';
 import { ImageActions } from './ImageActions.js';
 import { NotebookDragDrop } from './NotebookDragDrop.js';
 import { NotebookSelection } from './NotebookSelection.js';
+import { notify } from './Notify.js';
 
 /**
  * NotebookEditor - Main notebook container, manages cells array.
@@ -124,14 +125,14 @@ export class NotebookEditor {
 
     save() {
         if (!this._notebook) {
-            this._showSaveIndicator('No notebook open', true);
+            notify.error('No notebook open');
             return;
         }
         try {
             const content = this._serializeNotebook();
             this._client.saveNotebook(content);
         } catch (err) {
-            this._showSaveIndicator('Save failed', true);
+            notify.error('Save failed');
             console.error('Save serialization error:', err);
         }
     }
@@ -722,7 +723,7 @@ export class NotebookEditor {
 
     _onError(data) {
         if (data.code === 'INVALID_REQUEST') {
-            this._showSaveIndicator(data.message || 'Request failed', true);
+            notify.error(data.message || 'Request failed');
             return;
         }
 
@@ -741,30 +742,13 @@ export class NotebookEditor {
 
     _onNotebookSaved(data) {
         if (data.success) {
-            this._showSaveIndicator('Saved');
+            notify.success('Saved');
         } else {
-            this._showSaveIndicator('Save failed', true);
+            notify.error('Save failed');
             console.error('Save failed:', data.error);
         }
     }
 
-    _showSaveIndicator(message, isError = false) {
-        const existing = document.querySelector('.save-indicator');
-        if (existing) existing.remove();
-
-        const el = document.createElement('div');
-        el.className = 'save-indicator';
-        el.textContent = message;
-        el.style.cssText = `
-            position: fixed; top: 48px; right: 16px; z-index: 1000;
-            padding: 6px 14px; border-radius: 6px; font-size: 13px;
-            font-family: var(--font-sans); animation: fadeInOut 2s ease forwards;
-            background: ${isError ? 'var(--accent-red)' : 'var(--accent-green)'};
-            color: #fff;
-        `;
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 2000);
-    }
 
     // --- Serialization ---
 

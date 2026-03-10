@@ -448,9 +448,8 @@ html:has(.hide-bg-color) {
     background: #4a7bd0cc;
 }
 
-@keyframes fadeInOut {
-    0% { opacity: 0; transform: translateY(-8px); }
-    15% { opacity: 1; transform: translateY(0); }
-    75% { opacity: 1; }
-    100% { opacity: 0; }
+/* Notyf overrides */
+.notyf {
+    padding-bottom: 50px;
 }
+
