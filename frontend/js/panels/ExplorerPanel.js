@@ -286,14 +286,47 @@ export class ExplorerPanel {
     }
 
     _fireSectionChange(nodeKey) {
-        if (!this._callbacks.onSectionChange) return;
-        let section = 'Workspace';
-        if (nodeKey === 'root-projects' || nodeKey.startsWith('project:') || nodeKey.startsWith('notebook:')) {
-            section = 'Projects';
-        } else if (nodeKey === 'root-envs' || nodeKey.startsWith('runtime:') || nodeKey.startsWith('env:')) {
-            section = 'Environments';
+        const info = this._buildBreadcrumbs(nodeKey);
+        if (this._callbacks.onSectionChange) {
+            this._callbacks.onSectionChange(info.crumbs[0] || 'Workspace');
         }
-        this._callbacks.onSectionChange(section);
+        if (this._callbacks.onBreadcrumbChange) {
+            this._callbacks.onBreadcrumbChange(info);
+        }
+    }
+
+    _buildBreadcrumbs(nodeKey) {
+        if (nodeKey === 'root-projects') {
+            const n = this._tree?.findKey('root-projects')?.children?.length || 0;
+            return { crumbs: ['Projects'], rootCount: n };
+        }
+        if (nodeKey === 'root-envs') {
+            const n = this._tree?.findKey('root-envs')?.children?.length || 0;
+            return { crumbs: ['Environments'], rootCount: n };
+        }
+        if (nodeKey.startsWith('project:')) {
+            const projectId = nodeKey.substring(8);
+            return { crumbs: ['Projects', projectId] };
+        }
+        if (nodeKey.startsWith('notebook:')) {
+            const rest = nodeKey.substring(9);
+            const colonIdx = rest.indexOf(':');
+            const projectId = rest.substring(0, colonIdx);
+            const nbName = rest.substring(colonIdx + 1);
+            return { crumbs: ['Projects', projectId, nbName] };
+        }
+        if (nodeKey.startsWith('runtime:')) {
+            const runtimeId = nodeKey.substring(8);
+            return { crumbs: ['Environments', this._getDisplayName(runtimeId)] };
+        }
+        if (nodeKey.startsWith('env:')) {
+            const rest = nodeKey.substring(4);
+            const lastColon = rest.lastIndexOf(':');
+            const runtimeId = rest.substring(0, lastColon);
+            const envName = rest.substring(lastColon + 1);
+            return { crumbs: ['Environments', this._getDisplayName(runtimeId), envName] };
+        }
+        return { crumbs: ['Workspace'] };
     }
 
     _navigateToEnvsRoot() {

@@ -36,7 +36,7 @@
 .toc-nav a {
     color: var(--text-primary, #1d1d1d);
     text-decoration: none;
-    font-size: 13px;
+    font-size: 12px;
     font-family: var(--font-sans);
     display: block;
     padding: 3px 8px;
@@ -62,7 +62,7 @@
 .toc-empty {
     padding: 24px 16px;
     color: var(--text-muted);
-    font-size: 13px;
+    font-size: 12px;
     text-align: center;
     font-family: var(--font-sans);
     list-style: none;

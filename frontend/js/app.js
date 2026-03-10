@@ -64,11 +64,13 @@ class App {
 
         // Initialize unified explorer panel (projects + environments)
         this._workspaceTitleEl = null;
+        this._workspaceBreadcrumbBar = null;
         this._explorerPanel = new ExplorerPanel({
             onNotebookSelect: (projectId, notebookName) => this._onNotebookChange(projectId, notebookName),
             onVenvSelect: (venv) => this._onVenvSelect(venv),
             onVenvDeleted: (deletedName) => this._onVenvDeleted(deletedName),
             onSectionChange: (section) => this._updateWorkspaceTitle(section),
+            onBreadcrumbChange: (crumbs) => this._updateWorkspaceBreadcrumbs(crumbs),
             onActivate: () => this._openWorkspaceTab(),
         });
 
@@ -642,7 +644,8 @@ class App {
         bar.appendChild(title);
 
         frag.appendChild(bar);
-        frag.appendChild(this._buildSecondBar());
+        this._workspaceBreadcrumbBar = this._buildSecondBar();
+        frag.appendChild(this._workspaceBreadcrumbBar);
         return frag;
     }
 
@@ -656,6 +659,51 @@ class App {
         if (this._workspaceTitleEl) {
             this._workspaceTitleEl.textContent = section;
         }
+    }
+
+    _updateWorkspaceBreadcrumbs(info) {
+        if (!this._workspaceBreadcrumbBar) return;
+        this._workspaceBreadcrumbBar.innerHTML = '';
+        const { crumbs, rootCount } = info;
+
+        // Root level: "Create X" on left, "n X" on right
+        if (crumbs.length === 1 && rootCount !== undefined) {
+            const section = crumbs[0]; // 'Projects' or 'Environments'
+            const singular = section === 'Projects' ? 'Project' : 'Environment';
+
+            const left = document.createElement('div');
+            left.className = 'service-second-bar-left';
+            const action = document.createElement('span');
+            action.className = 'breadcrumb-segment breadcrumb-current';
+            action.textContent = `Create ${singular}`;
+            left.appendChild(action);
+
+            const right = document.createElement('div');
+            right.className = 'service-second-bar-right';
+            const count = document.createElement('span');
+            count.className = 'breadcrumb-segment';
+            count.textContent = `${rootCount} ${rootCount !== 1 ? section : singular}`;
+            right.appendChild(count);
+
+            this._workspaceBreadcrumbBar.appendChild(left);
+            this._workspaceBreadcrumbBar.appendChild(right);
+            return;
+        }
+
+        // Deeper levels: breadcrumb trail with separators
+        crumbs.forEach((text, i) => {
+            if (i > 0) {
+                const sep = document.createElement('span');
+                sep.className = 'breadcrumb-sep';
+                sep.textContent = '|';
+                this._workspaceBreadcrumbBar.appendChild(sep);
+            }
+            const span = document.createElement('span');
+            span.className = 'breadcrumb-segment';
+            if (i === crumbs.length - 1) span.classList.add('breadcrumb-current');
+            span.textContent = text;
+            this._workspaceBreadcrumbBar.appendChild(span);
+        });
     }
 
     _checkServiceStatus(key, led, label) {

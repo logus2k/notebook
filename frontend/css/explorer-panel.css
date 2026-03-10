@@ -36,7 +36,7 @@
     justify-content: center;
     height: 100%;
     color: var(--text-muted);
-    font-size: 13px;
+    font-size: 12px;
 }
 
 .explorer-detail-parent {
@@ -167,7 +167,7 @@
 
 .explorer-create-form select {
     padding: 6px 8px;
-    font-size: 13px;
+    font-size: 12px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     background: var(--bg-primary);
@@ -182,7 +182,7 @@
 
 .explorer-create-form input {
     padding: 6px 8px;
-    font-size: 13px;
+    font-size: 12px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     background: var(--bg-primary);
@@ -244,7 +244,7 @@
     border: none !important;
     background: transparent !important;
     font-family: Roboto, sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     /* Override Wunderbaum color variables */
     --wb-background-color: transparent;
     --wb-hover-color: rgba(0, 0, 0, 0.05);
@@ -398,7 +398,7 @@ div.wunderbaum span.wb-node span.wb-title {
     white-space: nowrap;
     text-overflow: ellipsis;
     padding-left: 1px;
-    font-size: 13px;
+    font-size: 12px;
     font-family: 'Roboto', sans-serif !important;
     position: relative;
     top: 0px;
@@ -484,7 +484,7 @@ div.wunderbaum div.wb-node-list div.wb-row.wb-selected {
 .explorer-nb-description h1,
 .explorer-nb-description h2,
 .explorer-nb-description h3 {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     margin: 0 0 4px;
     color: var(--text-primary);

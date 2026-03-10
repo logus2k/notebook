@@ -190,6 +190,25 @@ body.resizing #service-tab-container iframe {
     font-family: var(--font-sans);
 }
 
+/* Breadcrumb segments in second bar */
+.breadcrumb-segment {
+    font-size: 11px;
+    font-family: var(--font-sans);
+    color: #666666;
+}
+
+.breadcrumb-segment.breadcrumb-current {
+    color: #333333;
+    font-weight: 500;
+}
+
+.breadcrumb-sep {
+    font-size: 11px;
+    color: #999999;
+    margin: 0 2px;
+    font-family: var(--font-sans);
+}
+
 @media (max-width: 900px) {
     .tab-bar .tab {
         max-width: 120px;
