@@ -12,6 +12,7 @@ import { ChatService } from './ChatService.js';
 import { RightPanel } from './RightPanel.js';
 import { TabBar } from './TabBar.js';
 import { TocPanel } from './TocPanel.js';
+import { DocumentViewer } from './panels/DocumentViewer.js';
 
 
 /**
@@ -33,6 +34,7 @@ class App {
         this._userName = this._generateUserName();
         this._kernelRunning = false;
         this._chatVisible = true;
+        this._documentViewer = null;
     }
 
     async init() {
@@ -72,6 +74,7 @@ class App {
             onSectionChange: (section) => this._updateWorkspaceTitle(section),
             onBreadcrumbChange: (crumbs) => this._updateWorkspaceBreadcrumbs(crumbs),
             onActivate: () => this._openWorkspaceTab(),
+            onDocumentOpen: (doc) => this._openDocumentTab(doc),
         });
 
         // Register sidebar views — tree from ExplorerPanel
@@ -203,6 +206,9 @@ class App {
 
         // Initialize display settings panel (jsPanel)
         this._displaySettingsPanel = new DisplaySettingsPanel();
+
+        // Initialize document viewer (for MD/PDF rendering in center pane)
+        this._documentViewer = new DocumentViewer();
 
         // Initialize right panel (chat assistant)
         this._initRightPanel();
@@ -525,6 +531,8 @@ class App {
         if (wsDetail) wsDetail.remove();
         const settingsEl = serviceContainer.querySelector('.settings-panel-wrapper');
         if (settingsEl) settingsEl.remove();
+        const docViewer = serviceContainer.querySelector('.document-viewer-wrapper');
+        if (docViewer) docViewer.remove();
 
         if (key === 'notebook') {
             // Show notebook, hide service container
@@ -544,6 +552,13 @@ class App {
             serviceContainer.innerHTML = '';
             serviceContainer.appendChild(this._buildSettingsBars());
             serviceContainer.appendChild(this._displaySettingsPanel.element);
+        } else if (key.startsWith('doc:')) {
+            // Show document viewer
+            notebookContainer.style.display = 'none';
+            serviceContainer.style.display = 'flex';
+            serviceContainer.innerHTML = '';
+            serviceContainer.appendChild(this._buildDocumentBars(key));
+            serviceContainer.appendChild(this._documentViewer.element);
         } else {
             // Show service iframe, hide notebook
             notebookContainer.style.display = 'none';
@@ -615,6 +630,18 @@ class App {
         });
     }
 
+    _openDocumentTab(doc) {
+        const tabKey = `doc:${doc.category}:${doc.name}`;
+        this._tabBar.addTab({
+            key: tabKey,
+            label: doc.name,
+            type: 'document',
+            closable: true,
+        });
+        // Load the document into the viewer
+        this._documentViewer.show(doc);
+    }
+
     _buildSettingsBars() {
         const frag = document.createDocumentFragment();
 
@@ -649,6 +676,43 @@ class App {
         return frag;
     }
 
+    _buildDocumentBars(key) {
+        const frag = document.createDocumentFragment();
+
+        const bar = document.createElement('div');
+        bar.className = 'service-top-bar';
+
+        const title = document.createElement('span');
+        title.className = 'service-top-bar-title';
+        // Extract document name from key "doc:category:name"
+        const parts = key.substring(4).split(':');
+        title.textContent = parts.length > 1 ? parts.slice(1).join(':') : key;
+        bar.appendChild(title);
+
+        frag.appendChild(bar);
+
+        // Second bar with breadcrumbs
+        const secondBar = this._buildSecondBar();
+        const category = parts[0] || '';
+        const docName = parts.slice(1).join(':') || '';
+        const crumbs = ['Documents', category, docName].filter(Boolean);
+        crumbs.forEach((text, i) => {
+            if (i > 0) {
+                const sep = document.createElement('span');
+                sep.className = 'breadcrumb-sep';
+                sep.textContent = '|';
+                secondBar.appendChild(sep);
+            }
+            const span = document.createElement('span');
+            span.className = 'breadcrumb-segment';
+            if (i === crumbs.length - 1) span.classList.add('breadcrumb-current');
+            span.textContent = text;
+            secondBar.appendChild(span);
+        });
+        frag.appendChild(secondBar);
+        return frag;
+    }
+
     _buildSecondBar() {
         const bar = document.createElement('div');
         bar.className = 'service-second-bar';
@@ -668,14 +732,17 @@ class App {
 
         // Root level: "Create X" on left, "n X" on right
         if (crumbs.length === 1 && rootCount !== undefined) {
-            const section = crumbs[0]; // 'Projects' or 'Environments'
-            const singular = section === 'Projects' ? 'Project' : 'Environment';
+            const section = crumbs[0]; // 'Projects', 'Environments', or 'Documents'
+            const singularMap = { Projects: 'Project', Environments: 'Environment', Documents: 'Document' };
+            const singular = singularMap[section] || section;
+            const actionMap = { Projects: 'Create Project', Environments: 'Create Environment', Documents: 'Upload Document' };
+            const actionText = actionMap[section] || `Create ${singular}`;
 
             const left = document.createElement('div');
             left.className = 'service-second-bar-left';
             const action = document.createElement('span');
             action.className = 'breadcrumb-segment breadcrumb-current';
-            action.textContent = `Create ${singular}`;
+            action.textContent = actionText;
             left.appendChild(action);
 
             const right = document.createElement('div');
@@ -721,6 +788,10 @@ class App {
     }
 
     _onTabClosed(key) {
+        // Clean up document viewer when its tab is closed
+        if (key.startsWith('doc:')) {
+            this._documentViewer.clear();
+        }
         // Remove cached iframe
         if (this._serviceIframes[key]) {
             this._serviceIframes[key].remove();

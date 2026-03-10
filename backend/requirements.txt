@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 python-socketio
 aiofiles
+python-multipart
 jupyter_client
 ipykernel
 pyzmq

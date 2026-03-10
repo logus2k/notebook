@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from app.config import FRONTEND_DIR
-from app.routers import notebooks, venvs
+from app.routers import notebooks, venvs, documents
 from app.managers.kernel_manager import KernelManagerService
 from app.managers.execution_bridge import ExecutionBridge
 from app.managers.collaboration import CollaborationManager
@@ -57,6 +57,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Notebook Collaboration Platform", lifespan=lifespan)
 app.include_router(notebooks.router)
 app.include_router(venvs.router)
+app.include_router(documents.router)
 
 
 # --- Socket.IO Events ---

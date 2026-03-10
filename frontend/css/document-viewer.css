@@ -1,0 +1,270 @@
+/* Document Viewer - renders Markdown and PDF documents in center pane */
+
+.document-viewer-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    border-left: 0.5px solid #666666;
+    border-right: 0.5px solid #666666;
+    box-sizing: border-box;
+    background: var(--bg-primary);
+}
+
+/* Markdown content */
+.document-viewer-markdown {
+    padding: 20px 32px;
+    max-width: 860px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.document-viewer-markdown h1 {
+    font-size: 1.8em;
+    font-weight: 700;
+    margin: 0.6em 0 0.4em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+}
+
+.document-viewer-markdown h2 {
+    font-size: 1.4em;
+    font-weight: 600;
+    margin: 0.8em 0 0.3em;
+}
+
+.document-viewer-markdown h3 {
+    font-size: 1.15em;
+    font-weight: 600;
+    margin: 0.6em 0 0.3em;
+}
+
+.document-viewer-markdown h4,
+.document-viewer-markdown h5,
+.document-viewer-markdown h6 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 0.5em 0 0.2em;
+}
+
+.document-viewer-markdown p {
+    margin: 0.6em 0;
+}
+
+.document-viewer-markdown img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.document-viewer-markdown a {
+    color: #3272c0;
+    text-decoration: none;
+}
+
+.document-viewer-markdown a:hover {
+    text-decoration: underline;
+}
+
+.document-viewer-markdown pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 12px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0.8em 0;
+}
+
+.document-viewer-markdown code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+}
+
+.document-viewer-markdown :not(pre) > code {
+    background: rgba(0, 0, 0, 0.06);
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+.document-viewer-markdown blockquote {
+    border-left: 3px solid #d0d0d0;
+    margin: 0.8em 0;
+    padding: 0.2em 1em;
+    color: #555;
+}
+
+.document-viewer-markdown table {
+    border-collapse: collapse;
+    margin: 0.8em 0;
+    width: 100%;
+}
+
+.document-viewer-markdown th,
+.document-viewer-markdown td {
+    border: 1px solid var(--border-color);
+    padding: 6px 10px;
+    text-align: left;
+}
+
+.document-viewer-markdown th {
+    background: rgba(0, 0, 0, 0.04);
+    font-weight: 600;
+}
+
+.document-viewer-markdown ul,
+.document-viewer-markdown ol {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+}
+
+.document-viewer-markdown li {
+    margin: 0.2em 0;
+}
+
+.document-viewer-markdown hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1.2em 0;
+}
+
+/* PDF content */
+.document-viewer-pdf {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: #525659;
+}
+
+.pdf-page {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.pdf-page canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* PDF text layer (for text selection) */
+.pdf-page .textLayer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    opacity: 0.25;
+    line-height: 1;
+}
+
+.pdf-page .textLayer span {
+    position: absolute;
+    white-space: pre;
+    color: transparent;
+    pointer-events: all;
+}
+
+.pdf-page .textLayer span::selection {
+    background: rgba(0, 100, 200, 0.35);
+}
+
+/* PDF annotation layer (links) */
+.pdf-page .annotationLayer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: top left;
+}
+
+.pdf-page .annotationLayer a {
+    display: block;
+    cursor: pointer;
+}
+
+.pdf-page .annotationLayer a:hover {
+    background: rgba(255, 255, 0, 0.15);
+}
+
+/* Error state */
+.document-viewer-error {
+    padding: 32px;
+    text-align: center;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 13px;
+}
+
+/* Explorer panel document styles */
+.explorer-doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 8px;
+}
+
+.explorer-doc-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.explorer-doc-row:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.explorer-doc-row i {
+    font-size: 14px;
+    color: #888;
+    width: 18px;
+    text-align: center;
+}
+
+.explorer-doc-row .fa-file-pdf {
+    color: #e44d26;
+}
+
+.explorer-doc-row .fa-file-lines {
+    color: #5ba4e6;
+}
+
+.explorer-doc-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* File input styling */
+.explorer-file-input {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    padding: 4px 0;
+}
+
+/* Document tree node icons */
+#explorerTree .fa-book {
+    color: #8b6914 !important;
+}
+
+#explorerTree .fa-file-pdf {
+    color: #e44d26 !important;
+}
+
+#explorerTree .fa-file-lines {
+    color: #5ba4e6 !important;
+}
