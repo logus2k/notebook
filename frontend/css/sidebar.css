@@ -1,0 +1,98 @@
+/* ── Sidebar Panel (between icon bar and content area) ──────────── */
+
+#sidebar-panel {
+    display: none;
+    flex-direction: column;
+    width: 280px;
+    min-width: 160px;
+    max-width: 500px;
+    background: var(--bg-primary, #ffffff);
+    border-right: 1px solid var(--border-color, #d0d0d8);
+    overflow: hidden;
+    flex-shrink: 0;
+    z-index: 4;
+}
+
+#sidebar-panel.sidebar-open {
+    display: flex;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #ffe39eed;
+    flex-shrink: 0;
+}
+
+.sidebar-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #333333;
+    font-family: var(--font-sans);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Sidebar resize handle */
+#sidebar-resizer {
+    width: 6px;
+    cursor: col-resize;
+    flex-shrink: 0;
+    position: relative;
+    display: none;
+    z-index: 5;
+}
+
+#sidebar-resizer.sidebar-open {
+    display: block;
+}
+
+#sidebar-resizer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 2px;
+    width: 0;
+    height: 100%;
+    border-left: 1px solid #cecece;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+#sidebar-resizer:hover::after,
+#sidebar-resizer.dragging::after {
+    opacity: 1;
+}
+
+/* Sidebar scrollbar */
+.sidebar-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 4px 0;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: #6096e5ad;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover,
+.sidebar-content::-webkit-scrollbar-thumb:active {
+    background: #4a7bd0cc;
+}

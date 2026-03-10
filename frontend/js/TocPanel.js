@@ -120,10 +120,16 @@ export class TocPanel {
         if (!this._visible) {
             this._contentArea.style.marginLeft = '';
         } else {
-            const tocLeft = parseInt(getComputedStyle(this._wrapper).left) || 64;
+            // TOC left = icon bar + sidebar + sidebar resizer
             const iconBar = document.getElementById('icon-bar');
+            const sidebar = document.getElementById('sidebar-panel');
+            const sidebarResizer = document.getElementById('sidebar-resizer');
             const iconBarWidth = iconBar ? iconBar.offsetWidth : 0;
-            const margin = tocLeft + this._getTargetWidth() + 20 - iconBarWidth;
+            const sidebarWidth = (sidebar && sidebar.classList.contains('sidebar-open')) ? sidebar.offsetWidth : 0;
+            const resizerWidth = (sidebarResizer && sidebarResizer.classList.contains('sidebar-open')) ? sidebarResizer.offsetWidth : 0;
+            const tocLeft = iconBarWidth + sidebarWidth + resizerWidth;
+            this._wrapper.style.left = tocLeft + 'px';
+            const margin = tocLeft + this._getTargetWidth() + 20 - iconBarWidth - sidebarWidth - resizerWidth;
             this._contentArea.style.marginLeft = Math.max(0, margin) + 'px';
         }
     }

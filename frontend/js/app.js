@@ -3,6 +3,7 @@ import { NotebookEditor } from './NotebookEditor.js';
 import { NotebookToolbar } from './NotebookToolbar.js';
 import { InfoBar } from './InfoBar.js';
 import { IconBar } from './IconBar.js';
+import { SidebarPanel } from './SidebarPanel.js';
 import { ExplorerPanel } from './panels/ExplorerPanel.js';
 import { DisplaySettingsPanel } from './panels/DisplaySettingsPanel.js';
 import { NotebookResizer } from './NotebookResizer.js';
@@ -20,6 +21,7 @@ class App {
         this._toolbar = null;
         this._infoBar = null;
         this._iconBar = null;
+        this._sidebar = null;
         this._explorerPanel = null;
         this._displaySettingsPanel = null;
         this._currentProject = null;
@@ -44,6 +46,20 @@ class App {
                 onIconClick: (key, isActive) => this._onIconBarClick(key, isActive),
             }
         );
+
+        // Initialize sidebar panel (between icon bar and content area)
+        this._sidebar = new SidebarPanel({
+            onResize: () => this._toolbar?.refreshToc(),
+        });
+
+        // Register sidebar views (content will be populated later)
+        const projectsView = document.createElement('div');
+        projectsView.className = 'sidebar-view-projects';
+        this._sidebar.registerView('projects', { title: 'Projects', element: projectsView });
+
+        const environmentsView = document.createElement('div');
+        environmentsView.className = 'sidebar-view-environments';
+        this._sidebar.registerView('environments', { title: 'Environments', element: environmentsView });
 
         // Restore display toggles
         const toggleMap = {
@@ -402,9 +418,11 @@ class App {
         panel.style.display = this._chatVisible ? 'flex' : 'none';
     }
 
-    _onIconBarClick(key, isActive) {
+    _onIconBarClick(key) {
         if (key === 'projects' || key === 'environments') {
-            if (isActive) {
+            const shown = this._sidebar.toggle(key);
+            if (shown) {
+                // Also open the explorer panel (floating, for now)
                 this._explorerPanel.setActiveVenv(this._activeVenv ? this._activeVenv.name : null);
                 this._explorerPanel.open({
                     currentProject: this._currentProject,
@@ -413,7 +431,10 @@ class App {
                 });
             } else {
                 this._explorerPanel.close();
+                this._iconBar.clearActive();
             }
+            // Update TOC position after sidebar toggle
+            requestAnimationFrame(() => this._toolbar?.refreshToc());
         } else if (key === 'mlflow' || key === 'airflow' || key === 'minio') {
             // Service panels — delegate to toolbar's service panel logic for now
             this._toolbar._openServicePanel(

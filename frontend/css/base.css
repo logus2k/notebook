@@ -151,9 +151,9 @@ html, body {
     flex-direction: column;
     background: var(--bg-primary, #ffffff);
     border: 1px solid var(--border-color, #e8e8e8);
-    border-radius: 6px;
-    margin: 16px 16px 16px 0;
-    box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
+    border-radius: 0;
+    margin: 0;
+    box-shadow: -4px 0 8px rgba(0, 0, 0, 0.08);
 }
 
 button {
