@@ -103,6 +103,11 @@
     box-sizing: border-box;
 }
 
+/* Disable iframe pointer events during splitter drag to prevent mouse capture */
+body.resizing #service-tab-container iframe {
+    pointer-events: none;
+}
+
 /* Service top bar — mirrors notebook top bar */
 .service-top-bar {
     height: 24px;
