@@ -4,8 +4,7 @@
  */
 export class ChatPanel {
 
-    constructor(containerElement) {
-        this.container = containerElement;
+    constructor() {
         this._onSendCallback = null;
         this._onSttToggleCallback = null;
         this._onTtsToggleCallback = null;
@@ -13,18 +12,11 @@ export class ChatPanel {
         this._build();
     }
 
+    get element() { return this._panel; }
+
     _build() {
         const panel = document.createElement('div');
         panel.className = 'chat-panel';
-
-        // Header (reuses toc-header style)
-        const header = document.createElement('div');
-        header.className = 'toc-header';
-        const title = document.createElement('div');
-        title.className = 'toc-title';
-        title.textContent = 'Assistant';
-        header.appendChild(title);
-        panel.appendChild(header);
 
         // Messages area
         this._messagesArea = document.createElement('div');
@@ -94,7 +86,7 @@ export class ChatPanel {
         inputArea.appendChild(this._ttsBtn);
 
         panel.appendChild(inputArea);
-        this.container.appendChild(panel);
+        this._panel = panel;
     }
 
     _autoGrow() {

@@ -9,6 +9,7 @@ import { DisplaySettingsPanel } from './panels/DisplaySettingsPanel.js';
 import { NotebookResizer } from './NotebookResizer.js';
 import { ChatPanel } from './ChatPanel.js';
 import { ChatService } from './ChatService.js';
+import { RightPanel } from './RightPanel.js';
 import { TabBar } from './TabBar.js';
 import { TocPanel } from './TocPanel.js';
 
@@ -63,7 +64,7 @@ class App {
         // Register sidebar views (content will be populated later)
         const projectsView = document.createElement('div');
         projectsView.className = 'sidebar-view-projects';
-        this._sidebar.registerView('projects', { tabLabel: 'Workspace', title: 'Workspace', element: projectsView });
+        this._sidebar.registerView('projects', { tabLabel: 'Workspace', title: 'Workspace Assets Management', element: projectsView });
 
         // TOC panel — lives inside the sidebar as a view
         this._tocPanel = new TocPanel(
@@ -436,7 +437,28 @@ class App {
 
     _initRightPanel() {
         const rightPanel = document.getElementById('right-panel');
-        this._chatPanel = new ChatPanel(rightPanel);
+        this._rightPanel = new RightPanel(rightPanel);
+
+        // Assistant tab
+        this._chatPanel = new ChatPanel();
+        this._rightPanel.registerView('assistant', {
+            tabLabel: 'Assistant',
+            title: 'Chat Window',
+            element: this._chatPanel.element,
+        });
+
+        // Prompts tab
+        const promptsEl = document.createElement('div');
+        promptsEl.className = 'prompts-view';
+        this._rightPanel.registerView('prompts', {
+            tabLabel: 'Prompts',
+            title: 'LLM Prompts Management',
+            element: promptsEl,
+        });
+
+        // Show Assistant by default
+        this._rightPanel.show('assistant');
+
         this._chatService = new ChatService(this._chatPanel);
         this._chatService.connect().catch(err => {
             console.error('Chat service connection failed:', err);

@@ -86,7 +86,7 @@ html, body {
     font-family: var(--font-sans);
     font-size: 14px;
     background-color: #90909052;
-    background-image: url("../images/low-contrast-linen.png");
+    background-image: url("../images/project-paper.png");
     color: var(--text-primary);
     overflow: hidden;
 }

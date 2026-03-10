@@ -5,7 +5,7 @@
     /* Align with notebook top bars: left = 10px padding + 36px margin, right = 10px padding + 8px scrollbar */
     margin: 0 20px 0 50px;
     padding: 0 6px;
-    gap: 2px;
+    gap: 0px;
     align-items: flex-end;
     font-size: 0.85em;
     flex-shrink: 0;
