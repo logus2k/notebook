@@ -114,7 +114,7 @@ html, body {
 
 #notebook-container {
     overflow-y: scroll;
-    padding: 15px 10px 16px 10px;
+    padding: 0 10px 16px 10px;
     width: 988px;
     min-width: 400px;
     flex-shrink: 1;
@@ -130,6 +130,9 @@ html, body {
     padding: 0 12px;
     gap: 2px;
     font-size: 11px;
+    position: sticky;
+    top: 0;
+    z-index: 3;
 }
 
 #notebook-second-bar {
@@ -137,6 +140,9 @@ html, body {
     background: #fff2bcd9;
     margin: 0 0 0 36px;
     display: flex;
+    position: sticky;
+    top: 28px;
+    z-index: 3;
     align-items: center;
     justify-content: center;
     padding: 0 4px;
