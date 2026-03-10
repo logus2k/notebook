@@ -59,7 +59,7 @@
     color: #202020;
 }
 
-@media (max-width: 860px) {
+@container center (max-width: 660px) {
     .info-bar-btn-label { display: none; }
     .info-bar-text-btn { padding: 0 4px; }
 }

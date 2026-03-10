@@ -135,6 +135,8 @@ html, body {
     min-width: 400px;
     flex-shrink: 1;
     overflow: hidden;
+    container-type: inline-size;
+    container-name: center;
 }
 
 #notebook-container {
@@ -144,10 +146,9 @@ html, body {
 }
 
 #notebook-top-bar {
-    height: 28px;
+    height: 24px;
     background: #ffd670;
     margin: 0 0 0 36px;
-    border-radius: 3px 3px 0 0;
     display: flex;
     align-items: center;
     padding: 0 12px;
@@ -156,24 +157,24 @@ html, body {
     position: sticky;
     top: 0;
     z-index: 3;
-    border-left: 0.5px solid #aeaeae;
-    border-right: 0.5px solid #aeaeae;
+    border-left: 0.5px solid #666666;
+    border-right: 0.5px solid #666666;
 }
 
 #notebook-second-bar {
-    height: 28px;
+    height: 24px;
     background: #fff2bc;
     margin: 0 0 0 36px;
     display: flex;
     position: sticky;
-    top: 28px;
+    top: 24px;
     z-index: 3;
     align-items: center;
     justify-content: center;
     padding: 0 4px;
-    border-left: 0.5px solid #aeaeae;
-    border-right: 0.5px solid #aeaeae;
-    border-bottom: 0.5px solid #aeaeae;
+    border-left: 0.5px solid #666666;
+    border-right: 0.5px solid #666666;
+    border-bottom: 0.5px solid #999999;
 }
 
 
@@ -218,6 +219,14 @@ html, body {
 
 #notebook-top-bar .info-bar-kernel {
     margin-left: auto;
+    overflow: hidden;
+    max-width: 240px;
+}
+
+#notebook-top-bar .info-bar-kernel .info-bar-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 #notebook-resizer {

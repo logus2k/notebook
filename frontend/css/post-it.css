@@ -37,8 +37,8 @@
 /* Notes count badge on toolbar icon */
 .toolbar-notes-badge {
     position: absolute;
-    bottom: -1px;
-    right: -2px;
+    bottom: 0px;
+    right: -3px;
     background: #a8dda0;
     color: #1a3a18;
     font-size: 9px;

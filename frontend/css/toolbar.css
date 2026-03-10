@@ -6,7 +6,7 @@
     left: 0;
     right: 0;
     height: var(--toolbar-height, 37px);
-    background: #ffde8cd6;
+    background: #ffde8c;
     z-index: 1;
     pointer-events: none;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -23,7 +23,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 4px 12px;
+    padding: 1px 12px 7px 12px;
     z-index: 6;
     pointer-events: none;
 }
