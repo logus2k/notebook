@@ -1,4 +1,4 @@
-/* Tab bar — first child of #center-column, sits in the toolbar zone */
+/* Tab bar — first child of #center-column, fills toolbar zone */
 .tab-bar {
     display: flex;
     flex-wrap: wrap;
@@ -10,7 +10,6 @@
     font-size: 0.85em;
     flex-shrink: 0;
     z-index: 4;
-    /* Fill toolbar height so tabs sit at its bottom edge */
     height: var(--toolbar-height, 37px);
     border-bottom: 0.5px solid #666666;
 }

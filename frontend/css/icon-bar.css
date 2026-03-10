@@ -4,11 +4,11 @@
     align-items: center;
     width: 48px;
     min-width: 48px;
-    background: #181818;
+    background: linear-gradient(to bottom, transparent var(--toolbar-height, 37px), #181818 var(--toolbar-height, 37px));
     flex-shrink: 0;
     z-index: 10;
     user-select: none;
-    /* No padding-top — toolbar is now in document flow above */
+    padding-top: var(--toolbar-height, 37px);
 }
 
 .icon-bar-group {

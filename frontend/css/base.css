@@ -275,6 +275,7 @@ body.resizing iframe {
     border: none;
     border-radius: 0;
     margin: 0;
+    padding-top: var(--toolbar-height, 37px);
 }
 
 button {

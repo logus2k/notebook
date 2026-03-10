@@ -9,6 +9,7 @@
     overflow: hidden;
     flex-shrink: 0;
     z-index: 4;
+    padding-top: var(--toolbar-height, 37px);
 }
 
 #sidebar-panel.sidebar-open {
