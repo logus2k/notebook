@@ -113,7 +113,7 @@
         transparent var(--gutter-width, 0px));
 }
 
-#notebook-container:hover .cell-header {
+#notebook-container .cell:hover .cell-header {
     border-radius: var(--radius) var(--radius) 0 0;
     border-bottom: 0.5px solid #999999;
 }
