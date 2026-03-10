@@ -1,0 +1,104 @@
+/* Tab bar — fixed position so it can overflow upward into the toolbar */
+.tab-bar {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0 6px;
+    gap: 2px;
+    align-items: flex-end;
+    font-size: 0.85em;
+    position: fixed;
+    top: 16px;
+    z-index: 5;
+    pointer-events: auto;
+}
+
+.tab-bar .tab {
+    position: relative;
+    padding: 5px 14px 3px 14px;
+    background-color: #ffecb9;
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    white-space: nowrap;
+    color: #1a1a1a;
+    border: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+    user-select: none;
+    -webkit-user-select: none;
+    font-size: 11px;
+    font-family: var(--font-sans);
+    line-height: 1.3;
+}
+
+.tab-bar .tab.active {
+    background-color: #ffd670ed;
+    color: #1a1a1a;
+    font-weight: 500;
+    z-index: 1;
+    padding: 7px 14px 3px 14px;
+}
+
+.tab-bar .tab.sticky {
+    border-top: 2px solid #ffc630;
+}
+
+/* Close button */
+.tab-bar .tab-close-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #fff5e6;
+    color: #333333;
+    font-size: 12px;
+    line-height: 12px;
+    font-weight: 400;
+    text-align: center;
+    cursor: pointer;
+    display: none;
+    border: none;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+.tab-bar .tab:hover .tab-close-btn {
+    display: block;
+}
+
+/* Tab with icon (service tabs) */
+.tab-bar .tab .tab-icon {
+    width: 14px;
+    height: 14px;
+    margin-right: 4px;
+    vertical-align: middle;
+    border-radius: 2px;
+}
+
+/* Service iframe container (inside center-column) */
+#service-tab-container {
+    flex: 1;
+    display: none;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+}
+
+#service-tab-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+@media (max-width: 900px) {
+    .tab-bar .tab {
+        max-width: 120px;
+        padding: 3px 10px 3px 10px;
+    }
+    .tab-bar .tab.active {
+        padding: 5px 10px 3px 10px;
+    }
+}

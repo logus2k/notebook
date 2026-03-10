@@ -2,8 +2,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 12px;
-    background: #ffe39eed;
+    padding: 4px 12px;
+    background: #ffde8cd6;
     flex-shrink: 0;
     position: relative;
 }

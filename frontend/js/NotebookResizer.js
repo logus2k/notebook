@@ -3,9 +3,10 @@
  * Replaces the width slider in DisplaySettingsPanel.
  */
 export class NotebookResizer {
-    constructor() {
+    constructor({ onResize } = {}) {
         this._resizer = document.getElementById('notebook-resizer');
-        this._container = document.getElementById('notebook-container');
+        this._container = document.getElementById('center-column');
+        this._onResize = onResize || null;
 
         // Restore saved width
         const saved = localStorage.getItem('notebook-cell-width');
@@ -24,6 +25,7 @@ export class NotebookResizer {
             if (e.button !== 0) return;
             e.preventDefault();
             this._resizer.classList.add('dragging');
+            document.body.classList.add('resizing');
             document.body.style.userSelect = 'none';
             document.body.style.cursor = 'col-resize';
             // Contain layout during drag to limit reflow scope
@@ -45,6 +47,7 @@ export class NotebookResizer {
             const onMouseUp = () => {
                 if (rafId) cancelAnimationFrame(rafId);
                 this._resizer.classList.remove('dragging');
+                document.body.classList.remove('resizing');
                 document.body.style.userSelect = '';
                 document.body.style.cursor = '';
                 this._container.style.contain = '';
@@ -55,6 +58,7 @@ export class NotebookResizer {
                 const containerWidth = this._container.getBoundingClientRect().width;
                 const cellWidth = Math.round(containerWidth - 28);
                 localStorage.setItem('notebook-cell-width', String(cellWidth));
+                this._onResize?.();
             };
 
             document.addEventListener('mousemove', onMouseMove);

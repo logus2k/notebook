@@ -9,6 +9,7 @@ import { DisplaySettingsPanel } from './panels/DisplaySettingsPanel.js';
 import { NotebookResizer } from './NotebookResizer.js';
 import { ChatPanel } from './ChatPanel.js';
 import { ChatService } from './ChatService.js';
+import { TabBar } from './TabBar.js';
 
 
 /**
@@ -37,7 +38,9 @@ class App {
         jsPanel.defaults.dragit.opacity = 0.95;
 
         // Initialize notebook resizer (restores saved width)
-        this._notebookResizer = new NotebookResizer();
+        this._notebookResizer = new NotebookResizer({
+            onResize: () => this._tabBar?.syncPosition(),
+        });
 
         // Initialize icon bar (left vertical strip)
         this._iconBar = new IconBar(
@@ -49,7 +52,7 @@ class App {
 
         // Initialize sidebar panel (between icon bar and content area)
         this._sidebar = new SidebarPanel({
-            onResize: () => this._toolbar?.refreshToc(),
+            onResize: () => { this._toolbar?.refreshToc(); this._tabBar?.syncPosition(); },
         });
 
         // Register sidebar views (content will be populated later)
@@ -131,9 +134,17 @@ class App {
             }
         );
 
-        // Initialize info bar (empty — controls moved to notebook second bar)
-        this._infoBar = new InfoBar(
-            document.getElementById('info-bar')
+        // Initialize info bar (decorative)
+        this._infoBar = new InfoBar(document.getElementById('info-bar'));
+
+        // Initialize tab bar (above notebook, inside center-column)
+        this._serviceIframes = {};
+        this._tabBar = new TabBar(
+            document.getElementById('center-column'),
+            {
+                onActivateTab: (key) => this._onTabActivated(key),
+                onCloseTab: (key) => this._onTabClosed(key),
+            }
         );
 
         // Kernel selector click (in notebook top bar)
@@ -249,6 +260,9 @@ class App {
             // Open the Welcome notebook by default
             this._onNotebookChange('Examples', 'Welcome.ipynb');
         }
+
+        // Final sync after layout is fully settled
+        requestAnimationFrame(() => this._tabBar?.syncPosition());
     }
 
     async _onProjectChange(projectId) {
@@ -275,6 +289,8 @@ class App {
 
         this._editor.setProject(projectId);
         this._editor.setNotebook(notebookName);
+        this._tabBar.setNotebookLabel(notebookName.replace(/\.ipynb$/, ''));
+        requestAnimationFrame(() => this._tabBar.syncPosition());
 
         this._editor.openNotebook(projectId, notebookName, this._userName);
 
@@ -436,17 +452,57 @@ class App {
                 this._explorerPanel.close();
                 this._iconBar.clearActive();
             }
-            // Update TOC position after sidebar toggle
-            requestAnimationFrame(() => this._toolbar?.refreshToc());
+            // Update TOC and tab bar position after sidebar toggle
+            requestAnimationFrame(() => { this._toolbar?.refreshToc(); this._tabBar?.syncPosition(); });
         } else if (key === 'mlflow' || key === 'airflow' || key === 'minio') {
-            // Service panels — delegate to toolbar's service panel logic for now
-            this._toolbar._openServicePanel(
-                { key, icon: key, title: key.charAt(0).toUpperCase() + key.slice(1), url: `/${key}` }
-            );
+            // Open service as a tab in the center pane
+            const title = key.charAt(0).toUpperCase() + key.slice(1);
+            this._tabBar.addTab({
+                key,
+                label: title,
+                type: 'service',
+                icon: `static/images/${key}.png`,
+                closable: true,
+            });
             this._iconBar.clearActive();
         } else if (key === 'settings') {
             this._displaySettingsPanel.toggle();
             this._iconBar.clearActive();
+        }
+    }
+
+    _onTabActivated(key) {
+        const notebookContainer = document.getElementById('notebook-container');
+        const serviceContainer = document.getElementById('service-tab-container');
+
+        if (key === 'notebook') {
+            // Show notebook, hide service iframe
+            notebookContainer.style.display = '';
+            serviceContainer.style.display = 'none';
+        } else {
+            // Show service iframe, hide notebook
+            notebookContainer.style.display = 'none';
+            serviceContainer.style.display = 'block';
+
+            // Create or reuse iframe for this service
+            if (!this._serviceIframes[key]) {
+                const iframe = document.createElement('iframe');
+                iframe.src = `/${key}`;
+                iframe.dataset.serviceKey = key;
+                this._serviceIframes[key] = iframe;
+            }
+
+            // Show only the active service iframe
+            serviceContainer.innerHTML = '';
+            serviceContainer.appendChild(this._serviceIframes[key]);
+        }
+    }
+
+    _onTabClosed(key) {
+        // Remove cached iframe
+        if (this._serviceIframes[key]) {
+            this._serviceIframes[key].remove();
+            delete this._serviceIframes[key];
         }
     }
 
