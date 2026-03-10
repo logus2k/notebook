@@ -63,10 +63,13 @@ class App {
         });
 
         // Initialize unified explorer panel (projects + environments)
+        this._workspaceTitleEl = null;
         this._explorerPanel = new ExplorerPanel({
             onNotebookSelect: (projectId, notebookName) => this._onNotebookChange(projectId, notebookName),
             onVenvSelect: (venv) => this._onVenvSelect(venv),
             onVenvDeleted: (deletedName) => this._onVenvDeleted(deletedName),
+            onSectionChange: (section) => this._updateWorkspaceTitle(section),
+            onActivate: () => this._openWorkspaceTab(),
         });
 
         // Register sidebar views — tree from ExplorerPanel
@@ -452,7 +455,7 @@ class App {
         this._chatPanel = new ChatPanel();
         this._rightPanel.registerView('assistant', {
             tabLabel: 'Assistant',
-            title: 'Chat Window',
+            title: 'Chat',
             element: this._chatPanel.element,
         });
 
@@ -518,7 +521,7 @@ class App {
         // Detach reusable elements before clearing (preserve DOM state)
         const wsDetail = serviceContainer.querySelector('.explorer-detail-pane');
         if (wsDetail) wsDetail.remove();
-        const settingsEl = serviceContainer.querySelector('.settings-panel-content');
+        const settingsEl = serviceContainer.querySelector('.settings-panel-wrapper');
         if (settingsEl) settingsEl.remove();
 
         if (key === 'notebook') {
@@ -612,7 +615,7 @@ class App {
 
         const title = document.createElement('span');
         title.className = 'service-top-bar-title';
-        title.textContent = 'Settings';
+        title.textContent = 'Application Settings';
         bar.appendChild(title);
 
         return bar;
@@ -625,9 +628,16 @@ class App {
         const title = document.createElement('span');
         title.className = 'service-top-bar-title';
         title.textContent = 'Workspace';
+        this._workspaceTitleEl = title;
         bar.appendChild(title);
 
         return bar;
+    }
+
+    _updateWorkspaceTitle(section) {
+        if (this._workspaceTitleEl) {
+            this._workspaceTitleEl.textContent = section;
+        }
     }
 
     _checkServiceStatus(key, led, label) {

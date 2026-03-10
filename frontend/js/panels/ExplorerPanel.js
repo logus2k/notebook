@@ -244,6 +244,10 @@ export class ExplorerPanel {
             activate: (e) => {
                 const key = e.node.key || '';
                 this._showDetailForNode(e.node);
+                // Notify section change for title bar updates
+                this._fireSectionChange(key);
+                // Notify that a tree node was activated (so workspace tab can auto-open)
+                if (this._callbacks.onActivate) this._callbacks.onActivate();
                 // Auto-load notebook on activation (click or keyboard)
                 if (key.startsWith('notebook:') && this._autoLoad && this._callbacks.onNotebookSelect) {
                     const parts = key.replace('notebook:', '').split(':');
@@ -279,6 +283,17 @@ export class ExplorerPanel {
         } else {
             this._navigateToCurrentNotebook();
         }
+    }
+
+    _fireSectionChange(nodeKey) {
+        if (!this._callbacks.onSectionChange) return;
+        let section = 'Workspace';
+        if (nodeKey === 'root-projects' || nodeKey.startsWith('project:') || nodeKey.startsWith('notebook:')) {
+            section = 'Projects';
+        } else if (nodeKey === 'root-envs' || nodeKey.startsWith('runtime:') || nodeKey.startsWith('env:')) {
+            section = 'Environments';
+        }
+        this._callbacks.onSectionChange(section);
     }
 
     _navigateToEnvsRoot() {

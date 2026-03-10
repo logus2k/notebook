@@ -7,13 +7,18 @@ import { terminalThemes, setTerminalTheme } from '../TerminalThemes.js';
  */
 export class DisplaySettingsPanel {
     constructor() {
-        this._element = document.createElement('div');
-        this._element.className = 'settings-panel-content';
-        this._buildContent(this._element);
+        this._wrapper = document.createElement('div');
+        this._wrapper.className = 'settings-panel-wrapper';
+
+        this._content = document.createElement('div');
+        this._content.className = 'settings-panel-content';
+        this._wrapper.appendChild(this._content);
+
+        this._buildContent(this._content);
     }
 
     get element() {
-        return this._element;
+        return this._wrapper;
     }
 
     _buildContent(container) {

@@ -16,6 +16,9 @@
     min-height: 0;
     background: var(--bg-primary);
     position: relative;
+    border-left: 0.5px solid #666666;
+    border-right: 0.5px solid #666666;
+    box-sizing: border-box;
 }
 
 .explorer-detail-content {

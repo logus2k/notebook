@@ -1,7 +1,15 @@
-/* Settings panel styles (used by DisplaySettingsPanel in center tab) */
-.settings-panel-content {
+/* Settings panel wrapper — full-width with side borders */
+.settings-panel-wrapper {
     flex: 1;
     overflow-y: auto;
+    border-left: 0.5px solid #666666;
+    border-right: 0.5px solid #666666;
+    box-sizing: border-box;
+    background: var(--bg-primary);
+}
+
+/* Settings content — constrained width inside wrapper */
+.settings-panel-content {
     padding: 16px 20px;
     max-width: 480px;
 }
