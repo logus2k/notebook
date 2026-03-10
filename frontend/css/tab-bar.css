@@ -39,7 +39,7 @@
     color: #1a1a1a;
     font-weight: 500;
     z-index: 1;
-    padding: 9px 14px 4px 14px;
+    padding: 7px 14px 5px 14px;
     margin-bottom: -1px;
 }
 
@@ -74,10 +74,10 @@
 
 /* Tab with icon (service tabs) */
 .tab-bar .tab .tab-icon {
-    width: 14px;
+    width: 16px;
     height: 14px;
     margin-right: 4px;
-    vertical-align: middle;
+    vertical-align: bottom;
     border-radius: 2px;
 }
 

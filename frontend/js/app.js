@@ -62,10 +62,19 @@ class App {
             },
         });
 
-        // Register sidebar views (content will be populated later)
-        const projectsView = document.createElement('div');
-        projectsView.className = 'sidebar-view-projects';
-        this._sidebar.registerView('projects', { tabLabel: 'Workspace', title: 'Assets Management', element: projectsView });
+        // Initialize unified explorer panel (projects + environments)
+        this._explorerPanel = new ExplorerPanel({
+            onNotebookSelect: (projectId, notebookName) => this._onNotebookChange(projectId, notebookName),
+            onVenvSelect: (venv) => this._onVenvSelect(venv),
+            onVenvDeleted: (deletedName) => this._onVenvDeleted(deletedName),
+        });
+
+        // Register sidebar views — tree from ExplorerPanel
+        this._sidebar.registerView('projects', {
+            tabLabel: 'Workspace',
+            title: 'Assets Management',
+            element: this._explorerPanel.treeElement,
+        });
 
         // TOC panel — lives inside the sidebar as a view
         this._tocPanel = new TocPanel(
@@ -167,7 +176,11 @@ class App {
             this._explorerPanel.setActiveVenv(
                 this._activeVenv ? this._activeVenv.name : null
             );
-            this._explorerPanel.open({
+            // Open sidebar tree + workspace tab, navigate to env
+            this._sidebar.show('projects');
+            this._iconBar.setActive('projects');
+            this._openWorkspaceTab();
+            this._explorerPanel.navigate({
                 currentProject: this._currentProject,
                 currentNotebook: this._currentNotebook,
                 navigateToVenv: this._activeVenv
@@ -188,13 +201,6 @@ class App {
 
         // Initialize right panel (chat assistant)
         this._initRightPanel();
-
-        // Initialize unified explorer panel (projects + environments)
-        this._explorerPanel = new ExplorerPanel({
-            onNotebookSelect: (projectId, notebookName) => this._onNotebookChange(projectId, notebookName),
-            onVenvSelect: (venv) => this._onVenvSelect(venv),
-            onVenvDeleted: (deletedName) => this._onVenvDeleted(deletedName),
-        });
 
         // Track kernel running state
         this._client.on('kernel:status', (data) => {
@@ -263,6 +269,9 @@ class App {
 
         // Show TOC in sidebar by default
         requestAnimationFrame(() => this._sidebar.show('toc'));
+
+        // Load workspace tree data (deferred so DOM is ready)
+        this._explorerPanel.init();
 
         // Check URL params for auto-open, or open Welcome notebook
         const params = new URLSearchParams(window.location.search);
@@ -472,18 +481,16 @@ class App {
     }
 
     _onIconBarClick(key) {
-        if (key === 'projects' || key === 'environments') {
-            // Both icons toggle the Workspace sidebar view
+        if (key === 'projects') {
+            // Toggle the Workspace sidebar view + workspace tab
             const shown = this._sidebar.toggle('projects');
             if (shown) {
                 this._explorerPanel.setActiveVenv(this._activeVenv ? this._activeVenv.name : null);
-                this._explorerPanel.open({
+                this._openWorkspaceTab();
+                this._explorerPanel.navigate({
                     currentProject: this._currentProject,
                     currentNotebook: this._currentNotebook,
-                    navigateToEnvs: key === 'environments',
                 });
-            } else {
-                this._explorerPanel.close();
             }
         } else if (key === 'mlflow' || key === 'airflow' || key === 'minio') {
             // Open service as a tab in the center pane
@@ -506,10 +513,21 @@ class App {
         const notebookContainer = document.getElementById('notebook-container');
         const serviceContainer = document.getElementById('service-tab-container');
 
+        // Detach workspace detail before clearing (preserve DOM state)
+        const wsDetail = serviceContainer.querySelector('.explorer-detail-pane');
+        if (wsDetail) wsDetail.remove();
+
         if (key === 'notebook') {
-            // Show notebook, hide service iframe
+            // Show notebook, hide service container
             notebookContainer.style.display = '';
             serviceContainer.style.display = 'none';
+        } else if (key === 'workspace') {
+            // Show workspace detail pane
+            notebookContainer.style.display = 'none';
+            serviceContainer.style.display = 'flex';
+            serviceContainer.innerHTML = '';
+            serviceContainer.appendChild(this._buildWorkspaceTopBar());
+            serviceContainer.appendChild(this._explorerPanel.detailElement);
         } else {
             // Show service iframe, hide notebook
             notebookContainer.style.display = 'none';
@@ -555,6 +573,27 @@ class App {
 
         // Check connection status
         this._checkServiceStatus(key, led, statusLabel);
+
+        return bar;
+    }
+
+    _openWorkspaceTab() {
+        this._tabBar.addTab({
+            key: 'workspace',
+            label: 'Workspace',
+            type: 'workspace',
+            closable: true,
+        });
+    }
+
+    _buildWorkspaceTopBar() {
+        const bar = document.createElement('div');
+        bar.className = 'service-top-bar';
+
+        const title = document.createElement('span');
+        title.className = 'service-top-bar-title';
+        title.textContent = 'Workspace';
+        bar.appendChild(title);
 
         return bar;
     }

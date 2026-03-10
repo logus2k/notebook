@@ -1,8 +1,9 @@
 import { getTerminalTheme, onTerminalThemeChange } from '../TerminalThemes.js';
 
 /**
- * ExplorerPanel - Unified jsPanel with Wunderbaum tree (left) and detail pane (right).
+ * ExplorerPanel - Workspace tree (sidebar) and detail pane (center tab).
  * Two root branches: Projects (with notebooks) and Environments.
+ * Tree and detail are separate DOM elements wired together via app.js.
  */
 export class ExplorerPanel {
     /**
@@ -17,10 +18,10 @@ export class ExplorerPanel {
      */
     constructor(callbacks = {}) {
         this._callbacks = callbacks;
-        this._panel = null;
         this._tree = null;
         this._detailEl = null;
-        this._detailPane = null;
+        this._detailRoot = null;
+        this._treeRoot = null;
         this._treeEl = null;
         this._activeVenvName = null;
         this._kernelRunning = false;
@@ -35,6 +36,8 @@ export class ExplorerPanel {
         this._envTerminals = {};
         // Project metadata from API (keyed by project id)
         this._projectsData = {};
+
+        this._buildElements();
     }
 
     setActiveVenv(name) {
@@ -47,8 +50,8 @@ export class ExplorerPanel {
     }
 
     _syncStatusTag() {
-        if (!this._detailPane) return;
-        const tag = this._detailPane.querySelector('.explorer-env-tag');
+        if (!this._detailRoot) return;
+        const tag = this._detailRoot.querySelector('.explorer-env-tag');
         if (!tag) return;
         if (this._kernelRunning) {
             tag.className = 'explorer-env-tag active';
@@ -59,67 +62,37 @@ export class ExplorerPanel {
         }
     }
 
+    /** Get the tree DOM element (for sidebar registration). */
+    get treeElement() { return this._treeRoot; }
+
+    /** Get the detail DOM element (for center tab). */
+    get detailElement() { return this._detailRoot; }
+
     /**
+     * Navigate to a specific item in the tree.
      * @param {object} opts
      *   opts.currentProject, opts.currentNotebook - for notebook navigation
      *   opts.navigateToVenv - venv name to navigate to and select
      *   opts.navigateToEnvs - navigate to the Environments root node
      */
-    open(opts = {}) {
+    navigate(opts = {}) {
         const { currentProject = null, currentNotebook = null, navigateToVenv = null, navigateToEnvs = false } = opts;
         this._currentProject = currentProject;
         this._currentNotebook = currentNotebook;
         this._navigateToVenvName = navigateToVenv;
         this._navigateToEnvs = navigateToEnvs;
-
-        if (this._panel) {
-            // Panel exists but may be hidden — show it and bring to front
-            this._panel.style.display = '';
-            this._panel.front();
-            this._applyNavigation();
-            return;
-        }
-
-        this._panel = jsPanel.create({
-            id: 'explorer-panel',
-            headerTitle: 'Workspace',
-            theme: 'none',
-            borderRadius: '5px',
-            border: '1px solid var(--border-color)',
-            boxShadow: 3,
-            position: 'center',
-            panelSize: { width: 900, height: 574 },
-            headerControls: { minimize: 'remove', smallify: 'remove', normalize: 'remove', maximize: 'remove' },
-            onbeforeclose: [() => {
-                // Don't destroy — just hide so state is preserved
-                this._panel.style.display = 'none';
-                return false; // prevent jsPanel from removing the DOM
-            }],
-            callback: (panel) => {
-                this._panel = panel;
-                panel.content.style.padding = '0';
-                panel.content.style.overflow = 'hidden';
-                // Prevent wheel events from bleeding through to the page behind
-                panel.content.addEventListener('wheel', (e) => e.stopPropagation(), { passive: false });
-                this._buildLayout(panel.content);
-                this._loadTree();
-            }
-        });
+        this._applyNavigation();
     }
 
-    close() {
-        if (this._panel) {
-            this._panel.style.display = 'none';
-        }
+    /** Load tree data from the API. Call after DOM elements are attached. */
+    async init() {
+        await this._loadTree();
     }
 
-    _buildLayout(container) {
-        container.innerHTML = '';
-        container.classList.add('explorer-layout');
-
-        // Left pane: tree
-        const left = document.createElement('div');
-        left.className = 'explorer-tree-pane';
+    _buildElements() {
+        // Tree pane (for sidebar)
+        this._treeRoot = document.createElement('div');
+        this._treeRoot.className = 'explorer-tree-pane';
 
         const treeWrapper = document.createElement('div');
         treeWrapper.id = 'explorerTreeWrapper';
@@ -127,34 +100,17 @@ export class ExplorerPanel {
         this._treeEl = document.createElement('div');
         this._treeEl.id = 'explorerTree';
         treeWrapper.appendChild(this._treeEl);
-        left.appendChild(treeWrapper);
+        this._treeRoot.appendChild(treeWrapper);
 
-        // Right pane: detail wrapper with close button
-        const right = document.createElement('div');
-        right.className = 'explorer-detail-pane';
+        // Detail pane (for center tab)
+        this._detailRoot = document.createElement('div');
+        this._detailRoot.className = 'explorer-detail-pane';
 
         this._detailEl = document.createElement('div');
         this._detailEl.className = 'explorer-detail-content';
-        right.appendChild(this._detailEl);
-        this._detailPane = right;
-
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'explorer-btn primary explorer-close-btn';
-        closeBtn.textContent = 'Close';
-        closeBtn.addEventListener('click', () => this.close());
-        right.appendChild(closeBtn);
+        this._detailRoot.appendChild(this._detailEl);
 
         this._showWelcomeDetail();
-
-        container.append(left, right);
-
-        // Initialize resizable splitter
-        Split([left, right], {
-            sizes: [30, 70],
-            minSize: [150, 200],
-            gutterSize: 6,
-            cursor: 'col-resize',
-        });
     }
 
     _showWelcomeDetail() {
@@ -665,7 +621,7 @@ export class ExplorerPanel {
             }
         });
         actionBar.appendChild(delBtn);
-        this._detailPane.appendChild(actionBar);
+        this._detailRoot.appendChild(actionBar);
 
         nameInput.focus();
     }
@@ -789,7 +745,7 @@ export class ExplorerPanel {
             }
         });
         actionBar.appendChild(delBtn);
-        this._detailPane.appendChild(actionBar);
+        this._detailRoot.appendChild(actionBar);
     }
 
     async _showEnvDetail(envName, runtimeId, displayName) {
@@ -1001,7 +957,7 @@ export class ExplorerPanel {
             }
         });
         actionBar.appendChild(delBtn);
-        this._detailPane.appendChild(actionBar);
+        this._detailRoot.appendChild(actionBar);
     }
 
     // --- Create actions ---
@@ -1080,7 +1036,6 @@ export class ExplorerPanel {
             if (this._callbacks.onNotebookSelect) {
                 this._callbacks.onNotebookSelect(projectId, nbName);
             }
-            this.close();
         } catch (err) {
             errorEl.textContent = err.message;
         } finally {
@@ -1372,7 +1327,7 @@ export class ExplorerPanel {
     }
 
     _clearActionBar() {
-        const existing = this._detailPane?.querySelector('.explorer-action-bar');
+        const existing = this._detailRoot?.querySelector('.explorer-action-bar');
         if (existing) existing.remove();
     }
 

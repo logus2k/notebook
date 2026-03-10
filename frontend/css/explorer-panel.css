@@ -1,22 +1,19 @@
-/* Explorer panel: master-detail layout */
-.explorer-layout {
-    display: flex;
-    height: 100%;
-}
-
+/* Explorer tree pane (sidebar view) */
 .explorer-tree-pane {
     overflow: hidden;
     min-width: 0;
     height: 100%;
     background: #fff2bc54;
     position: relative;
-    border-right: 0.5px solid #cfcfcf;
 }
 
+/* Explorer detail pane (center tab) */
 .explorer-detail-pane {
     display: flex;
     flex-direction: column;
+    flex: 1;
     min-width: 0;
+    min-height: 0;
     background: var(--bg-primary);
     position: relative;
 }
@@ -28,31 +25,6 @@
     padding: 14px 16px 48px;
     display: flex;
     flex-direction: column;
-}
-
-.explorer-close-btn {
-    position: absolute;
-    bottom: 12px;
-    right: 16px;
-}
-
-/* Split.js gutter */
-.explorer-layout > .gutter {
-    background-repeat: no-repeat;
-    background-position: 50%;
-    cursor: col-resize;
-    background-color: transparent;
-}
-
-.explorer-layout > .gutter:hover {
-    background-color: rgba(0, 0, 0, 0.04);
-}
-
-.explorer-layout > .gutter.gutter-horizontal {
-    width: 6px;
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="30"><path d="M2 5v20M4 5v20" stroke="%23999" stroke-width="1"/></svg>');
-    right: 3px;
-    position: relative;
 }
 
 .explorer-detail-empty {
@@ -308,37 +280,37 @@
 
 
 /* Folder icons */
-#explorer-panel .fa-folder,
-#explorer-panel .fa-folder-open {
+.explorer-tree-pane .fa-folder,
+.explorer-tree-pane .fa-folder-open {
     color: #eec541 !important;
     -webkit-text-stroke: 1.5px #666666;
     paint-order: stroke fill;
 }
 
 /* File icons (notebooks) */
-#explorer-panel .fa-file {
+.explorer-tree-pane .fa-file {
     color: #ffffff !important;
     -webkit-text-stroke: 1.5px #666666;
     paint-order: stroke fill;
 }
 
 /* Cube icons (environments) */
-#explorer-panel .fa-cube,
-#explorer-panel .fa-cubes {
+.explorer-tree-pane .fa-cube,
+.explorer-tree-pane .fa-cubes {
     color: #90d490 !important;
     -webkit-text-stroke: 1.5px #666666;
     paint-order: stroke fill;
 }
 
 /* Layer group icons (runtimes) */
-#explorer-panel .fa-layer-group {
+.explorer-tree-pane .fa-layer-group {
     color: #7ec8e3 !important;
     -webkit-text-stroke: 1.5px #666666;
     paint-order: stroke fill;
 }
 
 /* Package icons */
-#explorer-panel .fa-box-open {
+.explorer-tree-pane .fa-box-open {
     color: #c4a6e0 !important;
     -webkit-text-stroke: 1.5px #666666;
     paint-order: stroke fill;
@@ -455,7 +427,7 @@ div.wunderbaum div.wb-node-list div.wb-row.wb-selected {
 }
 
 .explorer-detail-content::-webkit-scrollbar-track,
-#explorer-panel ::-webkit-scrollbar-track {
+.explorer-tree-pane ::-webkit-scrollbar-track {
     background: transparent;
     margin: 0;
 }
