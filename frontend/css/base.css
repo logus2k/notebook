@@ -453,3 +453,18 @@ html:has(.hide-bg-color) {
     padding-bottom: 50px;
 }
 
+.notyf__toast {
+    max-width: 480px;
+    min-width: 320px;
+    border-radius: 6px;
+}
+
+.notyf__wrapper {
+    padding: 14px 18px;
+}
+
+.notyf__message {
+    font-size: 14px;
+    font-family: var(--font-sans);
+}
+
