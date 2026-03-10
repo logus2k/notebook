@@ -110,10 +110,14 @@ export class TocPanel {
         a.href = 'javascript:void(0)';
         a.addEventListener('click', (e) => {
             e.preventDefault();
-            if (headingEl) {
-                headingEl.scrollIntoView({ behavior: 'instant', block: 'start' });
+            const target = headingEl || cell.element;
+            const container = target.closest('#notebook-container');
+            if (container) {
+                const containerRect = container.getBoundingClientRect();
+                const targetRect = target.getBoundingClientRect();
+                container.scrollTop += targetRect.top - containerRect.top - 30;
             } else {
-                cell.element.scrollIntoView({ behavior: 'instant', block: 'start' });
+                target.scrollIntoView({ behavior: 'instant', block: 'start' });
             }
             if (this._onSelectCell) {
                 this._onSelectCell(cellIndex);
