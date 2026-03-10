@@ -12,6 +12,7 @@
     z-index: 4;
     /* Fill toolbar height so tabs sit at its bottom edge */
     height: var(--toolbar-height, 37px);
+    border-bottom: 0.5px solid #aeaeae;
 }
 
 .tab-bar .tab {
@@ -22,7 +23,8 @@
     border-radius: 8px 8px 0 0;
     white-space: nowrap;
     color: #1a1a1a;
-    border: none;
+    border: 0.5px solid #aeaeae;
+    border-bottom: none;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 180px;
@@ -38,7 +40,8 @@
     color: #1a1a1a;
     font-weight: 500;
     z-index: 1;
-    padding: 7px 14px 3px 14px;
+    padding: 7px 14px 4px 14px;
+    margin-bottom: -1px;
 }
 
 .tab-bar .tab.sticky {
