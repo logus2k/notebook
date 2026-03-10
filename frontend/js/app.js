@@ -324,6 +324,7 @@ class App {
         this._editor.setProject(projectId);
         this._editor.setNotebook(notebookName);
         this._tabBar.setNotebookLabel(notebookName);
+        this._tabBar.activate('notebook');
         this._sidebar.updateViewTitle('toc', notebookName);
         this._editor.openNotebook(projectId, notebookName, this._userName);
 
