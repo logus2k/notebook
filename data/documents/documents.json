@@ -1,0 +1,12 @@
+{
+  "categories": {
+    "MLOps": {}
+  },
+  "documents": [
+    {
+      "name": "Apache Airflow",
+      "category": "MLOps",
+      "location": "files/airflow.pdf"
+    }
+  ]
+}

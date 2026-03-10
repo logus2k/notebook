@@ -84,7 +84,8 @@ export class NotebookEditor {
         document.addEventListener('mousedown', (e) => {
             if (!this._container.contains(e.target)
                 && !e.target.closest('#toolbar') && !e.target.closest('#info-bar')
-                && !e.target.closest('.jsPanel') && !e.target.closest('#right-panel')) {
+                && !e.target.closest('.jsPanel') && !e.target.closest('#right-panel')
+                && !e.target.closest('#service-tab-container') && !e.target.closest('#sidebar-panel')) {
                 e.preventDefault();
                 const active = document.activeElement;
                 if (active && active.closest('.cell')) active.blur();

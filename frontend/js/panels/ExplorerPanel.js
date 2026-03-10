@@ -1642,8 +1642,15 @@ export class ExplorerPanel {
             });
 
             if (!resp.ok) {
-                const err = await resp.json();
-                throw new Error(err.detail || 'Upload failed');
+                if (resp.status === 413) throw new Error('File too large (max 100 MB)');
+                const text = await resp.text();
+                try {
+                    const err = JSON.parse(text);
+                    throw new Error(err.detail || 'Upload failed');
+                } catch (e) {
+                    if (e.message.includes('Upload failed') || e.message.includes('too large')) throw e;
+                    throw new Error(`Upload failed (HTTP ${resp.status})`);
+                }
             }
 
             await this._reloadDocuments();

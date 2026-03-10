@@ -118,8 +118,8 @@ export class DocumentViewer {
 
         try {
             if (!this._pdfModule) {
-                this._pdfModule = await import('/static/vendor/pdf.min.mjs');
-                this._pdfModule.GlobalWorkerOptions.workerSrc = '/static/vendor/pdf.worker.min.mjs';
+                this._pdfModule = await import('../../vendor/pdf.min.mjs');
+                this._pdfModule.GlobalWorkerOptions.workerSrc = 'static/vendor/pdf.worker.min.mjs';
             }
 
             const pdfDoc = await this._pdfModule.getDocument({ url }).promise;
