@@ -14,3 +14,4 @@ scipy
 plotly
 statsmodels
 pillow
+dvc[s3]

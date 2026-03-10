@@ -26,6 +26,8 @@ RUN apt-get update && \
         python3-pip \
         # curl for health checks
         curl \
+        # git for DVC and version control
+        git \
         libportaudio2 && \
     rm -rf /var/lib/apt/lists/* && \
     # Remove broken distutils-precedence.pth (references missing _distutils_hack)

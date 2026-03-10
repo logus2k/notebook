@@ -2,3 +2,6 @@
 __pycache__/
 
 data/environments/
+services/airflow/logs/
+services/airflow/dags/
+services/airflow/config/
