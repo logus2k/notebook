@@ -12,51 +12,6 @@
     z-index: 1;
 }
 
-/* Left section: breadcrumb (absolute, won't affect centering) */
-.info-bar-left {
-    position: absolute;
-    left: 18px;
-    display: flex;
-    align-items: center;
-    gap: 2px;
-}
-
-/* Right section: kernel status (absolute, won't affect centering) */
-.info-bar-right {
-    position: absolute;
-    right: 10px;
-    display: flex;
-    align-items: center;
-}
-
-/* Plain text labels for project/notebook */
-.info-bar-text {
-    color: #202020;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 240px;
-}
-
-.info-bar-text.has-value {
-    color: #202020;
-}
-
-.info-bar-separator {
-    display: flex;
-    align-items: center;
-    margin: 0 4px;
-    flex-shrink: 0;
-    opacity: 0.5;
-}
-
-.info-bar-label {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 250px;
-}
-
 /* Centered kernel controls (only flow child, so justify-content: center works) */
 .info-bar-controls {
     display: flex;

@@ -21,6 +21,11 @@ export class NotebookEditor {
         this._wrapperEl = null;
         this._debounceTimers = {};
 
+        // Top bar inside the notebook with project/notebook breadcrumb
+        this._topBar = document.getElementById('notebook-top-bar')
+            || this._createTopBar();
+        this._buildTopBarContent();
+
         // Multi-cell selection state
         this._selectedIndices = new Set();
         this._anchorIndex = null;
@@ -222,6 +227,7 @@ export class NotebookEditor {
 
         this._wrapperEl = document.createElement('div');
         this._wrapperEl.className = 'notebook';
+        this._wrapperEl.appendChild(this._topBar);
 
         for (let i = 0; i < this._notebook.cells.length; i++) {
             const cellData = this._notebook.cells[i];
@@ -248,6 +254,113 @@ export class NotebookEditor {
 
         this._container.appendChild(this._wrapperEl);
         this.dragDrop.setup();
+    }
+
+    _createTopBar() {
+        const bar = document.createElement('div');
+        bar.id = 'notebook-top-bar';
+        return bar;
+    }
+
+    _buildTopBarContent() {
+        this._topBar.innerHTML = '';
+        this._venvName = null;
+        this._displayName = null;
+        this._kernelStatus = 'dead';
+
+        // Left: breadcrumb
+        this._projectLabel = document.createElement('span');
+        this._projectLabel.className = 'info-bar-text';
+        this._projectLabel.textContent = '';
+
+        this._topBarSep = document.createElement('span');
+        this._topBarSep.className = 'info-bar-separator';
+        this._topBarSep.textContent = '|';
+        this._topBarSep.style.display = 'none';
+
+        this._notebookLabel = document.createElement('span');
+        this._notebookLabel.className = 'info-bar-text';
+        this._notebookLabel.textContent = '';
+
+        // Right: kernel selector
+        this._kernelItem = document.createElement('div');
+        this._kernelItem.className = 'info-bar-kernel';
+        this._kernelItem.addEventListener('click', () => {
+            if (this._onKernelClick) this._onKernelClick();
+        });
+
+        this._kernelDot = document.createElement('span');
+        this._kernelDot.className = 'kernel-status-dot dead';
+
+        this._kernelLabel = document.createElement('span');
+        this._kernelLabel.className = 'info-bar-label';
+        this._kernelLabel.textContent = 'Select kernel';
+
+        this._kernelItem.append(this._kernelDot, this._kernelLabel);
+
+        this._topBar.append(this._projectLabel, this._topBarSep, this._notebookLabel, this._kernelItem);
+
+        // Listen for kernel status
+        this._client.on('kernel:status', (data) => this._setKernelStatus(data.status));
+    }
+
+    setOnKernelClick(cb) {
+        this._onKernelClick = cb;
+    }
+
+    setProject(name) {
+        this._projectLabel.textContent = name || '';
+        this._updateTopBarSep();
+    }
+
+    setNotebook(name) {
+        this._notebookLabel.textContent = name || '';
+        this._updateTopBarSep();
+    }
+
+    setVenv(name, displayName) {
+        this._venvName = name;
+        this._displayName = displayName;
+        if (name && this._kernelStatus === 'dead') {
+            this._kernelDot.className = 'kernel-status-dot standby';
+        }
+        this._updateKernelLabel();
+    }
+
+    _setKernelStatus(status) {
+        const prev = this._kernelStatus;
+        this._kernelStatus = status;
+        this._kernelDot.className = `kernel-status-dot ${status}`;
+        this._updateKernelLabel();
+        if (status === 'idle' && (prev === 'starting' || prev === 'busy')) {
+            this._flashKernelStatus('Ready');
+        }
+    }
+
+    _updateKernelLabel() {
+        const statusText = { starting: 'Starting', dead: 'Stopped' };
+        const suffix = statusText[this._kernelStatus] || '';
+        if (this._venvName) {
+            const info = suffix ? `(${suffix})` : this._displayName ? `(${this._displayName})` : '';
+            this._kernelLabel.textContent = info ? `${this._venvName} ${info}` : this._venvName;
+        } else {
+            this._kernelLabel.textContent = 'Select kernel';
+        }
+    }
+
+    _flashKernelStatus(text) {
+        if (this._flashTimer) clearTimeout(this._flashTimer);
+        this._kernelLabel.textContent = `${this._venvName || 'Kernel'} (${text})`;
+        this._flashTimer = setTimeout(() => {
+            this._flashTimer = null;
+            this._updateKernelLabel();
+        }, 2000);
+    }
+
+    _updateTopBarSep() {
+        const hasProject = !!this._projectLabel.textContent;
+        const hasNotebook = !!this._notebookLabel.textContent;
+        this._topBarSep.style.display = (hasProject && hasNotebook) ? '' : 'none';
     }
 
     _clear() {

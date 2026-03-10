@@ -21,35 +21,12 @@ export class InfoBar {
         this._container = containerEl;
         this._client = kernelClient;
         this._callbacks = callbacks;
-        this._venvName = null;
-        this._displayName = null;
-        this._kernelStatus = 'dead';
         this._build();
-        this._client.on('kernel:status', (data) => this._setKernelStatus(data.status));
     }
 
     _build() {
         this._container.innerHTML = '';
         this._container.id = 'info-bar';
-
-        // Left: breadcrumb
-        const leftWrap = document.createElement('div');
-        leftWrap.className = 'info-bar-left';
-
-        this._projectLabel = document.createElement('span');
-        this._projectLabel.className = 'info-bar-text';
-        this._projectLabel.textContent = 'No project selected';
-
-        const sep = document.createElement('span');
-        sep.className = 'info-bar-separator';
-        sep.textContent = '|';
-
-        this._notebookLabel = document.createElement('span');
-        this._notebookLabel.className = 'info-bar-text';
-        this._notebookLabel.textContent = '';
-
-        leftWrap.append(this._projectLabel, sep, this._notebookLabel);
-        this._container.appendChild(leftWrap);
 
         // Center: kernel controls
         const controls = document.createElement('div');
@@ -66,93 +43,6 @@ export class InfoBar {
         }));
 
         this._container.appendChild(controls);
-
-        // Right: kernel/environment status (clickable)
-        const rightWrap = document.createElement('div');
-        rightWrap.className = 'info-bar-right';
-
-        this._kernelItem = document.createElement('div');
-        this._kernelItem.className = 'info-bar-kernel';
-        this._kernelItem.addEventListener('click', () => {
-            if (this._callbacks.onKernelClick) this._callbacks.onKernelClick();
-        });
-
-        this._kernelDot = document.createElement('span');
-        this._kernelDot.className = 'kernel-status-dot dead';
-
-        this._kernelLabel = document.createElement('span');
-        this._kernelLabel.className = 'info-bar-label';
-        this._kernelLabel.textContent = 'Select kernel';
-
-        this._kernelItem.append(this._kernelDot, this._kernelLabel);
-        rightWrap.appendChild(this._kernelItem);
-        this._container.appendChild(rightWrap);
-    }
-
-    setProject(name) {
-        this._projectLabel.textContent = name || 'No project selected';
-        this._projectLabel.classList.toggle('has-value', !!name);
-    }
-
-    setNotebook(name) {
-        this._notebookLabel.textContent = name || '';
-        this._notebookLabel.classList.toggle('has-value', !!name);
-    }
-
-    /**
-     * @param {string|null} name - venv name
-     * @param {string|null} displayName - runtime display name, e.g. "Python 3.12"
-     */
-    setVenv(name, displayName) {
-        this._venvName = name;
-        this._displayName = displayName;
-        // If a venv is selected but kernel hasn't started yet, show standby (gray) instead of dead (red)
-        if (name && this._kernelStatus === 'dead') {
-            this._kernelDot.className = 'kernel-status-dot standby';
-        }
-        this._updateKernelLabel();
-    }
-
-    _setKernelStatus(status) {
-        const prev = this._kernelStatus;
-        this._kernelStatus = status;
-        this._kernelDot.className = `kernel-status-dot ${status}`;
-        this._updateKernelLabel();
-
-        // Show brief "Ready" flash when kernel finishes starting/restarting
-        if (status === 'idle' && (prev === 'starting' || prev === 'busy')) {
-            this._flashStatus('Ready');
-        }
-    }
-
-    _updateKernelLabel() {
-        const statusText = {
-            starting: 'Starting',
-            dead: 'Stopped',
-        };
-        const suffix = statusText[this._kernelStatus] || '';
-
-        if (this._venvName) {
-            const info = suffix
-                ? `(${suffix})`
-                : this._displayName
-                    ? `(${this._displayName})`
-                    : '';
-            this._kernelLabel.textContent = info
-                ? `${this._venvName} ${info}`
-                : this._venvName;
-        } else {
-            this._kernelLabel.textContent = 'Select kernel';
-        }
-    }
-
-    _flashStatus(text) {
-        if (this._flashTimer) clearTimeout(this._flashTimer);
-        this._kernelLabel.textContent = `${this._venvName || 'Kernel'} (${text})`;
-        this._flashTimer = setTimeout(() => {
-            this._flashTimer = null;
-            this._updateKernelLabel();
-        }, 2000);
     }
 
     // --- Helpers ---

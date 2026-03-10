@@ -114,10 +114,42 @@ html, body {
 
 #notebook-container {
     overflow-y: scroll;
-    padding: 16px 10px 16px 10px;
+    padding: 15px 10px 16px 10px;
     width: 988px;
     min-width: 400px;
     flex-shrink: 1;
+}
+
+#notebook-top-bar {
+    height: 28px;
+    background: #fff2bcd9;
+    margin: 0 0 0 36px;
+    border-radius: 3px 3px 0 0;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 2px;
+    font-size: 11px;
+}
+
+#notebook-top-bar .info-bar-text {
+    color: #202020;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 240px;
+}
+
+#notebook-top-bar .info-bar-separator {
+    display: flex;
+    align-items: center;
+    margin: 0 4px;
+    flex-shrink: 0;
+    opacity: 0.5;
+}
+
+#notebook-top-bar .info-bar-kernel {
+    margin-left: auto;
 }
 
 #notebook-resizer {

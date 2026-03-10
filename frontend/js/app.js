@@ -131,7 +131,7 @@ class App {
             }
         );
 
-        // Initialize info bar (breadcrumb + kernel controls + kernel/env status)
+        // Initialize info bar (kernel controls only)
         this._infoBar = new InfoBar(
             document.getElementById('info-bar'),
             this._client,
@@ -139,21 +139,23 @@ class App {
                 onRunAll: () => this._editor.runAll(),
                 onClearAllOutputs: () => this._editor.clearAllOutputs(),
                 onStartKernel: () => this._onStartKernel(),
-                onKernelClick: () => {
-                    this._explorerPanel.setActiveVenv(
-                        this._activeVenv ? this._activeVenv.name : null
-                    );
-                    this._explorerPanel.open({
-                        currentProject: this._currentProject,
-                        currentNotebook: this._currentNotebook,
-                        navigateToVenv: this._activeVenv
-                            ? `${this._activeVenv.runtimeId}:${this._activeVenv.name}`
-                            : null,
-                        navigateToEnvs: !this._activeVenv,
-                    });
-                },
             }
         );
+
+        // Kernel selector click (in notebook top bar)
+        this._editor.setOnKernelClick(() => {
+            this._explorerPanel.setActiveVenv(
+                this._activeVenv ? this._activeVenv.name : null
+            );
+            this._explorerPanel.open({
+                currentProject: this._currentProject,
+                currentNotebook: this._currentNotebook,
+                navigateToVenv: this._activeVenv
+                    ? `${this._activeVenv.runtimeId}:${this._activeVenv.name}`
+                    : null,
+                navigateToEnvs: !this._activeVenv,
+            });
+        });
 
         // Initialize display settings panel (jsPanel)
         this._displaySettingsPanel = new DisplaySettingsPanel();
@@ -256,9 +258,9 @@ class App {
         this._currentNotebook = null;
         this._activeVenv = null;
 
-        this._infoBar.setProject(projectId);
-        this._infoBar.setNotebook(null);
-        this._infoBar.setVenv(null, null);
+        this._editor.setProject(projectId);
+        this._editor.setNotebook(null);
+        this._editor.setVenv(null, null);
     }
 
     async _onNotebookChange(projectId, notebookName) {
@@ -270,8 +272,8 @@ class App {
         this._currentProject = projectId;
         this._currentNotebook = notebookName;
 
-        this._infoBar.setProject(projectId);
-        this._infoBar.setNotebook(notebookName);
+        this._editor.setProject(projectId);
+        this._editor.setNotebook(notebookName);
 
         this._editor.openNotebook(projectId, notebookName, this._userName);
 
@@ -291,7 +293,7 @@ class App {
                     const match = envs.find(v => v.name === name && (!runtimeId || v.runtime_id === runtimeId));
                     if (match) {
                         this._activeVenv = { name: match.name, runtimeId: match.runtime_id, displayName: match.display_name };
-                        this._infoBar.setVenv(match.name, match.display_name);
+                        this._editor.setVenv(match.name, match.display_name);
                         this._client.startKernel(match.runtime_id, match.name);
                         restored = true;
                     }
@@ -305,7 +307,7 @@ class App {
         if (!restored) {
             // No saved venv for this notebook — clear any previous state
             this._activeVenv = null;
-            this._infoBar.setVenv(null);
+            this._editor.setVenv(null);
             this._client.stopKernel();
         }
 
@@ -323,7 +325,7 @@ class App {
             const displayName = venv.displayName
                 || (venv.runtimeId ? venv.runtimeId.replace(/^(\w)/, c => c.toUpperCase()).replace('/', ' ') : null);
             venv.displayName = displayName;
-            this._infoBar.setVenv(venv.name, displayName);
+            this._editor.setVenv(venv.name, displayName);
             // Persist for this notebook (runtimeId:name)
             if (this._currentProject && this._currentNotebook) {
                 localStorage.setItem(
@@ -336,7 +338,7 @@ class App {
                 this._client.startKernel(venv.runtimeId, venv.name);
             }
         } else {
-            this._infoBar.setVenv(null);
+            this._editor.setVenv(null);
             if (this._currentProject && this._currentNotebook) {
                 localStorage.removeItem(
                     `notebook-venv:${this._currentProject}:${this._currentNotebook}`
@@ -350,7 +352,7 @@ class App {
         if (this._activeVenv.name === deletedName) {
             this._client.stopKernel();
             this._activeVenv = null;
-            this._infoBar.setVenv(null);
+            this._editor.setVenv(null);
             if (this._currentProject && this._currentNotebook) {
                 localStorage.removeItem(
                     `notebook-venv:${this._currentProject}:${this._currentNotebook}`
