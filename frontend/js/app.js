@@ -420,6 +420,9 @@ class App {
                 { key, icon: key, title: key.charAt(0).toUpperCase() + key.slice(1), url: `/${key}` }
             );
             this._iconBar.clearActive();
+        } else if (key === 'settings') {
+            this._displaySettingsPanel.toggle();
+            this._iconBar.clearActive();
         }
     }
 
