@@ -1,4 +1,5 @@
 import { CellEditor } from './CellEditor.js';
+import { POST_IT_ICON_CELL } from './CellPostIt.js';
 import { ImageActions } from './ImageActions.js';
 import { NotebookDragDrop } from './NotebookDragDrop.js';
 import { NotebookSelection } from './NotebookSelection.js';
@@ -24,6 +25,7 @@ export class NotebookEditor {
         // Top bar inside the notebook with project/notebook breadcrumb
         this._topBar = document.getElementById('notebook-top-bar')
             || this._createTopBar();
+        this._secondBar = this._createSecondBar();
         this._buildTopBarContent();
 
         // Multi-cell selection state
@@ -228,6 +230,7 @@ export class NotebookEditor {
         this._wrapperEl = document.createElement('div');
         this._wrapperEl.className = 'notebook';
         this._wrapperEl.appendChild(this._topBar);
+        this._wrapperEl.appendChild(this._secondBar);
 
         for (let i = 0; i < this._notebook.cells.length; i++) {
             const cellData = this._notebook.cells[i];
@@ -262,6 +265,71 @@ export class NotebookEditor {
         return bar;
     }
 
+    _createSecondBar() {
+        const S = 'stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
+        const ICONS = {
+            runAll:    `<svg width="12" height="12" viewBox="0 0 24 24" fill="#555" ${S}><polygon points="6,3 20,12 6,21"/></svg>`,
+            restart:   `<svg width="12" height="12" viewBox="0 2 24 24" fill="none" ${S}><polygon points="5,4 5,10 11,10" fill="#555"/><path d="M3.5 16a9 9 0 1 0 6-10" stroke-width="2.8"/></svg>`,
+            stop:      `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" ${S}><path d="M6.34 6.34a9 9 0 1 0 11.32 0" stroke-width="2.8"/><line x1="12" y1="2" x2="12" y2="12" stroke-width="2.8"/></svg>`,
+            interrupt: `<svg width="12" height="12" viewBox="0 0 24 24" fill="#555" ${S}><rect x="4" y="4" width="16" height="16" rx="2"/></svg>`,
+            clearAll:  `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ${S}><path d="M3 6h16" stroke-width="2.2"/><path d="M3 12h16" stroke-width="2.2"/><path d="M3 18h16" stroke-width="2.2"/><polygon points="19,1 23,6 19,11" fill="#555" stroke="none"/></svg>`,
+            toc:       `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${S}><line x1="9" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="9" y1="18" x2="21" y2="18"/><circle cx="4.5" cy="6" r="1.5" fill="#5b9bd5"/><circle cx="4.5" cy="12" r="1.5" fill="#5b9bd5"/><circle cx="4.5" cy="18" r="1.5" fill="#5b9bd5"/></svg>`,
+            upload:    `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" ${S}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+            download:  `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" ${S}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+        };
+
+        const bar = document.createElement('div');
+        bar.id = 'notebook-second-bar';
+
+        const mkBtn = (icon, label, onClick, cls) => {
+            const btn = document.createElement('button');
+            btn.className = cls || 'info-bar-text-btn';
+            btn.innerHTML = icon + `<span class="info-bar-btn-label">${label}</span>`;
+            btn.title = label;
+            btn.addEventListener('click', onClick);
+            return btn;
+        };
+
+        // Left: TOC toggle
+        this._tocBtn = mkBtn(ICONS.toc, 'TOC', () => {
+            if (this._onTocToggle) this._onTocToggle();
+            this._tocBtn.classList.toggle('toolbar-btn-active');
+        }, 'info-bar-text-btn second-bar-left');
+        this._tocBtn.classList.add('toolbar-btn-active');
+        bar.appendChild(this._tocBtn);
+
+        // Center: kernel controls
+        const controls = document.createElement('div');
+        controls.className = 'info-bar-controls';
+        controls.appendChild(mkBtn(ICONS.runAll, 'Run All', () => this.runAll()));
+        controls.appendChild(mkBtn(ICONS.restart, 'Restart', () => this._client.restartKernel()));
+        controls.appendChild(mkBtn(ICONS.stop, 'Stop', () => this._client.stopKernel()));
+        controls.appendChild(mkBtn(ICONS.interrupt, 'Interrupt', () => this._client.interruptKernel()));
+        controls.appendChild(mkBtn(ICONS.clearAll, 'Clear All Outputs', () => this.clearAllOutputs()));
+        bar.appendChild(controls);
+
+        // Right: Import + Export
+        const rightGroup = document.createElement('div');
+        rightGroup.className = 'second-bar-right';
+        rightGroup.appendChild(mkBtn(ICONS.upload, 'Import', () => this._onImport?.()));
+        rightGroup.appendChild(mkBtn(ICONS.download, 'Export', () => this._onExport?.()));
+        bar.appendChild(rightGroup);
+
+        return bar;
+    }
+
+    setOnTocToggle(cb) { this._onTocToggle = cb; }
+    setOnPostItToggle(cb) { this._onPostItToggle = cb; }
+    setOnSave(cb) { this._onSave = cb; }
+    setOnImport(cb) { this._onImport = cb; }
+    setOnExport(cb) { this._onExport = cb; }
+
+    updateNotesBadge(count) {
+        if (!this._notesBadge) return;
+        this._notesBadge.textContent = count || '';
+        this._notesBadge.style.display = count ? 'inline-block' : 'none';
+    }
+
     _buildTopBarContent() {
         this._topBar.innerHTML = '';
         this._venvName = null;
@@ -294,11 +362,37 @@ export class NotebookEditor {
 
         this._kernelLabel = document.createElement('span');
         this._kernelLabel.className = 'info-bar-label';
-        this._kernelLabel.textContent = 'Select kernel';
+        this._kernelLabel.textContent = 'Select Kernel';
 
         this._kernelItem.append(this._kernelDot, this._kernelLabel);
 
-        this._topBar.append(this._projectLabel, this._topBarSep, this._notebookLabel, this._kernelItem);
+        // File actions before kernel selector: save + post-it
+        const FS = 'stroke="#555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"';
+        const saveIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ${FS}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" fill="#4caf50"/><polygon points="17 21 17 13 7 13 7 21" fill="#fff2bc"/><polyline points="7 3 7 8 15 8" fill="#cecece"/></svg>`;
+        const postItIcon = POST_IT_ICON_CELL;
+
+        const topBarActions = document.createElement('div');
+        topBarActions.className = 'top-bar-actions';
+
+        this._saveBtn = document.createElement('button');
+        this._saveBtn.className = 'info-bar-text-btn';
+        this._saveBtn.innerHTML = saveIcon;
+        this._saveBtn.title = 'Save';
+        this._saveBtn.addEventListener('click', () => this._onSave?.());
+
+        this._postItBtn = document.createElement('button');
+        this._postItBtn.className = 'info-bar-text-btn';
+        this._postItBtn.innerHTML = postItIcon;
+        this._postItBtn.title = 'Notes';
+        this._postItBtn.style.position = 'relative';
+        this._postItBtn.addEventListener('click', () => this._onPostItToggle?.());
+        this._notesBadge = document.createElement('span');
+        this._notesBadge.className = 'toolbar-notes-badge';
+        this._postItBtn.appendChild(this._notesBadge);
+
+        topBarActions.append(this._saveBtn, this._postItBtn);
+
+        this._topBar.append(this._projectLabel, this._topBarSep, this._notebookLabel, topBarActions, this._kernelItem);
 
         // Listen for kernel status
         this._client.on('kernel:status', (data) => this._setKernelStatus(data.status));
@@ -344,7 +438,7 @@ export class NotebookEditor {
             const info = suffix ? `(${suffix})` : this._displayName ? `(${this._displayName})` : '';
             this._kernelLabel.textContent = info ? `${this._venvName} ${info}` : this._venvName;
         } else {
-            this._kernelLabel.textContent = 'Select kernel';
+            this._kernelLabel.textContent = 'Select Kernel';
         }
     }
 

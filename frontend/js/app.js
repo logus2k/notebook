@@ -94,9 +94,9 @@ class App {
             this._client
         );
 
-        // Update toolbar badge when cells change
+        // Update badges and TOC when cells change
         this._editor.onCellsChanged = () => {
-            this._toolbar?.updateNotesBadge();
+            this._editor.updateNotesBadge(this._toolbar?.countNotes() || 0);
             this._toolbar?.refreshToc();
         };
 
@@ -131,15 +131,9 @@ class App {
             }
         );
 
-        // Initialize info bar (kernel controls only)
+        // Initialize info bar (empty — controls moved to notebook second bar)
         this._infoBar = new InfoBar(
-            document.getElementById('info-bar'),
-            this._client,
-            {
-                onRunAll: () => this._editor.runAll(),
-                onClearAllOutputs: () => this._editor.clearAllOutputs(),
-                onStartKernel: () => this._onStartKernel(),
-            }
+            document.getElementById('info-bar')
         );
 
         // Kernel selector click (in notebook top bar)
@@ -156,6 +150,13 @@ class App {
                 navigateToEnvs: !this._activeVenv,
             });
         });
+
+        // Wire notebook bar callbacks to toolbar panels and file actions
+        this._editor.setOnTocToggle(() => this._toolbar._tocPanel.toggle());
+        this._editor.setOnPostItToggle(() => this._toolbar._postItIndex.toggle());
+        this._editor.setOnSave(() => this._toolbar._callbacks.onSave?.());
+        this._editor.setOnImport(() => this._toolbar._callbacks.onImport?.());
+        this._editor.setOnExport(() => this._toolbar._callbacks.onExport?.());
 
         // Initialize display settings panel (jsPanel)
         this._displaySettingsPanel = new DisplaySettingsPanel();

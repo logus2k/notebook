@@ -122,7 +122,7 @@ html, body {
 
 #notebook-top-bar {
     height: 28px;
-    background: #fff2bcd9;
+    background: #ffe39eed;
     margin: 0 0 0 36px;
     border-radius: 3px 3px 0 0;
     display: flex;
@@ -130,6 +130,27 @@ html, body {
     padding: 0 12px;
     gap: 2px;
     font-size: 11px;
+}
+
+#notebook-second-bar {
+    height: 28px;
+    background: #fff2bcd9;
+    margin: 0 0 0 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}
+
+#notebook-second-bar .second-bar-left {
+    margin-right: auto;
+}
+
+#notebook-second-bar .second-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
 }
 
 #notebook-top-bar .info-bar-text {
@@ -148,8 +169,15 @@ html, body {
     opacity: 0.5;
 }
 
-#notebook-top-bar .info-bar-kernel {
+.top-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
     margin-left: auto;
+}
+
+#notebook-top-bar .info-bar-kernel {
+    margin-left: 8px;
 }
 
 #notebook-resizer {
