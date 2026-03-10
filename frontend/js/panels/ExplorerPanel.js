@@ -1581,16 +1581,18 @@ export class ExplorerPanel {
         this._detailEl.appendChild(info);
 
         // Open button
+        const actions = document.createElement('div');
+        actions.className = 'explorer-detail-actions';
         const openBtn = document.createElement('button');
         openBtn.className = 'explorer-btn primary';
         openBtn.textContent = 'Open Document';
-        openBtn.style.marginTop = '12px';
         openBtn.addEventListener('click', () => {
             if (this._callbacks.onDocumentOpen) {
                 this._callbacks.onDocumentOpen(doc);
             }
         });
-        this._detailEl.appendChild(openBtn);
+        actions.appendChild(openBtn);
+        this._detailEl.appendChild(actions);
 
         // Delete button in action bar
         const actionBar = this._createActionBar();
