@@ -11,6 +11,7 @@ export class SidebarPanel {
     constructor(callbacks = {}) {
         this._panel = document.getElementById('sidebar-panel');
         this._resizer = document.getElementById('sidebar-resizer');
+        this._contentArea = document.getElementById('content-area');
         this._callbacks = callbacks;
         this._header = null;
         this._titleEl = null;
@@ -45,33 +46,48 @@ export class SidebarPanel {
     }
 
     _setupResize() {
-        let dragging = false;
-        let startX, startWidth;
+        let startX, startWidth, rafId;
 
         this._resizer.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
             e.preventDefault();
-            dragging = true;
             startX = e.clientX;
             startWidth = this._panel.getBoundingClientRect().width;
+            rafId = 0;
             this._resizer.classList.add('dragging');
+            document.body.classList.add('resizing');
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
             this._panel.style.transition = 'none';
-        });
+            // Contain layout during drag to limit reflow scope (on content-area, which holds the iframe)
+            this._contentArea.style.contain = 'inline-size layout style';
 
-        window.addEventListener('mousemove', (e) => {
-            if (!dragging) return;
-            const rawWidth = startWidth + (e.clientX - startX);
-            const newWidth = Math.max(160, Math.min(500, rawWidth));
-            this._panel.style.width = newWidth + 'px';
-            if (this._callbacks.onResize) this._callbacks.onResize();
-        });
+            const onMouseMove = (e) => {
+                if (rafId) return;
+                rafId = requestAnimationFrame(() => {
+                    const rawWidth = startWidth + (e.clientX - startX);
+                    const newWidth = Math.max(160, Math.min(500, rawWidth));
+                    this._panel.style.width = newWidth + 'px';
+                    rafId = 0;
+                });
+            };
 
-        window.addEventListener('mouseup', () => {
-            if (!dragging) return;
-            dragging = false;
-            this._resizer.classList.remove('dragging');
-            this._panel.style.transition = '';
-            this._savedWidth = this._panel.style.width || null;
-            if (this._callbacks.onResize) this._callbacks.onResize();
+            const onMouseUp = () => {
+                if (rafId) cancelAnimationFrame(rafId);
+                this._resizer.classList.remove('dragging');
+                document.body.classList.remove('resizing');
+                document.body.style.userSelect = '';
+                document.body.style.cursor = '';
+                this._panel.style.transition = '';
+                this._contentArea.style.contain = '';
+                this._savedWidth = this._panel.style.width || null;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                if (this._callbacks.onResize) this._callbacks.onResize();
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
         });
     }
 

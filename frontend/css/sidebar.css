@@ -6,8 +6,8 @@
     width: 280px;
     min-width: 160px;
     max-width: 500px;
-    background: var(--bg-primary, #ffffff);
-    border-right: 1px solid var(--border-color, #d0d0d8);
+    /* background: var(--bg-primary, #ffffff); */
+    /* border-right: 1px solid var(--border-color, #d0d0d8); */
     overflow: hidden;
     flex-shrink: 0;
     z-index: 4;
@@ -23,8 +23,10 @@
     align-items: center;
     gap: 8px;
     padding: 6px 12px;
-    background: #ffe39eed;
+    background: #ffd670ed;
     flex-shrink: 0;
+    border-top: 0.5px solid #aeaeae;
+    border-right: 0.5px solid #aeaeae;
 }
 
 .sidebar-title {
