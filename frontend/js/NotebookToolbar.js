@@ -4,23 +4,13 @@ import { TocPanel } from './TocPanel.js';
 
 const S = 'stroke="#202020" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"';
 const ICONS = {
-    folder:    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" fill="#e6b800"/></svg>`,
     upload:    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
     save:      `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" fill="#4caf50"/><polygon points="17 21 17 13 7 13 7 21" fill="#fff2bc"/><polyline points="7 3 7 8 15 8" fill="#cecece"/></svg>`,
     download:  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
     settings:  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="#c4a07a"/><circle cx="12" cy="12" r="3" fill="#fff2bc"/></svg>`,
-    mlflow:    `<img src="static/images/mlflow.png" width="18" height="18" style="display:block"/>`,
-    airflow:   `<img src="static/images/airflow.png" width="18" height="18" style="display:block"/>`,
-    minio:     `<img src="static/images/minio.png" width="18" height="18" style="display:block"/>`,
     toc:       `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ${S}><line x1="9" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="9" y1="18" x2="21" y2="18"/><circle cx="4.5" cy="6" r="1.5" fill="#5b9bd5"/><circle cx="4.5" cy="12" r="1.5" fill="#5b9bd5"/><circle cx="4.5" cy="18" r="1.5" fill="#5b9bd5"/></svg>`,
     robot:     `<svg width="25" height="25" viewBox="0 -960 960 960" style="vertical-align:middle" xmlns="http://www.w3.org/2000/svg"><rect x="250" y="-710" width="460" height="540" rx="20" fill="#c6e2ff"/><path d="M200-400q-33.85 0-56.92-23.08Q120-446.15 120-480t23.08-56.92Q166.15-560 200-560v-95.38q0-26.66 18.98-45.64T264.62-720H400q0-33.85 23.08-56.92Q446.15-800 480-800t56.92 23.08Q560-753.85 560-720h135.38q26.66 0 45.64 18.98T760-655.38V-560q33.85 0 56.92 23.08Q840-513.85 840-480t-23.08 56.92Q793.85-400 760-400v175.38q0 26.66-18.98 45.64T695.38-160H264.62q-26.66 0-45.64-18.98T200-224.62V-400Zm188.27-71.64Q400-483.28 400-499.91t-11.64-28.36Q376.72-540 360.09-540t-28.36 11.64Q320-516.72 320-500.09t11.64 28.36Q343.28-460 359.91-460t28.36-11.64Zm240 0Q640-483.28 640-499.91t-11.64-28.36Q616.72-540 600.09-540t-28.36 11.64Q560-516.72 560-500.09t11.64 28.36Q583.28-460 599.91-460t28.36-11.64ZM340-300h280v-40H340v40Zm-75.38 100h430.76q10.77 0 17.7-6.92 6.92-6.93 6.92-17.7v-430.76q0-10.77-6.92-17.7-6.93-6.92-17.7-6.92H264.62q-10.77 0-17.7 6.92-6.92 6.93-6.92 17.7v430.76q0 10.77 6.92 17.7 6.93 6.92 17.7 6.92ZM480-440Z" fill="#202020"/></svg>`,
 };
-
-const SERVICES = [
-    { key: 'airflow', icon: 'airflow', title: 'Airflow', url: '/airflow' },
-    { key: 'mlflow',  icon: 'mlflow',  title: 'MLflow',  url: '/mlflow' },
-    { key: 'minio',   icon: 'minio',   title: 'MinIO',   url: '/minio' },
-];
 
 /**
  * NotebookToolbar - Navigation, file actions, settings, connected users.
@@ -64,10 +54,6 @@ export class NotebookToolbar {
         const actionsGroup = this._createGroup();
         actionsGroup.classList.add('toolbar-center');
 
-        actionsGroup.appendChild(this._iconButton(ICONS.folder, 'Browse projects', () => {
-            if (this._callbacks.onBrowse) this._callbacks.onBrowse();
-        }));
-
         this._saveBtn = this._iconButton(ICONS.save, 'Save', () => {
             if (this._callbacks.onSave) this._callbacks.onSave();
         });
@@ -103,16 +89,6 @@ export class NotebookToolbar {
         });
         settingsBtn.className = 'toolbar-settings-btn';
         actionsGroup.appendChild(settingsBtn);
-
-        // Service buttons (MLflow, Airflow, MinIO) — after settings with separator
-        const servicesSep = document.createElement('div');
-        servicesSep.className = 'toolbar-separator';
-        actionsGroup.appendChild(servicesSep);
-        for (const svc of SERVICES) {
-            actionsGroup.appendChild(this._iconButton(ICONS[svc.icon], svc.title, () => {
-                this._openServicePanel(svc);
-            }));
-        }
 
         this._container.appendChild(actionsGroup);
 

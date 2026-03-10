@@ -2,6 +2,7 @@ import { KernelClient } from './KernelClient.js';
 import { NotebookEditor } from './NotebookEditor.js';
 import { NotebookToolbar } from './NotebookToolbar.js';
 import { InfoBar } from './InfoBar.js';
+import { IconBar } from './IconBar.js';
 import { ExplorerPanel } from './panels/ExplorerPanel.js';
 import { DisplaySettingsPanel } from './panels/DisplaySettingsPanel.js';
 import { NotebookResizer } from './NotebookResizer.js';
@@ -18,6 +19,7 @@ class App {
         this._editor = null;
         this._toolbar = null;
         this._infoBar = null;
+        this._iconBar = null;
         this._explorerPanel = null;
         this._displaySettingsPanel = null;
         this._currentProject = null;
@@ -34,6 +36,14 @@ class App {
 
         // Initialize notebook resizer (restores saved width)
         this._notebookResizer = new NotebookResizer();
+
+        // Initialize icon bar (left vertical strip)
+        this._iconBar = new IconBar(
+            document.getElementById('icon-bar'),
+            {
+                onIconClick: (key, isActive) => this._onIconBarClick(key, isActive),
+            }
+        );
 
         // Restore display toggles
         const toggleMap = {
@@ -95,10 +105,6 @@ class App {
             document.getElementById('toolbar'),
             this._client,
             {
-                onBrowse: () => {
-                    this._explorerPanel.setActiveVenv(this._activeVenv ? this._activeVenv.name : null);
-                    this._explorerPanel.open({ currentProject: this._currentProject, currentNotebook: this._currentNotebook });
-                },
                 onImport: () => this._onImportNotebook(),
                 onSave: () => this._editor.save(),
                 onExport: () => this._editor.export(),
@@ -394,6 +400,27 @@ class App {
         const panel = document.getElementById('right-panel');
         this._chatVisible = !this._chatVisible;
         panel.style.display = this._chatVisible ? 'flex' : 'none';
+    }
+
+    _onIconBarClick(key, isActive) {
+        if (key === 'projects' || key === 'environments') {
+            if (isActive) {
+                this._explorerPanel.setActiveVenv(this._activeVenv ? this._activeVenv.name : null);
+                this._explorerPanel.open({
+                    currentProject: this._currentProject,
+                    currentNotebook: this._currentNotebook,
+                    navigateToEnvs: key === 'environments',
+                });
+            } else {
+                this._explorerPanel.close();
+            }
+        } else if (key === 'mlflow' || key === 'airflow' || key === 'minio') {
+            // Service panels — delegate to toolbar's service panel logic for now
+            this._toolbar._openServicePanel(
+                { key, icon: key, title: key.charAt(0).toUpperCase() + key.slice(1), url: `/${key}` }
+            );
+            this._iconBar.clearActive();
+        }
     }
 
     _generateUserName() {

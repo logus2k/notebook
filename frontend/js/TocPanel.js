@@ -120,9 +120,11 @@ export class TocPanel {
         if (!this._visible) {
             this._contentArea.style.marginLeft = '';
         } else {
-            const left = parseInt(getComputedStyle(this._wrapper).left) || 16;
-            const margin = left + this._getTargetWidth() + 20;
-            this._contentArea.style.marginLeft = margin + 'px';
+            const tocLeft = parseInt(getComputedStyle(this._wrapper).left) || 64;
+            const iconBar = document.getElementById('icon-bar');
+            const iconBarWidth = iconBar ? iconBar.offsetWidth : 0;
+            const margin = tocLeft + this._getTargetWidth() + 20 - iconBarWidth;
+            this._contentArea.style.marginLeft = Math.max(0, margin) + 'px';
         }
     }
 
