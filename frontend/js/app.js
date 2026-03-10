@@ -47,6 +47,7 @@ class App {
             document.getElementById('icon-bar'),
             {
                 onIconClick: (key, isActive) => this._onIconBarClick(key, isActive),
+                onChatToggle: () => this._toggleChatPanel(),
             }
         );
 
@@ -143,7 +144,6 @@ class App {
                 onSave: () => this._editor.save(),
                 onExport: () => this._editor.export(),
                 onSettingsToggle: () => this._displaySettingsPanel.toggle(),
-                onChatToggle: () => this._toggleChatPanel(),
                 getCells: () => this._editor.cells,
                 onSelectCell: (index) => this._editor.selection.selectCell(index),
             }

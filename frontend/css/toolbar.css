@@ -23,7 +23,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 1px 12px 7px 12px;
+    padding: 4px 12px;
     z-index: 6;
     pointer-events: none;
 }
