@@ -6,11 +6,11 @@
 |---------------|------------------------------------|
 | Document      | Product Scope                      |
 | Project       | noted - Integrated MLOps Platform  |
-| Version       | 1.1                                |
-| Date          | 2026-03-08                         |
+| Version       | 1.2                                |
+| Date          | 2026-03-10                         |
 | Status        | Draft                              |
-| Related       | Vision Document v1.1               |
-| Changes       | v1.1: Corrected to reflect actual noted architecture (single container, vanilla ES6 frontend, multi-runtime kernels, existing managers and Socket.io events). Infrastructure section updated to match running services. |
+| Related       | Vision Document v1.2               |
+| Changes       | v1.2: UI layout redesigned as VS Code-like 4-column layout (icon bar, Workspace Explorer, tabbed center, Chat). Workspace tree expanded beyond Projects/Environments to all MLOps artifact categories. Service UIs (MLflow, Airflow, MinIO) open as center tabs instead of floating panels. Python file editing added for satellite project files. Container names updated to reflect consolidated services/docker-compose.yml stack. Phase 0 completed successfully. |
 
 ---
 
@@ -102,16 +102,16 @@ noted already exposes REST endpoints for projects, notebooks, runtimes, and envi
 | Service                        | Status    | Container Name                  |
 |--------------------------------|-----------|---------------------------------|
 | noted                          | Running   | noted                           |
-| MinIO                          | Running   | airflow-minio                   |
-| MLflow 3.x                     | Running   | emi-mlflow                      |
-| Airflow API Server (3.0)       | Running   | airflow-airflow-apiserver-1     |
-| Airflow Scheduler              | Running   | airflow-airflow-scheduler-1     |
-| Airflow Worker                 | Running   | airflow-airflow-worker-1        |
-| Airflow Triggerer              | Running   | airflow-airflow-triggerer-1     |
-| Airflow DAG Processor          | Running   | airflow-airflow-dag-processor-1 |
-| PostgreSQL                     | Running   | airflow-postgres-1              |
-| Redis (Airflow-managed)        | Running   | airflow-redis-1                 |
-| nginx reverse proxy            | Running   | proxy_server                    |
+| MinIO                          | Running   | noted-minio                     |
+| MLflow 3.x                     | Running   | noted-mlflow                    |
+| Airflow API Server (3.0)       | Running   | noted-airflow-apiserver         |
+| Airflow Scheduler              | Running   | noted-airflow-scheduler         |
+| Airflow Worker                 | Running   | noted-airflow-worker            |
+| Airflow Triggerer              | Running   | noted-airflow-triggerer         |
+| Airflow DAG Processor          | Running   | noted-airflow-dag-processor     |
+| PostgreSQL                     | Running   | noted-postgres                  |
+| Redis (Airflow-managed)        | Running   | noted-redis                     |
+| nginx reverse proxy            | Running   | noted-nginx (local only via docker-compose.local.yml) |
 | GPU (NVIDIA)                   | Available | Host-level, CUDA 13.1           |
 
 ---
@@ -229,8 +229,8 @@ All Git and DVC operations go through a `ProjectVersionControl` service interfac
 #### 3.3.1 Features
 
 **F-MLF-01: MLflow Server Configuration**
-The existing MLflow 3.x Tracking Server (container `emi-mlflow`) is configured with:
-- PostgreSQL as the backend store (metadata) - uses the existing `airflow-postgres-1` instance with a dedicated `mlflow` database
+The existing MLflow 3.x Tracking Server (container `noted-mlflow`) is configured with:
+- PostgreSQL as the backend store (metadata) - uses the existing `noted-postgres` instance with a dedicated `mlflow` database
 - MinIO as the artifact store (models, plots, data samples)
 - Accessible only via the noted backend on the Docker internal network
 
@@ -393,13 +393,13 @@ The Config panel supports defining Hydra multirun sweeps:
 
 **F-AIR-01: Airflow Service Integration**
 The existing Airflow 3.0 deployment (already running) consists of:
-- API Server (`airflow-airflow-apiserver-1`) - REST API endpoint
-- Scheduler (`airflow-airflow-scheduler-1`)
-- DAG Processor (`airflow-airflow-dag-processor-1`)
-- Celery Worker (`airflow-airflow-worker-1`)
-- Triggerer (`airflow-airflow-triggerer-1`)
-- PostgreSQL backend (shared with MLflow, `airflow-postgres-1`)
-- Redis broker (`airflow-redis-1`, Airflow-managed)
+- API Server (`noted-airflow-apiserver`) - REST API endpoint
+- Scheduler (`noted-airflow-scheduler`)
+- DAG Processor (`noted-airflow-dag-processor`)
+- Celery Worker (`noted-airflow-worker`)
+- Triggerer (`noted-airflow-triggerer`)
+- PostgreSQL backend (shared with MLflow, `noted-postgres`)
+- Redis broker (`noted-redis`, Airflow-managed)
 
 The Airflow web UI remains accessible for admin use only (not exposed to noted users).
 
@@ -631,40 +631,58 @@ When multiple users upload data simultaneously, operations are serialized per pr
 
 #### 3.9.1 Layout Structure
 
-The UI extends noted's existing panel-based architecture (jsPanel, Split.js, Wunderbaum) with new sidebar panels:
+The UI adopts a VS Code-like 4-column layout:
 
 ```
-+---------------------------------------------------------------+
-|  Top Bar: Project selector | Settings | User                  |
-+----------+------------------------------------+---------------+
-|          |                                    |               |
-| Left     |         Main Workspace             |  Right        |
-| Sidebar  |                                    |  Sidebar      |
-|          |   Notebook cells (existing)        |               |
-| - Data   |   Terminal output (existing)       | - Experiments |
-| - Config |   Pipeline node graph (new)        | - Models      |
-| - Files  |                                    | - Serving     |
-|  (exist) |                                    | - Activity    |
-|          |                                    |               |
-+----------+------------------------------------+---------------+
-|  Bottom Bar: Pipeline status | Kernel status | Storage usage  |
-+---------------------------------------------------------------+
++----+----------+------------------------------------+----------+
+|    |          |  Tab Bar                           |          |
+| I  | Workspace|  [notebook.ipynb ×] [model.py ×]   |  Chat    |
+| C  | Explorer |  [MLflow ×]                        |  Panel   |
+| O  |          |------------------------------------| (AI      |
+| N  | Projects |  Center Pane                       |  Assist) |
+|    |  └ my-pr |  (active tab content)              |          |
+| B  | Envs     |                                    |          |
+| A  | Storage  |  - notebook editor                 |          |
+| R  | Pipelines|  - Python file editor              |          |
+|    | Models   |  - service UI iframe               |          |
+|    | APIs     |  - detail view (runs, lineage...)  |          |
++----+----------+------------------------------------+----------+
+|  Status Bar: Kernel | Pipeline | Storage                      |
++--------------------------------------------------------------+
 ```
 
-**Left sidebar** contains input-oriented panels: data management, configuration, file browser (existing Wunderbaum tree).
+**Icon Bar** (leftmost): Narrow vertical strip with icons for each Workspace category. Toggles the Workspace Explorer sidebar and selects the active section. Always visible.
 
-**Right sidebar** contains output-oriented panels: experiment results, model registry, serving, activity feed.
+**Workspace Explorer**: Collapsible tree panel showing all platform artifacts:
+- Projects (existing: hierarchy with notebooks and files)
+- Environments (existing: Python runtime management)
+- Storage (MinIO bucket browser — Phase 1B)
+- Pipelines (Airflow DAGs with status — Phase 2)
+- Models (MLflow Registry with versions — Phase 3)
+- APIs (deployed model endpoints — Phase 3)
 
-**Main workspace** contains the notebook editor (existing), terminal output (existing xterm.js), and pipeline visualization (new).
+Replaces the previous floating modal (jsPanel) Explorer. Categories are populated incrementally across phases.
 
-**Bottom bar** provides persistent status indicators.
+**Center Tabbed Pane**: Primary content area with multiple tab types:
+- Notebook tabs (existing notebook editor)
+- Python file tabs (CodeMirror text editor for project satellite files like model.py, utils.py — edit and save, no execution UI)
+- Service UI tabs (MLflow, Airflow, MinIO web UIs as iframes)
+- Detail view tabs (experiment runs, model lineage, pipeline graphs, data browsers — opened from Workspace tree clicks)
+
+**Chat Panel** (rightmost): AI assistant, collapsible, unchanged from current.
+
+All side elements are independently collapsible. The center pane resizes relative to sidebar and chat panel using existing Split.js patterns.
 
 #### 3.9.2 Panel Behavior
 
-- Panels are collapsible and resizable (extending existing jsPanel/Split.js patterns)
-- Only one panel per sidebar is expanded at a time (accordion behavior)
-- Panel state (which is open, size) persists per user per project (localStorage, consistent with existing settings persistence)
-- Panels load data lazily - only when expanded
+- Icon bar is always visible (narrow, minimal space)
+- Workspace Explorer is collapsible — icon bar click toggles it
+- Chat panel is collapsible — toolbar button toggles it
+- Center pane tabs support: close, reorder (drag), and restore on session reload
+- Tab state (open tabs, active tab, tab order) persists per user per project (localStorage)
+- Workspace tree loads categories lazily — only fetch data when a section is expanded
+- Detail view tabs are opened by tree item clicks and can be closed independently
+- Service UI tabs (MLflow, Airflow, MinIO) are singleton — clicking the tree icon focuses the existing tab or creates one
 
 #### 3.9.3 Acceptance Criteria
 
@@ -765,16 +783,16 @@ These events extend the existing Socket.io event vocabulary:
 | Service                | Container Name                  | Ports (internal) | Notes                         |
 |------------------------|---------------------------------|------------------|-------------------------------|
 | noted                  | noted                           | 8123             | Single container: API + frontend |
-| mlflow-server          | emi-mlflow                      | 5000             | MLflow 3.x, tracking + registry |
-| airflow-apiserver      | airflow-airflow-apiserver-1     | 8080             | Airflow 3.0 REST API           |
-| airflow-scheduler      | airflow-airflow-scheduler-1     | -                |                                |
-| airflow-worker         | airflow-airflow-worker-1        | -                | Celery worker                  |
-| airflow-triggerer      | airflow-airflow-triggerer-1     | -                | Airflow 3.0                    |
-| airflow-dag-processor  | airflow-airflow-dag-processor-1 | -                | Airflow 3.0                    |
-| minio                  | airflow-minio                   | 9000, 9001       |                                |
-| postgres               | airflow-postgres-1              | 5432             | Shared: MLflow + Airflow       |
-| redis                  | airflow-redis-1                 | 6379             | Airflow-managed Celery broker  |
-| nginx                  | proxy_server                    | 80, 443          | SSL termination, routing       |
+| mlflow-server          | noted-mlflow                    | 5000             | MLflow 3.x, tracking + registry |
+| airflow-apiserver      | noted-airflow-apiserver         | 8080             | Airflow 3.0 REST API           |
+| airflow-scheduler      | noted-airflow-scheduler         | -                |                                |
+| airflow-worker         | noted-airflow-worker            | -                | Celery worker                  |
+| airflow-triggerer      | noted-airflow-triggerer         | -                | Airflow 3.0                    |
+| airflow-dag-processor  | noted-airflow-dag-processor     | -                | Airflow 3.0                    |
+| minio                  | noted-minio                     | 9000, 9001       |                                |
+| postgres               | noted-postgres                  | 5432             | Shared: MLflow + Airflow       |
+| redis                  | noted-redis                     | 6379             | Airflow-managed Celery broker  |
+| nginx                  | noted-nginx                     | 80, 443          | SSL termination, routing (local only via docker-compose.local.yml) |
 
 **To be added:**
 
@@ -796,11 +814,11 @@ These events extend the existing Socket.io event vocabulary:
     +-- /admin/minio/   -> minio:9001 (admin only)
 ```
 
-All inter-service communication uses the Docker internal network. Only nginx is exposed externally.
+All services are defined in the same Docker Compose file (`services/docker-compose.yml`) and share the default network. Only nginx is exposed externally.
 
 ### 5.3 Database Schema
 
-PostgreSQL hosts separate databases within the shared instance (`airflow-postgres-1`):
+PostgreSQL hosts separate databases within the shared instance (`noted-postgres`):
 - `noted` - noted application metadata (projects, users, sessions) - to be created
 - `mlflow` - MLflow tracking metadata (existing or to be confirmed)
 - `airflow` - Airflow metadata (existing)

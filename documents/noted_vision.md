@@ -6,10 +6,10 @@
 |---------------|------------------------------------|
 | Document      | Product Vision                     |
 | Project       | noted - Integrated MLOps Platform  |
-| Version       | 1.1                                |
-| Date          | 2026-03-08                         |
+| Version       | 1.2                                |
+| Date          | 2026-03-10                         |
 | Status        | Draft                              |
-| Changes       | v1.1: Corrected to reflect actual noted architecture (single container, vanilla ES6 frontend, multi-runtime kernels, existing environment management). Incorporated PROJECT_STATUS.md as authoritative source for current capabilities. |
+| Changes       | v1.2: Updated UI architecture to VS Code-like layout with left icon bar, collapsible Workspace Explorer, tabbed center pane, and right Chat panel. Workspace tree expanded from Projects/Environments to include all MLOps artifacts (Storage, Pipelines, Models, APIs). Center pane supports tabbed content: notebooks, Python file editors, service UIs, and detail views. Container names updated to reflect consolidated services/docker-compose.yml stack. Phase 0 completed. Python file editing support added. Multi-notebook support deferred. |
 
 ---
 
@@ -66,7 +66,7 @@ People who need to review experiment results, approve model promotions, or audit
 
 ### 5.1 Integration Over Aggregation
 
-noted is not a dashboard that embeds iframes of other tools' UIs. It is a purpose-built interface that communicates with backend services through their APIs, presenting a unified experience where actions in one domain (e.g., promoting a model) are immediately reflected in others (e.g., the deployment panel).
+noted is not a dashboard that merely aggregates other tools' UIs. It is a purpose-built interface that communicates with backend services through their APIs, presenting a unified experience where actions in one domain (e.g., promoting a model) are immediately reflected in others (e.g., the Models section of the Workspace tree, the detail tab in the center pane). Service UIs (MLflow, Airflow, MinIO) are accessible as tabs in the center pane for advanced use, but the primary interaction model is through noted's own purpose-built views.
 
 ### 5.2 Backend Services Stay Canonical
 
@@ -96,7 +96,7 @@ The following narrative describes the target user experience when all phases are
 
 **Step 1 - Data Ingestion**
 
-A researcher opens the noted workspace and navigates to the Data panel. They drag the raw `jena_climate_2009_2016.csv` file into the upload area. The backend stores the file in MinIO, runs `dvc add` and `dvc push`, and commits the `.dvc` pointer file to the project's backend-managed Git repository. The Data panel shows:
+A researcher opens the noted workspace and navigates to Data in the Workspace tree. They drag the raw `jena_climate_2009_2016.csv` file into the upload area. The backend stores the file in MinIO, runs `dvc add` and `dvc push`, and commits the `.dvc` pointer file to the project's backend-managed Git repository. The detail tab shows:
 
 ```
 data/raw/jena_climate.csv    v1    42MB    uploaded 2 min ago
@@ -104,7 +104,7 @@ data/raw/jena_climate.csv    v1    42MB    uploaded 2 min ago
 
 **Step 2 - Preprocessing**
 
-In a notebook cell, the researcher writes a preprocessing pipeline that standardizes features and creates train/test splits. They execute the cell. The backend detects that new files were written to `data/processed/`, runs `dvc add` on them, and the Data panel updates:
+In a notebook cell, the researcher writes a preprocessing pipeline that standardizes features and creates train/test splits. They execute the cell. The backend detects that new files were written to `data/processed/`, runs `dvc add` on them, and the Data detail tab updates:
 
 ```
 data/raw/jena_climate.csv       v1    42MB
@@ -113,7 +113,7 @@ data/processed/scaled.npz       v1    18MB    derived from raw v1
 
 **Step 3 - Configuration**
 
-The researcher opens the Config panel. They see a form generated from the project's Hydra structured configs:
+The researcher opens the Config section in the Workspace tree, which opens a detail tab. They see a form generated from the project's Hydra structured configs:
 
 ```
 Architecture:  [GRU v]        (dropdown: GRU, Transformer)
@@ -128,21 +128,21 @@ Selecting "Transformer" from the dropdown dynamically replaces "Hidden Dim" and 
 
 **Step 4 - Interactive Training**
 
-The researcher clicks "Run" on a training cell. Because auto-tracking is enabled for this project, the backend wraps execution with MLflow context. The Experiments sidebar shows a live-updating chart:
+The researcher clicks "Run" on a training cell. Because auto-tracking is enabled for this project, the backend wraps execution with MLflow context. The Experiments section in the Workspace tree updates, and a detail view opens as a center tab showing a live-updating chart:
 
 ```
 Run #14  |  GRU  |  Epoch 23/50  |  MAE: 2.41  |  Running...
 ```
 
-Metrics update in real-time via Socket.io. The second team member, working in the same project, sees this run appear in their sidebar as well.
+Metrics update in real-time via Socket.io. The second team member, working in the same project, sees this run appear in their Workspace tree as well.
 
 **Step 5 - Comparison**
 
-After both team members have completed several runs, they open the Experiments panel and select runs to compare. A comparison view shows overlaid loss curves, final metrics, and the exact Hydra config diff between runs. The data version hash is displayed alongside each run, confirming both used `data/raw v1`.
+After both team members have completed several runs, they open the Experiments section in the Workspace tree and select runs to compare. A comparison view shows overlaid loss curves, final metrics, and the exact Hydra config diff between runs. The data version hash is displayed alongside each run, confirming both used `data/raw v1`.
 
 **Step 6 - Pipeline Execution**
 
-The lead researcher wants to run a full hyperparameter sweep. They switch to "Pipeline" mode, which generates an Airflow DAG from the project's `src/train.py` entry point and the Hydra multirun config. They click "Submit." The Pipeline panel shows a node graph:
+The lead researcher wants to run a full hyperparameter sweep. They switch to "Pipeline" mode, which generates an Airflow DAG from the project's `src/train.py` entry point and the Hydra multirun config. They click "Submit." A Pipeline view opens as a center tab showing a node graph:
 
 ```
 [Pull Data v1] --> [Validate Config] --> [Train (x12 configs)] --> [Log Results]
@@ -153,7 +153,7 @@ Task stdout streams into a terminal panel via Socket.io.
 
 **Step 7 - Model Promotion**
 
-The best-performing run (Transformer, 8 heads, MAE: 1.87) is visible in the Experiments panel. The researcher clicks "Register Model" and assigns the alias `@staging`. The Models panel updates:
+The best-performing run (Transformer, 8 heads, MAE: 1.87) is visible in the Experiments detail tab. The researcher clicks "Register Model" and assigns the alias `@staging`. The Models section in the Workspace tree updates:
 
 ```
 JenaForecaster
@@ -165,7 +165,7 @@ After review by the team lead, they promote v2 to `@champion`.
 
 **Step 8 - Serving**
 
-The model-serving container detects the new `@champion` alias and hot-loads the model. The "Try It" panel in noted becomes active, showing an input form matching the model's expected schema. The researcher pastes sample weather data and gets a prediction inline.
+The model-serving container detects the new `@champion` alias and hot-loads the model. A "Try It" center tab becomes active, showing an input form matching the model's expected schema. The researcher pastes sample weather data and gets a prediction inline.
 
 ### 6.2 What This Demonstrates
 
@@ -257,17 +257,17 @@ All services run as containers alongside the noted container. This is appropriat
 Current running infrastructure (already deployed):
 
 ```
-noted              (FastAPI + static frontend, single container)
-mlflow-server      (Tracking + Registry, MLflow 3.x)
-airflow-apiserver  (Airflow 3.0 API Server)
-airflow-scheduler  (Airflow 3.0)
-airflow-worker     (Celery Worker)
-airflow-triggerer  (Airflow 3.0)
-airflow-dag-processor (Airflow 3.0)
-minio              (Object storage)
-postgres           (Shared metadata: MLflow + Airflow)
-redis              (Airflow Celery broker, Airflow-managed)
-nginx              (Reverse proxy, SSL termination)
+noted              (noted)         - FastAPI + static frontend, single container
+mlflow             (noted-mlflow)  - Tracking + Registry, MLflow 3.x
+airflow-apiserver  (noted-airflow-apiserver)   - Airflow 3.0 API Server
+airflow-scheduler  (noted-airflow-scheduler)   - Airflow 3.0
+airflow-worker     (noted-airflow-worker)      - Celery Worker
+airflow-triggerer  (noted-airflow-triggerer)   - Airflow 3.0
+airflow-dag-processor (noted-airflow-dag-processor) - Airflow 3.0
+minio              (noted-minio)   - Object storage
+postgres           (noted-postgres) - Shared metadata: MLflow + Airflow
+redis              (noted-redis)   - Airflow Celery broker, Airflow-managed
+nginx              (noted-nginx)   - Reverse proxy, SSL termination (local only, via docker-compose.local.yml)
 ```
 
 Additional services to be added:
@@ -275,6 +275,34 @@ Additional services to be added:
 ```
 model-server       (FastAPI serving, on-demand per project)
 ```
+
+### 7.6 UI Architecture
+
+noted adopts a VS Code-like layout with four columns:
+
+1. **Icon Bar** (leftmost) — A narrow vertical strip with icons for each Workspace category. Clicking an icon expands or collapses the Workspace Explorer to the corresponding section. Always visible.
+
+2. **Workspace Explorer** — A collapsible tree panel showing all platform artifacts organized by category:
+   - Projects (existing: project hierarchy with notebooks)
+   - Environments (existing: Python runtime management)
+   - Storage (MinIO bucket browser)
+   - Pipelines (Airflow DAGs with status)
+   - Models (MLflow Registry with versions and aliases)
+   - APIs (deployed model serving endpoints)
+
+   The tree provides project-centric navigation (drill into a project to see its notebooks, data, experiments) and platform-wide views (all models, all pipelines). Clicking a tree item opens a detail view in the center pane. The Workspace Explorer replaces the previous floating modal (jsPanel) used for project/environment browsing.
+
+3. **Center Tabbed Pane** — The primary content area supporting multiple simultaneous tabs:
+   - **Notebook tabs**: The existing notebook editor, one notebook at a time (multi-notebook deferred)
+   - **Python file tabs**: CodeMirror-based text editors for satellite files (model.py, utils.py, etc.) that share the active notebook's kernel for import purposes. Edit and save only — no cell execution UI.
+   - **Service UI tabs**: MLflow, Airflow, and MinIO web UIs loaded as iframes within tabs, replacing the previous floating panel approach
+   - **Detail view tabs**: Experiment run details, model lineage, pipeline graphs, data version browsers — opened from Workspace tree interactions
+
+   Tabs can be closed individually. Tab state persists across sessions via localStorage.
+
+4. **Chat Panel** (rightmost) — The AI assistant panel, collapsible, unchanged from current implementation.
+
+All three side elements (icon bar, Workspace Explorer, Chat panel) are independently collapsible, allowing the center pane to maximize available space. The center pane is resizable relative to the sidebar and chat panel, maintaining the existing Split.js resize behavior.
 
 ---
 
@@ -312,7 +340,7 @@ model-server       (FastAPI serving, on-demand per project)
 - noted does not implement its own object store - MinIO handles this
 - noted does not implement Git hosting - it manages bare repos internally
 - noted does not manage Kubernetes, cloud deployments, or multi-cluster orchestration
-- noted does not provide a general-purpose IDE or file editor beyond notebooks
+- noted does not provide a general-purpose IDE — it supports notebook editing and Python file editing within projects, but is not a replacement for VS Code or similar development environments
 
 ---
 
@@ -482,6 +510,7 @@ The platform is successful when:
 4. Model promotion from experiment to production serving happens through the noted interface
 5. Two or more users can collaborate on the same project simultaneously, seeing each other's experiment results and pipeline status in real-time
 6. No user-facing operation requires direct access to MLflow UI, Airflow UI, MinIO Console, or a terminal
+7. The UI layout provides seamless navigation across all MLOps domains through a unified Workspace Explorer, without requiring the user to open external browser tabs
 
 ---
 
