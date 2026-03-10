@@ -85,8 +85,11 @@ html, body {
     height: 100%;
     font-family: var(--font-sans);
     font-size: 14px;
-    background-color: #90909052;
-    background-image: url("../images/project-paper.png");
+    background-color: #e8e4db;
+    background-image:
+        linear-gradient(rgba(140, 160, 180, 0.35) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(140, 160, 180, 0.35) 1px, transparent 1px);
+    background-size: 20px 20px;
     color: var(--text-primary);
     overflow: hidden;
 }
@@ -141,7 +144,7 @@ html, body {
 
 #notebook-container {
     overflow-y: scroll;
-    padding: 0 10px 16px 10px;
+    padding: 0 10px 0px 10px;
     flex: 1;
 }
 
@@ -174,6 +177,10 @@ html, body {
     padding: 0 4px;
     border-left: 0.5px solid #666666;
     border-right: 0.5px solid #666666;
+    border-bottom: 0.5px solid #cecece;
+}
+
+#notebook-container:hover #notebook-second-bar {
     border-bottom: 0.5px solid #666666;
 }
 

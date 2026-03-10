@@ -115,16 +115,17 @@
 
 #notebook-container:hover .cell-header {
     border-radius: var(--radius) var(--radius) 0 0;
+    border-bottom: 0.5px solid #999999;
 }
 
 #notebook-container .cell:hover[data-cell-type="code"] .cell-header {
     background: #c6e2ff69;
-    border-bottom: 0.5px solid #cecece;
+    border-bottom: 0.5px solid #999999;
 }
 
 #notebook-container .cell:hover[data-cell-type="markdown"] .cell-header {
     background: #b0eaac45;
-    border-bottom: 0.5px solid #cecece;
+    border-bottom: 0.5px solid #999999;
 }
 
 .cell-type-badge {

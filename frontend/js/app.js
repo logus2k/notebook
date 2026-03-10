@@ -64,7 +64,7 @@ class App {
         // Register sidebar views (content will be populated later)
         const projectsView = document.createElement('div');
         projectsView.className = 'sidebar-view-projects';
-        this._sidebar.registerView('projects', { tabLabel: 'Workspace', title: 'Workspace Assets Management', element: projectsView });
+        this._sidebar.registerView('projects', { tabLabel: 'Workspace', title: 'Assets Management', element: projectsView });
 
         // TOC panel — lives inside the sidebar as a view
         this._tocPanel = new TocPanel(
@@ -452,7 +452,7 @@ class App {
         promptsEl.className = 'prompts-view';
         this._rightPanel.registerView('prompts', {
             tabLabel: 'Prompts',
-            title: 'LLM Prompts Management',
+            title: 'LLM Management',
             element: promptsEl,
         });
 

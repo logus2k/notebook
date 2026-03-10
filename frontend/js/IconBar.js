@@ -37,45 +37,17 @@ export class IconBar {
         const topGroup = document.createElement('div');
         topGroup.className = 'icon-bar-group';
 
-        // Only Projects and Environments are active for now
-        const categories = [
-            { key: 'projects', title: 'Projects', enabled: true },
-            { key: 'environments', title: 'Environments', enabled: true },
-            { key: 'experiments', title: 'Experiments', enabled: false },
-            { key: 'storage', title: 'Storage', enabled: false },
-            { key: 'pipelines', title: 'Pipelines', enabled: false },
-            { key: 'models', title: 'Models', enabled: false },
-        ];
+        // Projects (folder) icon
+        const projectsBtn = document.createElement('button');
+        projectsBtn.className = 'icon-bar-btn';
+        projectsBtn.innerHTML = ICON_BAR_ICONS.projects;
+        projectsBtn.title = 'Projects';
+        projectsBtn.dataset.key = 'projects';
+        projectsBtn.addEventListener('click', () => this._onIconClick('projects'));
+        topGroup.appendChild(projectsBtn);
+        this._buttons['projects'] = projectsBtn;
 
-        for (const cat of categories) {
-            const btn = document.createElement('button');
-            btn.className = 'icon-bar-btn';
-            btn.innerHTML = ICON_BAR_ICONS[cat.key];
-            btn.title = cat.title;
-            btn.dataset.key = cat.key;
-
-            if (!cat.enabled) {
-                btn.classList.add('icon-bar-btn-disabled');
-                btn.disabled = true;
-            } else {
-                btn.addEventListener('click', () => this._onIconClick(cat.key));
-            }
-
-            topGroup.appendChild(btn);
-            this._buttons[cat.key] = btn;
-        }
-
-        this._container.appendChild(topGroup);
-
-        // Spacer pushes bottom group down
-        const spacer = document.createElement('div');
-        spacer.className = 'icon-bar-spacer';
-        this._container.appendChild(spacer);
-
-        // Bottom group: service shortcuts + settings
-        const bottomGroup = document.createElement('div');
-        bottomGroup.className = 'icon-bar-group icon-bar-bottom';
-
+        // Service icons (right after projects)
         const services = [
             { key: 'airflow', title: 'Airflow', img: 'static/images/airflow.png' },
             { key: 'mlflow', title: 'MLflow', img: 'static/images/mlflow.png' },
@@ -89,11 +61,21 @@ export class IconBar {
             btn.title = svc.title;
             btn.dataset.key = svc.key;
             btn.addEventListener('click', () => this._onIconClick(svc.key));
-            bottomGroup.appendChild(btn);
+            topGroup.appendChild(btn);
             this._buttons[svc.key] = btn;
         }
 
-        // Settings (always last)
+        this._container.appendChild(topGroup);
+
+        // Spacer pushes bottom group down
+        const spacer = document.createElement('div');
+        spacer.className = 'icon-bar-spacer';
+        this._container.appendChild(spacer);
+
+        // Bottom group: settings only
+        const bottomGroup = document.createElement('div');
+        bottomGroup.className = 'icon-bar-group icon-bar-bottom';
+
         const settingsBtn = document.createElement('button');
         settingsBtn.className = 'icon-bar-btn';
         settingsBtn.innerHTML = ICON_BAR_ICONS.settings;
