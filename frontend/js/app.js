@@ -513,7 +513,7 @@ class App {
         } else {
             // Show service iframe, hide notebook
             notebookContainer.style.display = 'none';
-            serviceContainer.style.display = 'block';
+            serviceContainer.style.display = 'flex';
 
             // Create or reuse iframe for this service
             if (!this._serviceIframes[key]) {
@@ -523,10 +523,54 @@ class App {
                 this._serviceIframes[key] = iframe;
             }
 
-            // Show only the active service iframe
+            // Build service top bar + iframe
             serviceContainer.innerHTML = '';
+            serviceContainer.appendChild(this._buildServiceTopBar(key));
             serviceContainer.appendChild(this._serviceIframes[key]);
         }
+    }
+
+    _buildServiceTopBar(key) {
+        const bar = document.createElement('div');
+        bar.className = 'service-top-bar';
+
+        const title = document.createElement('span');
+        title.className = 'service-top-bar-title';
+        const names = { airflow: 'Apache Airflow', mlflow: 'MLflow', minio: 'MinIO' };
+        title.textContent = names[key] || key;
+        bar.appendChild(title);
+
+        const spacer = document.createElement('span');
+        spacer.className = 'service-top-bar-spacer';
+        bar.appendChild(spacer);
+
+        const statusLabel = document.createElement('span');
+        statusLabel.className = 'service-status-label';
+        statusLabel.textContent = 'checking...';
+        bar.appendChild(statusLabel);
+
+        const led = document.createElement('span');
+        led.className = 'service-status-led';
+        bar.appendChild(led);
+
+        // Check connection status
+        this._checkServiceStatus(key, led, statusLabel);
+
+        return bar;
+    }
+
+    _checkServiceStatus(key, led, label) {
+        fetch(`/${key}/`, { method: 'HEAD', mode: 'no-cors' })
+            .then(() => {
+                led.classList.add('connected');
+                led.classList.remove('disconnected');
+                label.textContent = 'Connected';
+            })
+            .catch(() => {
+                led.classList.add('disconnected');
+                led.classList.remove('connected');
+                label.textContent = 'unreachable';
+            });
     }
 
     _onTabClosed(key) {
