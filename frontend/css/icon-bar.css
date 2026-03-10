@@ -45,12 +45,10 @@
 }
 
 .icon-bar-btn:hover {
-    color: #ffcc00;
     background: #3d3d3d;
 }
 
 .icon-bar-btn-active {
-    color: #ffcc00;
     background: transparent;
 }
 

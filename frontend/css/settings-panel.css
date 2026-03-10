@@ -1,4 +1,32 @@
-/* Settings panel styles (used by DisplaySettingsPanel inside jsPanel) */
+/* Settings panel styles (used by DisplaySettingsPanel in center tab) */
+.settings-panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    max-width: 480px;
+}
+
+/* Section heading + divider */
+.settings-section-heading {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-primary);
+    margin-top: 18px;
+}
+
+.settings-section-heading:first-child {
+    margin-top: 0;
+}
+
+.settings-section-hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 6px 0 8px;
+}
+
+/* Toggle / select rows */
 .settings-toggle-row {
     display: flex;
     align-items: center;

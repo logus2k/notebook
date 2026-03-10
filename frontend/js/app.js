@@ -152,7 +152,7 @@ class App {
                 onImport: () => this._onImportNotebook(),
                 onSave: () => this._editor.save(),
                 onExport: () => this._editor.export(),
-                onSettingsToggle: () => this._displaySettingsPanel.toggle(),
+                onSettingsToggle: () => this._openSettingsTab(),
                 getCells: () => this._editor.cells,
                 onSelectCell: (index) => this._editor.selection.selectCell(index),
             }
@@ -503,9 +503,11 @@ class App {
                 closable: true,
             });
             this._iconBar.clearActive();
+            this._iconBar.setTabIndicator(key, true);
         } else if (key === 'settings') {
-            this._displaySettingsPanel.toggle();
+            this._openSettingsTab();
             this._iconBar.clearActive();
+            this._iconBar.setTabIndicator(key, true);
         }
     }
 
@@ -513,9 +515,11 @@ class App {
         const notebookContainer = document.getElementById('notebook-container');
         const serviceContainer = document.getElementById('service-tab-container');
 
-        // Detach workspace detail before clearing (preserve DOM state)
+        // Detach reusable elements before clearing (preserve DOM state)
         const wsDetail = serviceContainer.querySelector('.explorer-detail-pane');
         if (wsDetail) wsDetail.remove();
+        const settingsEl = serviceContainer.querySelector('.settings-panel-content');
+        if (settingsEl) settingsEl.remove();
 
         if (key === 'notebook') {
             // Show notebook, hide service container
@@ -528,6 +532,13 @@ class App {
             serviceContainer.innerHTML = '';
             serviceContainer.appendChild(this._buildWorkspaceTopBar());
             serviceContainer.appendChild(this._explorerPanel.detailElement);
+        } else if (key === 'settings') {
+            // Show settings pane
+            notebookContainer.style.display = 'none';
+            serviceContainer.style.display = 'flex';
+            serviceContainer.innerHTML = '';
+            serviceContainer.appendChild(this._buildSettingsTopBar());
+            serviceContainer.appendChild(this._displaySettingsPanel.element);
         } else {
             // Show service iframe, hide notebook
             notebookContainer.style.display = 'none';
@@ -586,6 +597,27 @@ class App {
         });
     }
 
+    _openSettingsTab() {
+        this._tabBar.addTab({
+            key: 'settings',
+            label: 'Settings',
+            type: 'settings',
+            closable: true,
+        });
+    }
+
+    _buildSettingsTopBar() {
+        const bar = document.createElement('div');
+        bar.className = 'service-top-bar';
+
+        const title = document.createElement('span');
+        title.className = 'service-top-bar-title';
+        title.textContent = 'Settings';
+        bar.appendChild(title);
+
+        return bar;
+    }
+
     _buildWorkspaceTopBar() {
         const bar = document.createElement('div');
         bar.className = 'service-top-bar';
@@ -618,6 +650,8 @@ class App {
             this._serviceIframes[key].remove();
             delete this._serviceIframes[key];
         }
+        // Remove accent bar from the service icon
+        this._iconBar.setTabIndicator(key, false);
     }
 
     _generateUserName() {

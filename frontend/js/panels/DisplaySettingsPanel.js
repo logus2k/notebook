@@ -2,103 +2,40 @@ import { CellEditor, editorThemes } from '../CellEditor.js';
 import { terminalThemes, setTerminalTheme } from '../TerminalThemes.js';
 
 /**
- * DisplaySettingsPanel - jsPanel floating window for display settings.
+ * DisplaySettingsPanel - Settings UI hosted in the center tab pane.
+ * Organized into sections: Editor, Terminal, Notebook.
  */
 export class DisplaySettingsPanel {
     constructor() {
-        this._panel = null;
+        this._element = document.createElement('div');
+        this._element.className = 'settings-panel-content';
+        this._buildContent(this._element);
     }
 
-    open() {
-        if (this._panel) {
-            this._panel.front();
-            return;
-        }
-
-        this._panel = jsPanel.create({
-            id: 'display-settings-panel',
-            headerTitle: 'Settings',
-            theme: 'none',
-            borderRadius: '5px',
-            border: '1px solid var(--border-color)',
-            boxShadow: 3,
-            position: { my: 'right-top', at: 'right-top', offsetX: -60, offsetY: 100 },
-            panelSize: { width: 320, height: 400 },
-            headerControls: { minimize: 'remove', smallify: 'remove', normalize: 'remove', maximize: 'remove' },
-            onclosed: () => { this._panel = null; },
-            callback: (panel) => {
-                this._panel = panel;
-                this._buildContent(panel.content);
-            }
-        });
-    }
-
-    close() {
-        if (this._panel) {
-            this._panel.close();
-            this._panel = null;
-        }
-    }
-
-    toggle() {
-        if (this._panel) this.close();
-        else this.open();
+    get element() {
+        return this._element;
     }
 
     _buildContent(container) {
-        container.innerHTML = '';
-        container.style.padding = '12px 16px';
-        container.style.overflowY = 'auto';
+        // --- Editor section ---
+        this._addSection(container, 'Editor');
+        this._addSelectRow(container, 'Theme', 'settings-theme-select',
+            Object.keys(editorThemes),
+            localStorage.getItem('notebook-editor-theme') || 'Tomorrow',
+            (val) => CellEditor.setTheme(val),
+        );
 
-        // Editor theme selector
-        const themeRow = document.createElement('div');
-        themeRow.className = 'settings-toggle-row';
+        // --- Terminal section ---
+        this._addSection(container, 'Terminal');
+        this._addSelectRow(container, 'Theme', 'settings-theme-select',
+            Object.keys(terminalThemes),
+            localStorage.getItem('notebook-terminal-theme') || 'Adventure',
+            (val) => setTerminalTheme(val),
+        );
 
-        const themeLabel = document.createElement('label');
-        themeLabel.textContent = 'Editor Theme';
+        // --- Notebook section ---
+        this._addSection(container, 'Notebook');
 
-        const themeSelect = document.createElement('select');
-        themeSelect.className = 'settings-theme-select';
-        const savedTheme = localStorage.getItem('notebook-editor-theme') || 'Tomorrow';
-        for (const name of Object.keys(editorThemes)) {
-            const opt = document.createElement('option');
-            opt.value = name;
-            opt.textContent = name;
-            if (name === savedTheme) opt.selected = true;
-            themeSelect.appendChild(opt);
-        }
-        themeSelect.addEventListener('change', () => {
-            CellEditor.setTheme(themeSelect.value);
-        });
-
-        themeRow.append(themeLabel, themeSelect);
-        container.appendChild(themeRow);
-
-        // Terminal theme selector
-        const termRow = document.createElement('div');
-        termRow.className = 'settings-toggle-row';
-
-        const termLabel = document.createElement('label');
-        termLabel.textContent = 'Terminal Theme';
-
-        const termSelect = document.createElement('select');
-        termSelect.className = 'settings-theme-select';
-        const savedTermTheme = localStorage.getItem('notebook-terminal-theme') || 'Adventure';
-        for (const name of Object.keys(terminalThemes)) {
-            const opt = document.createElement('option');
-            opt.value = name;
-            opt.textContent = name;
-            if (name === savedTermTheme) opt.selected = true;
-            termSelect.appendChild(opt);
-        }
-        termSelect.addEventListener('change', () => {
-            setTerminalTheme(termSelect.value);
-        });
-
-        termRow.append(termLabel, termSelect);
-        container.appendChild(termRow);
-
-        // Display toggles
         const toggles = [
             { key: 'show-cell-titles', label: 'Cell Titles', bodyClass: 'hide-cell-titles', defaultOn: true },
             { key: 'show-cell-borders', label: 'Cell Borders', bodyClass: 'hide-cell-borders', defaultOn: true },
@@ -139,5 +76,38 @@ export class DisplaySettingsPanel {
             row.append(label, toggle);
             container.appendChild(row);
         }
+    }
+
+    _addSection(container, title) {
+        const heading = document.createElement('div');
+        heading.className = 'settings-section-heading';
+        heading.textContent = title;
+        container.appendChild(heading);
+
+        const hr = document.createElement('hr');
+        hr.className = 'settings-section-hr';
+        container.appendChild(hr);
+    }
+
+    _addSelectRow(container, label, className, options, selectedValue, onChange) {
+        const row = document.createElement('div');
+        row.className = 'settings-toggle-row';
+
+        const lbl = document.createElement('label');
+        lbl.textContent = label;
+
+        const select = document.createElement('select');
+        select.className = className;
+        for (const name of options) {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            if (name === selectedValue) opt.selected = true;
+            select.appendChild(opt);
+        }
+        select.addEventListener('change', () => onChange(select.value));
+
+        row.append(lbl, select);
+        container.appendChild(row);
     }
 }
