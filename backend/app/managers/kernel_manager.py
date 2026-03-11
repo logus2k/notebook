@@ -128,6 +128,16 @@ class KernelManagerService:
             logger.warning(f"Kernel client not immediately ready: {e}")
             kc.stop_channels()
 
+        # Run silent init code to configure the kernel environment
+        if session._cached_client:
+            init_code = (
+                "try:\n"
+                "    import plotly.io as pio; pio.renderers.default = 'notebook'\n"
+                "except Exception:\n"
+                "    pass\n"
+            )
+            session._cached_client.execute(init_code, silent=True, store_history=False)
+
         logger.info(f"Kernel started: {session_id} ({display_name})")
         return session
 

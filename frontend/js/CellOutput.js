@@ -224,6 +224,8 @@ export class CellOutput {
         const rendered = this._renderOutput(output);
         if (rendered) {
             this._el.appendChild(rendered);
+            // Activate any scripts in the rendered output (innerHTML won't execute them)
+            if (rendered.querySelector('script')) this._activateScripts(rendered);
         }
     }
 
@@ -413,6 +415,16 @@ export class CellOutput {
         div.className = 'output-display-html';
         div.innerHTML = htmlString;
         return div;
+    }
+
+    /** Activate scripts inside an element after it's been inserted into the DOM. */
+    _activateScripts(el) {
+        for (const old of el.querySelectorAll('script')) {
+            const s = document.createElement('script');
+            for (const attr of old.attributes) s.setAttribute(attr.name, attr.value);
+            s.textContent = old.textContent;
+            old.replaceWith(s);
+        }
     }
 
     _renderJSON(jsonData) {

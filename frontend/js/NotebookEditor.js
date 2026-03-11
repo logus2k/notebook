@@ -473,8 +473,17 @@ export class NotebookEditor {
         this._kernelStatus = status;
         this._kernelDot.className = `kernel-status-dot ${status}`;
         this._updateKernelLabel();
-        if (status === 'idle' && (prev === 'starting' || prev === 'busy')) {
+        if (status === 'idle' && prev === 'starting') {
             this._flashKernelStatus('Ready');
+            const label = this._venvName
+                ? this._displayName ? `${this._venvName} (${this._displayName})` : this._venvName
+                : 'Kernel';
+            notify.success(`${label} started`);
+        } else if (status === 'dead' && prev === 'starting') {
+            const label = this._venvName
+                ? this._displayName ? `${this._venvName} (${this._displayName})` : this._venvName
+                : 'Kernel';
+            notify.error(`${label} failed to start`);
         }
     }
 
