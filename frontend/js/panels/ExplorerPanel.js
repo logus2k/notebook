@@ -1,4 +1,5 @@
 import { getTerminalTheme, onTerminalThemeChange } from '../TerminalThemes.js';
+import { notify } from '../Notify.js';
 
 /**
  * ExplorerPanel - Workspace tree (sidebar) and detail pane (center tab).
@@ -1411,8 +1412,9 @@ export class ExplorerPanel {
         cancelBtn.textContent = 'Cancel Installation';
         installBtn.parentNode.insertBefore(cancelBtn, installBtn.nextSibling);
 
-        // Open terminal panel
+        // Open terminal panel and reset title
         await termState.openPanel();
+        this._setTerminalPanelTitle(termState, envName, null);
 
         term.writeln(`\x1b[1m> pip install ${tokens.join(' ')}\x1b[0m\r\n`);
 
@@ -1460,6 +1462,9 @@ export class ExplorerPanel {
                 }
                 if (!hasError && !installState.cancelled) {
                     textarea.value = '';
+                    term.writeln('\r\n\x1b[32m✓ Installation complete\x1b[0m');
+                    this._setTerminalPanelTitle(termState, envName, 'done');
+                    notify.success(`${envName}: packages installed successfully`);
                     // Refresh package list
                     this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
                     return;
@@ -1470,7 +1475,13 @@ export class ExplorerPanel {
             hasError = true;
         } finally {
             if (installState.cancelled) {
-                term.writeln('\r\n\x1b[33m[Cancelled]\x1b[0m');
+                term.writeln('\r\n\x1b[33m✗ Installation cancelled\x1b[0m');
+                this._setTerminalPanelTitle(termState, envName, 'cancelled');
+                notify.error(`${envName}: installation cancelled`);
+            } else if (hasError) {
+                term.writeln('\r\n\x1b[31m✗ Installation failed\x1b[0m');
+                this._setTerminalPanelTitle(termState, envName, 'failed');
+                notify.error(`${envName}: installation failed`);
             }
             installState.done = true;
             // Restore Install button if it's still in the DOM
@@ -1479,6 +1490,15 @@ export class ExplorerPanel {
                 installBtn.style.display = '';
             }
         }
+    }
+
+    _setTerminalPanelTitle(termState, envName, status) {
+        if (!termState.panel) return;
+        const statusLabel = status === 'done' ? '✓ done'
+            : status === 'failed' ? '✗ failed'
+            : status === 'cancelled' ? '✗ cancelled'
+            : '';
+        termState.panel.setHeaderTitle(`Terminal - ${envName} ${statusLabel}`);
     }
 
     _parseInstallInput(text) {
