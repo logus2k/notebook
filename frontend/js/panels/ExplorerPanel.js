@@ -728,13 +728,13 @@ export class ExplorerPanel {
             termContainer.style.background = t.background;
         });
         term.open(termContainer);
-        term.writeln('\x1b[2mWaiting for commands...\x1b[0m');
+        term.writeln('\x1b[38;2;206;206;206mWaiting for commands...\x1b[0m');
 
         const fitTerminal = () => {
             const dims = term._core._renderService.dimensions;
             if (!dims || !dims.css?.cell?.height || !dims.css?.cell?.width) return;
-            const cols = Math.max(20, Math.floor(termArea.clientWidth / dims.css.cell.width));
-            const rows = Math.max(4, Math.floor(termArea.clientHeight / dims.css.cell.height));
+            const cols = Math.max(20, Math.floor(termContainer.clientWidth / dims.css.cell.width));
+            const rows = Math.max(4, Math.floor(termContainer.clientHeight / dims.css.cell.height));
             if (rows !== term.rows || cols !== term.cols) term.resize(cols, rows);
         };
         const resizeObs = new ResizeObserver(() => fitTerminal());
@@ -1603,7 +1603,7 @@ export class ExplorerPanel {
                         term.open(termContainer);
                         state.termOpened = true;
                         if (!state.hasContent) {
-                            term.writeln('\x1b[2mWaiting for commands...\x1b[0m');
+                            term.writeln('\x1b[38;2;206;206;206mWaiting for commands...\x1b[0m');
                         }
                     }
                     const resizeObs = new ResizeObserver(() => fitTerminal());

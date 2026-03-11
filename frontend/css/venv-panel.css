@@ -145,9 +145,11 @@
     flex: 1;
     min-height: 120px;
     margin-top: 8px;
+    margin-bottom: 13px;
     border-radius: var(--radius);
     overflow: hidden;
     background: #1e1e20;
+    padding: 15px;
 }
 
 /* Package detail section */
