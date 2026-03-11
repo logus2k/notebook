@@ -326,11 +326,25 @@ export class NotebookEditor {
         controls.appendChild(mkBtn(ICONS.clearAll, 'Clear All Outputs', () => this.clearAllOutputs()));
         bar.appendChild(controls);
 
-        // Right: Import + Export
+        // Right: kernel selector
         const rightGroup = document.createElement('div');
         rightGroup.className = 'second-bar-right';
-        rightGroup.appendChild(mkBtn(ICONS.upload, 'Import', () => this._onImport?.()));
-        rightGroup.appendChild(mkBtn(ICONS.download, 'Export', () => this._onExport?.()));
+
+        this._kernelItem = document.createElement('div');
+        this._kernelItem.className = 'info-bar-kernel';
+        this._kernelItem.addEventListener('click', () => {
+            if (this._onKernelClick) this._onKernelClick();
+        });
+
+        this._kernelDot = document.createElement('span');
+        this._kernelDot.className = 'kernel-status-dot dead';
+
+        this._kernelLabel = document.createElement('span');
+        this._kernelLabel.className = 'info-bar-label';
+        this._kernelLabel.textContent = 'Select Kernel';
+
+        this._kernelItem.append(this._kernelDot, this._kernelLabel);
+        rightGroup.appendChild(this._kernelItem);
         bar.appendChild(rightGroup);
 
         return bar;
@@ -338,8 +352,6 @@ export class NotebookEditor {
 
     setOnPostItToggle(cb) { this._onPostItToggle = cb; }
     setOnSave(cb) { this._onSave = cb; }
-    setOnImport(cb) { this._onImport = cb; }
-    setOnExport(cb) { this._onExport = cb; }
 
     updateNotesBadge(count) {
         if (!this._secondBarNotesBadge) return;
@@ -367,23 +379,7 @@ export class NotebookEditor {
         this._notebookLabel.className = 'info-bar-text';
         this._notebookLabel.textContent = '';
 
-        // Right: kernel selector
-        this._kernelItem = document.createElement('div');
-        this._kernelItem.className = 'info-bar-kernel';
-        this._kernelItem.addEventListener('click', () => {
-            if (this._onKernelClick) this._onKernelClick();
-        });
-
-        this._kernelDot = document.createElement('span');
-        this._kernelDot.className = 'kernel-status-dot dead';
-
-        this._kernelLabel = document.createElement('span');
-        this._kernelLabel.className = 'info-bar-label';
-        this._kernelLabel.textContent = 'Select Kernel';
-
-        this._kernelItem.append(this._kernelDot, this._kernelLabel);
-
-        this._topBar.append(this._projectLabel, this._topBarSep, this._notebookLabel, this._kernelItem);
+        this._topBar.append(this._projectLabel, this._topBarSep, this._notebookLabel);
 
         // Listen for kernel status
         this._client.on('kernel:status', (data) => this._setKernelStatus(data.status));

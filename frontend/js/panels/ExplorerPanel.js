@@ -693,6 +693,9 @@ export class ExplorerPanel {
         errorEl.className = 'explorer-form-error';
         form.appendChild(errorEl);
 
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex; gap:8px; align-items:center;';
+
         const createBtn = document.createElement('button');
         createBtn.className = 'explorer-btn primary';
         createBtn.textContent = 'Create Notebook';
@@ -700,7 +703,15 @@ export class ExplorerPanel {
             const extPath = locationSelect ? locationSelect.value : null;
             this._createNotebook(projectId, nameInput, createBtn, errorEl, extPath);
         });
-        form.appendChild(createBtn);
+        btnRow.appendChild(createBtn);
+
+        const importBtn = document.createElement('button');
+        importBtn.className = 'explorer-btn primary';
+        importBtn.textContent = 'Import Notebook';
+        importBtn.addEventListener('click', () => this._importNotebook(projectId, errorEl));
+        btnRow.appendChild(importBtn);
+
+        form.appendChild(btnRow);
 
         nameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') createBtn.click();
@@ -759,20 +770,56 @@ export class ExplorerPanel {
         });
         actions.appendChild(openBtn);
 
-        const autoLoadLabel = document.createElement('label');
-        autoLoadLabel.className = 'explorer-autoload-label';
-        const autoLoadCb = document.createElement('input');
-        autoLoadCb.type = 'checkbox';
-        autoLoadCb.checked = this._autoLoad;
-        autoLoadCb.addEventListener('change', () => {
-            this._autoLoad = autoLoadCb.checked;
-            if (this._autoLoad && this._callbacks.onNotebookSelect) {
-                this._callbacks.onNotebookSelect(projectId, notebookName);
+        const exportBtn = document.createElement('button');
+        exportBtn.className = 'explorer-btn primary';
+        exportBtn.textContent = 'Export Notebook';
+        exportBtn.addEventListener('click', async () => {
+            try {
+                const resp = await fetch(
+                    `api/projects/${encodeURIComponent(projectId)}/notebooks/${encodeURIComponent(notebookName)}`
+                );
+                if (!resp.ok) throw new Error('Failed to fetch notebook');
+                const content = await resp.json();
+                const json = JSON.stringify(content, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = notebookName;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                alert(`Export error: ${err.message}`);
             }
         });
-        autoLoadLabel.appendChild(autoLoadCb);
-        autoLoadLabel.appendChild(document.createTextNode(' Auto-load'));
-        actions.appendChild(autoLoadLabel);
+        actions.appendChild(exportBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'explorer-btn danger';
+        delBtn.textContent = 'Delete Notebook';
+        delBtn.style.marginLeft = 'auto';
+        delBtn.addEventListener('click', async () => {
+            if (!confirm(`Delete notebook "${notebookName}"?`)) return;
+            try {
+                const resp = await fetch(
+                    `api/projects/${encodeURIComponent(projectId)}/notebooks/${encodeURIComponent(notebookName)}`,
+                    { method: 'DELETE' }
+                );
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to delete notebook');
+                }
+                const nbNode = this._tree.findKey(`notebook:${projectId}:${notebookName}`);
+                if (nbNode) nbNode.remove();
+                if (this._callbacks.onNotebookDeleted) {
+                    this._callbacks.onNotebookDeleted(projectId, notebookName);
+                }
+                this._showWelcomeDetail();
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        });
+        actions.appendChild(delBtn);
 
         this._detailEl.appendChild(actions);
 
@@ -829,34 +876,6 @@ export class ExplorerPanel {
             // Summary is optional — fail silently
         }
 
-        // Bottom action bar
-        const actionBar = this._createActionBar();
-        const delBtn = document.createElement('button');
-        delBtn.className = 'explorer-btn danger';
-        delBtn.textContent = 'Delete Notebook';
-        delBtn.addEventListener('click', async () => {
-            if (!confirm(`Delete notebook "${notebookName}"?`)) return;
-            try {
-                const resp = await fetch(
-                    `api/projects/${encodeURIComponent(projectId)}/notebooks/${encodeURIComponent(notebookName)}`,
-                    { method: 'DELETE' }
-                );
-                if (!resp.ok) {
-                    const err = await resp.json().catch(() => ({}));
-                    throw new Error(err.detail || 'Failed to delete notebook');
-                }
-                const nbNode = this._tree.findKey(`notebook:${projectId}:${notebookName}`);
-                if (nbNode) nbNode.remove();
-                if (this._callbacks.onNotebookDeleted) {
-                    this._callbacks.onNotebookDeleted(projectId, notebookName);
-                }
-                this._showWelcomeDetail();
-            } catch (err) {
-                alert(`Error: ${err.message}`);
-            }
-        });
-        actionBar.appendChild(delBtn);
-        this._detailRoot.appendChild(actionBar);
     }
 
     async _showEnvDetail(envName, runtimeId, displayName) {
@@ -878,9 +897,10 @@ export class ExplorerPanel {
             this._detailEl.appendChild(statusTag);
         }
 
+        const actions = document.createElement('div');
+        actions.className = 'explorer-detail-actions';
+
         if (!isSelected) {
-            const actions = document.createElement('div');
-            actions.className = 'explorer-detail-actions';
             const selectBtn = document.createElement('button');
             selectBtn.className = 'explorer-btn primary';
             selectBtn.textContent = 'Activate Environment';
@@ -892,8 +912,37 @@ export class ExplorerPanel {
                 this._showEnvDetail(envName, runtimeId, displayName);
             });
             actions.appendChild(selectBtn);
-            this._detailEl.appendChild(actions);
         }
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'explorer-btn danger';
+        delBtn.textContent = 'Delete Environment';
+        delBtn.style.marginLeft = 'auto';
+        delBtn.addEventListener('click', async () => {
+            if (!confirm(`Delete environment "${envName}"?`)) return;
+            try {
+                await fetch(`api/envs/${runtimeId}/${envName}`, { method: 'DELETE' });
+                const delKey = `${runtimeId}:${envName}`;
+                const termState = this._envTerminals[delKey];
+                if (termState) {
+                    if (termState.panel) try { termState.panel.close(); } catch (e) {}
+                    if (termState.termOpened) termState.term.dispose();
+                    delete this._envTerminals[delKey];
+                }
+                delete this._activeInstalls[delKey];
+                if (this._callbacks.onVenvDeleted) {
+                    this._callbacks.onVenvDeleted(envName);
+                }
+                const envNode = this._tree.findKey(`env:${runtimeId}:${envName}`);
+                if (envNode) envNode.remove();
+                this._showWelcomeDetail();
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        });
+        actions.appendChild(delBtn);
+
+        this._detailEl.appendChild(actions);
 
         // Packages section — inline
         const pkgSection = document.createElement('div');
@@ -1039,36 +1088,6 @@ export class ExplorerPanel {
             loading.innerHTML = `<span>Error: ${err.message}</span>`;
         }
 
-        // Bottom action bar
-        const actionBar = this._createActionBar();
-        const delBtn = document.createElement('button');
-        delBtn.className = 'explorer-btn danger';
-        delBtn.textContent = 'Delete Environment';
-        delBtn.addEventListener('click', async () => {
-            if (!confirm(`Delete environment "${envName}"?`)) return;
-            try {
-                await fetch(`api/envs/${runtimeId}/${envName}`, { method: 'DELETE' });
-                // Clean up persistent terminal for this env
-                const delKey = `${runtimeId}:${envName}`;
-                const termState = this._envTerminals[delKey];
-                if (termState) {
-                    if (termState.panel) try { termState.panel.close(); } catch (e) {}
-                    if (termState.termOpened) termState.term.dispose();
-                    delete this._envTerminals[delKey];
-                }
-                delete this._activeInstalls[delKey];
-                if (this._callbacks.onVenvDeleted) {
-                    this._callbacks.onVenvDeleted(envName);
-                }
-                const envNode = this._tree.findKey(`env:${runtimeId}:${envName}`);
-                if (envNode) envNode.remove();
-                this._showWelcomeDetail();
-            } catch (err) {
-                alert(`Error: ${err.message}`);
-            }
-        });
-        actionBar.appendChild(delBtn);
-        this._detailRoot.appendChild(actionBar);
     }
 
     // --- Create actions ---
@@ -1153,6 +1172,50 @@ export class ExplorerPanel {
             createBtn.disabled = false;
             createBtn.textContent = 'Create Notebook';
         }
+    }
+
+    _importNotebook(projectId, errorEl) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.ipynb';
+        input.addEventListener('change', async () => {
+            const file = input.files[0];
+            if (!file) return;
+            errorEl.textContent = '';
+            try {
+                const text = await file.text();
+                const content = JSON.parse(text);
+                if (!content.cells || !Array.isArray(content.cells)) {
+                    throw new Error('Invalid notebook: missing cells array');
+                }
+                const name = file.name.replace(/\.ipynb$/, '');
+                const resp = await fetch(`api/projects/${encodeURIComponent(projectId)}/notebooks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, content })
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || 'Failed to import notebook');
+                }
+                const nbName = name.endsWith('.ipynb') ? name : name + '.ipynb';
+                const projectNode = this._tree.findKey(`project:${projectId}`);
+                if (projectNode) {
+                    projectNode.addChildren([{
+                        title: nbName,
+                        key: `notebook:${projectId}:${nbName}`,
+                        icon: 'fa-solid fa-file',
+                    }]);
+                    projectNode.setExpanded(true);
+                }
+                if (this._callbacks.onNotebookSelect) {
+                    this._callbacks.onNotebookSelect(projectId, nbName);
+                }
+            } catch (err) {
+                errorEl.textContent = err.message;
+            }
+        });
+        input.click();
     }
 
     async _createEnv(nameInput, runtimeSelect, createBtn, errorEl, termArea) {
@@ -1592,13 +1655,11 @@ export class ExplorerPanel {
             }
         });
         actions.appendChild(openBtn);
-        this._detailEl.appendChild(actions);
 
-        // Delete button in action bar
-        const actionBar = this._createActionBar();
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'explorer-btn danger';
         deleteBtn.textContent = 'Delete Document';
+        deleteBtn.style.marginLeft = 'auto';
         deleteBtn.addEventListener('click', async () => {
             if (!confirm(`Delete document "${docName}"?`)) return;
             try {
@@ -1616,8 +1677,9 @@ export class ExplorerPanel {
                 alert(`Delete failed: ${err.message}`);
             }
         });
-        actionBar.appendChild(deleteBtn);
-        this._detailRoot.appendChild(actionBar);
+        actions.appendChild(deleteBtn);
+
+        this._detailEl.appendChild(actions);
     }
 
     async _uploadDocument(nameInput, catInput, fileInput, btn, errorEl) {

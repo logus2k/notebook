@@ -57,8 +57,10 @@ class App {
         this._sidebar = new SidebarPanel({
             onResize: () => this._tocPanel?.refresh(),
             onViewChange: (key) => {
-                // Sync icon bar — Workspace view maps to whichever icon was used
-                if (key !== 'projects') {
+                // Sync icon bar with sidebar view
+                if (key === 'projects') {
+                    this._iconBar.setActive('projects');
+                } else {
                     this._iconBar.clearActive();
                 }
             },
@@ -157,9 +159,7 @@ class App {
             document.getElementById('toolbar'),
             this._client,
             {
-                onImport: () => this._onImportNotebook(),
                 onSave: () => this._editor.save(),
-                onExport: () => this._editor.export(),
                 onSettingsToggle: () => this._openSettingsTab(),
                 getCells: () => this._editor.cells,
                 onSelectCell: (index) => this._editor.selection.selectCell(index),
@@ -201,8 +201,6 @@ class App {
         // Wire notebook bar callbacks to toolbar panels and file actions
         this._editor.setOnPostItToggle(() => this._toolbar._postItIndex.toggle());
         this._editor.setOnSave(() => this._toolbar._callbacks.onSave?.());
-        this._editor.setOnImport(() => this._toolbar._callbacks.onImport?.());
-        this._editor.setOnExport(() => this._toolbar._callbacks.onExport?.());
 
         // Initialize display settings panel (jsPanel)
         this._displaySettingsPanel = new DisplaySettingsPanel();
@@ -410,42 +408,6 @@ class App {
                 );
             }
         }
-    }
-
-    _onImportNotebook() {
-        if (!this._currentProject) {
-            alert('Select a project first');
-            return;
-        }
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.ipynb';
-        input.addEventListener('change', async () => {
-            const file = input.files[0];
-            if (!file) return;
-            try {
-                const text = await file.text();
-                const content = JSON.parse(text);
-                if (!content.cells || !Array.isArray(content.cells)) {
-                    throw new Error('Invalid notebook: missing cells array');
-                }
-                const name = file.name.replace(/\.ipynb$/, '');
-                const resp = await fetch(`api/projects/${this._currentProject}/notebooks`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, content })
-                });
-                if (!resp.ok) {
-                    const err = await resp.json();
-                    throw new Error(err.detail || 'Failed to import notebook');
-                }
-                const nbName = name.endsWith('.ipynb') ? name : name + '.ipynb';
-                this._onNotebookChange(this._currentProject, nbName);
-            } catch (err) {
-                alert(`Import error: ${err.message}`);
-            }
-        });
-        input.click();
     }
 
     _onStartKernel() {
