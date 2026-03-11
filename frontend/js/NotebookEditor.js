@@ -216,9 +216,9 @@ export class NotebookEditor {
 
     // --- Rendering ---
 
-    _onNotebookState(data) {
+    async _onNotebookState(data) {
         this._notebook = data.notebook;
-        this._render();
+        await this._render();
 
         const locks = data.locks || {};
         for (const [idx, lock] of Object.entries(locks)) {
