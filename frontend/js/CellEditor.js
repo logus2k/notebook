@@ -210,12 +210,12 @@ export class CellEditor {
         });
         sidebar.appendChild(dragHandle);
 
-        // Sidebar execution count (code cells only)
+        // Execution count (code cells only) — outside sidebar so it's always visible
         const sidebarExecCount = document.createElement('span');
         sidebarExecCount.className = 'cell-sidebar-exec-count';
         this._sidebarExecCountEl = sidebarExecCount;
         this._updateExecutionCount();
-        sidebar.appendChild(sidebarExecCount);
+        cell.appendChild(sidebarExecCount);
 
         // Header
         const header = document.createElement('div');

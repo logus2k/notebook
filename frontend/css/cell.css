@@ -423,18 +423,16 @@
 }
 
 .cell-sidebar-exec-count {
+    position: absolute;
+    left: -36px;
+    bottom: 0;
+    width: 32px;
+    text-align: center;
     font-size: 10px;
     color: #363636;
     font-family: var(--font-mono);
     white-space: nowrap;
-    padding-bottom: 4px;
-    margin-right: 4px;
-    opacity: 0;
-    transition: opacity 0.15s;
-}
-
-.cell:hover .cell-sidebar-exec-count {
-    opacity: 1;
+    padding-bottom: 2px;
 }
 
 .cell-drag-handle:active {

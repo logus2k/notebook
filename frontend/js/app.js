@@ -111,12 +111,13 @@ class App {
             }
         }
 
-        // Forward wheel events from page margins to notebook container
+        // Forward wheel events from page margins (dead zones) to notebook container
         const notebookContainer = document.getElementById('notebook-container');
         document.addEventListener('wheel', (e) => {
-            if (!notebookContainer.contains(e.target)) {
-                notebookContainer.scrollBy(0, e.deltaY);
-            }
+            if (notebookContainer.contains(e.target)) return;
+            // Don't forward if the target is inside a panel with its own scroll
+            if (e.target.closest('#sidebar-panel, #right-panel, #toolbar, .service-iframe-wrapper')) return;
+            notebookContainer.scrollBy(0, e.deltaY);
         }, { passive: true });
 
         // Initialize editor
