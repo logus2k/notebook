@@ -750,11 +750,17 @@ class App {
     }
 
     _checkServiceStatus(key, led, label) {
-        fetch(`/${key}/`, { method: 'HEAD', mode: 'no-cors' })
-            .then(() => {
-                led.classList.add('connected');
-                led.classList.remove('disconnected');
-                label.textContent = 'Connected';
+        fetch(`/${key}/`)
+            .then(res => {
+                if (res.ok) {
+                    led.classList.add('connected');
+                    led.classList.remove('disconnected');
+                    label.textContent = 'Connected';
+                } else {
+                    led.classList.add('disconnected');
+                    led.classList.remove('connected');
+                    label.textContent = 'unreachable';
+                }
             })
             .catch(() => {
                 led.classList.add('disconnected');
