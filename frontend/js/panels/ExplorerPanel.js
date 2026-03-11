@@ -1324,7 +1324,7 @@ export class ExplorerPanel {
                 border: '1px solid var(--border-color)', boxShadow: 3,
                 setStatus: 'normalized',
                 position: { my: 'center', at: 'center' },
-                panelSize: { width: 700, height: 400 },
+                panelSize: { width: 990, height: 450 },
                 headerControls: { minimize: 'remove', smallify: 'remove', normalize: 'remove', maximize: 'remove' },
                 onclosed: () => {
                     state.panel = null;
