@@ -144,30 +144,26 @@ export class NotebookDragDrop {
 
     _updateDropIndicator(clientY) {
         const cells = this._editor._cells;
-        let closestIndex = 0;
-        let closestDist = Infinity;
+        if (cells.length === 0) return;
 
-        for (let i = 0; i <= cells.length; i++) {
-            let y;
-            if (i < cells.length) {
-                y = cells[i].element.getBoundingClientRect().top;
-            } else {
-                const last = cells[cells.length - 1].element;
-                y = last.getBoundingClientRect().bottom;
-            }
-            const dist = Math.abs(clientY - y);
-            if (dist < closestDist) {
-                closestDist = dist;
-                closestIndex = i;
+        // Find drop index: cursor above a cell's midpoint → insert before it
+        let dropIndex = cells.length;
+        for (let i = 0; i < cells.length; i++) {
+            const rect = cells[i].element.getBoundingClientRect();
+            const mid = rect.top + rect.height / 2;
+            if (clientY < mid) {
+                dropIndex = i;
+                break;
             }
         }
 
-        if (closestIndex === this._dropTargetIndex) return;
+        if (dropIndex === this._dropTargetIndex) return;
 
         this._clearDropIndicator();
-        this._dropTargetIndex = closestIndex;
+        this._dropTargetIndex = dropIndex;
 
-        const indicator = this._editor._wrapperEl.children[closestIndex * 2];
+        // Offset by 2 to skip topBar and secondBar at the start of the wrapper
+        const indicator = this._editor._wrapperEl.children[2 + dropIndex * 2];
         if (indicator) {
             indicator.classList.add('drop-target');
         }
