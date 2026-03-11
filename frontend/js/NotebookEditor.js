@@ -45,6 +45,10 @@ export class NotebookEditor {
         // External change listener
         this._onChangeCallback = null;
 
+        // Loading state
+        this._onLoadCallback = null;
+        this._loadingOverlay = null;
+
         // Callback to ensure kernel is running before execution (returns Promise)
         this._ensureKernelCallback = null;
 
@@ -62,6 +66,7 @@ export class NotebookEditor {
     get notebookPath() { return this._notebookPath; }
     set onCellsChanged(fn) { this._onChangeCallback = fn; }
     set onEnsureKernel(fn) { this._ensureKernelCallback = fn; }
+    set onLoad(fn) { this._onLoadCallback = fn; }
 
     _setupContainerListeners() {
         // Open links in new tab
@@ -113,6 +118,7 @@ export class NotebookEditor {
         this._projectId = projectId;
         this._notebookPath = notebookPath;
         CellEditor.setProjectId(projectId);
+        this._showLoadingOverlay();
         this._client.openNotebook(projectId, notebookPath, userName);
     }
 
@@ -225,40 +231,94 @@ export class NotebookEditor {
         if (this._onChangeCallback) this._onChangeCallback();
     }
 
-    _render() {
+    async _render() {
         this._clear();
-        if (!this._notebook || !this._notebook.cells) return;
+        if (!this._notebook || !this._notebook.cells) {
+            this._hideLoadingOverlay();
+            return;
+        }
+
+        const cells = this._notebook.cells;
+        const total = cells.length;
 
         this._wrapperEl = document.createElement('div');
         this._wrapperEl.className = 'notebook';
         this._wrapperEl.appendChild(this._topBar);
         this._wrapperEl.appendChild(this._secondBar);
 
-        for (let i = 0; i < this._notebook.cells.length; i++) {
-            const cellData = this._notebook.cells[i];
+        if (total === 0) {
+            const addBtn = this._createAddCellButton(0);
+            addBtn.classList.add('add-cell-last');
+            this._wrapperEl.appendChild(addBtn);
+            this._container.appendChild(this._wrapperEl);
+            this.dragDrop.setup();
+            this._hideLoadingOverlay();
+            this._onRenderComplete();
+            return;
+        }
 
+        // Batch size: render N cells per frame to balance progress updates vs speed
+        const BATCH = Math.max(1, Math.ceil(total / 20));
+
+        for (let i = 0; i < total; i++) {
             if (i === 0) {
                 this._wrapperEl.appendChild(this._createAddCellButton(i));
             }
 
-            const cellEditor = this._createCellEditor(cellData, i);
+            const cellEditor = this._createCellEditor(cells[i], i);
             this._cells.push(cellEditor);
             this._wrapperEl.appendChild(cellEditor.element);
             const addBtn = this._createAddCellButton(i + 1);
-            if (i === this._notebook.cells.length - 1) {
-                addBtn.classList.add('add-cell-last');
-            }
+            if (i === total - 1) addBtn.classList.add('add-cell-last');
             this._wrapperEl.appendChild(addBtn);
-        }
 
-        if (this._notebook.cells.length === 0) {
-            const addBtn = this._createAddCellButton(0);
-            addBtn.classList.add('add-cell-last');
-            this._wrapperEl.appendChild(addBtn);
+            // Yield to the browser every BATCH cells to update progress
+            if ((i + 1) % BATCH === 0 && i < total - 1) {
+                this._updateLoadingProgress(Math.round(((i + 1) / total) * 100));
+                await new Promise(r => requestAnimationFrame(r));
+            }
         }
 
         this._container.appendChild(this._wrapperEl);
         this.dragDrop.setup();
+        this._hideLoadingOverlay();
+        this._onRenderComplete();
+    }
+
+    _showLoadingOverlay() {
+        if (this._loadingOverlay) this._loadingOverlay.remove();
+        const overlay = document.createElement('div');
+        overlay.className = 'notebook-loading-overlay';
+        overlay.innerHTML = `
+            <div class="notebook-loading-content">
+                <div class="notebook-loading-label">Loading notebook...</div>
+                <div class="notebook-loading-bar-track">
+                    <div class="notebook-loading-bar-fill"></div>
+                </div>
+                <div class="notebook-loading-percent">0%</div>
+            </div>`;
+        this._container.appendChild(overlay);
+        this._loadingOverlay = overlay;
+    }
+
+    _updateLoadingProgress(pct) {
+        if (!this._loadingOverlay) return;
+        const fill = this._loadingOverlay.querySelector('.notebook-loading-bar-fill');
+        const label = this._loadingOverlay.querySelector('.notebook-loading-percent');
+        if (fill) fill.style.width = `${pct}%`;
+        if (label) label.textContent = `${pct}%`;
+    }
+
+    _hideLoadingOverlay() {
+        if (this._loadingOverlay) {
+            this._loadingOverlay.remove();
+            this._loadingOverlay = null;
+        }
+    }
+
+    _onRenderComplete() {
+        notify.success('Notebook loaded');
+        if (this._onLoadCallback) this._onLoadCallback();
     }
 
     _createTopBar() {

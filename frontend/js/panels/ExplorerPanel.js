@@ -307,6 +307,40 @@ export class ExplorerPanel {
                 // Activate the node (triggers activate event which updates detail)
                 node.setActive(true);
                 return false;
+            },
+            dblclick: (e) => {
+                const key = e.node.key || '';
+
+                // Open notebook
+                if (key.startsWith('notebook:') && this._callbacks.onNotebookSelect) {
+                    const parts = key.replace('notebook:', '').split(':');
+                    this._callbacks.onNotebookSelect(parts[0], parts.slice(1).join(':'));
+                }
+                // Activate environment
+                else if (key.startsWith('env:')) {
+                    const parts = key.replace('env:', '').split(':');
+                    const runtimeId = parts[0];
+                    const envName = parts.slice(1).join(':');
+                    this._activeVenvName = envName;
+                    if (this._callbacks.onVenvSelect) {
+                        this._callbacks.onVenvSelect({
+                            name: envName,
+                            runtimeId,
+                            displayName: this._getDisplayName(runtimeId),
+                        });
+                    }
+                    this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
+                }
+                // Open document
+                else if (key.startsWith('doc:') && this._callbacks.onDocumentOpen) {
+                    const parts = key.replace('doc:', '').split(':');
+                    this._callbacks.onDocumentOpen({
+                        category: parts[0],
+                        name: parts.slice(1).join(':'),
+                    });
+                }
+
+                return false;
             }
         });
 
@@ -712,18 +746,9 @@ export class ExplorerPanel {
         importBtn.addEventListener('click', () => this._importNotebook(projectId, errorEl));
         btnRow.appendChild(importBtn);
 
-        form.appendChild(btnRow);
-
-        nameInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') createBtn.click();
-        });
-
-        this._detailEl.appendChild(form);
-
-        // Bottom action bar
-        const actionBar = this._createActionBar();
         const delBtn = document.createElement('button');
         delBtn.className = 'explorer-btn danger';
+        delBtn.style.marginLeft = 'auto';
         delBtn.textContent = 'Delete Project';
         delBtn.addEventListener('click', async () => {
             if (!confirm(`Delete project "${projectId}" and all its notebooks?`)) return;
@@ -743,8 +768,15 @@ export class ExplorerPanel {
                 alert(`Error: ${err.message}`);
             }
         });
-        actionBar.appendChild(delBtn);
-        this._detailRoot.appendChild(actionBar);
+        btnRow.appendChild(delBtn);
+
+        form.appendChild(btnRow);
+
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') createBtn.click();
+        });
+
+        this._detailEl.appendChild(form);
 
         nameInput.focus();
     }

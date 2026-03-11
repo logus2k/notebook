@@ -57,13 +57,12 @@
 .cell.executing::before {
     content: '';
     position: absolute;
-    left: -10px;
+    left: -4px;
     top: 5px;
     bottom: 5px;
     width: 3px;
     background: #e04040;
     border-radius: 4px;
-    box-shadow: 0 0 6px 2px rgba(224, 64, 64, 0.4);
     animation: executing-pulse 6s ease-in-out infinite;
 }
 

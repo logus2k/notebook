@@ -15,6 +15,10 @@ function get() {
             ripple: false,
             dismissible: true,
             position: { x: 'right', y: 'bottom' },
+            types: [
+                { type: 'success', background: '#3a9a5c' },
+                { type: 'error', background: '#c0392b' },
+            ],
         });
     }
     return instance;

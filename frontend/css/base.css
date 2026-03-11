@@ -141,6 +141,7 @@ html, body {
 }
 
 #notebook-container {
+    position: relative;
     overflow-y: scroll;
     padding: 0 10px 0px 0px;
     flex: 1;
@@ -466,5 +467,50 @@ html:has(.hide-bg-color) {
 .notyf__message {
     font-size: 14px;
     font-family: var(--font-sans);
+}
+
+/* Notebook loading overlay */
+.notebook-loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 252, 240, 0.85);
+    z-index: 10;
+}
+
+.notebook-loading-content {
+    text-align: center;
+    width: 280px;
+}
+
+.notebook-loading-label {
+    font-size: 14px;
+    font-family: var(--font-sans);
+    color: #555;
+    margin-bottom: 12px;
+}
+
+.notebook-loading-bar-track {
+    height: 6px;
+    background: #e0ddd0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.notebook-loading-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: #6096e5;
+    border-radius: 3px;
+    transition: width 0.15s ease;
+}
+
+.notebook-loading-percent {
+    font-size: 12px;
+    font-family: var(--font-sans);
+    color: #888;
+    margin-top: 6px;
 }
 
