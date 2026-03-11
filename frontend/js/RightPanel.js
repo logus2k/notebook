@@ -29,6 +29,16 @@ export class RightPanel {
         this._titleEl = document.createElement('div');
         this._titleEl.className = 'right-panel-title';
         this._titleBar.appendChild(this._titleEl);
+
+        // Status label + LED (right-aligned)
+        this._statusLabel = document.createElement('span');
+        this._statusLabel.className = 'right-panel-status-label';
+        this._titleBar.appendChild(this._statusLabel);
+
+        this._statusLed = document.createElement('span');
+        this._statusLed.className = 'right-panel-status-led';
+        this._titleBar.appendChild(this._statusLed);
+
         this._container.appendChild(this._titleBar);
 
         // Content area
@@ -78,6 +88,13 @@ export class RightPanel {
         if (this._activeView === key) {
             this._titleEl.textContent = title;
         }
+    }
+
+    /** Set the status LED: 'connected', 'disconnected', or 'connecting' */
+    setStatusLed(state) {
+        this._statusLed.className = `right-panel-status-led ${state}`;
+        const labels = { connected: 'Connected', disconnected: 'Disconnected', connecting: 'Connecting...' };
+        this._statusLabel.textContent = labels[state] || '';
     }
 
     get activeView() {

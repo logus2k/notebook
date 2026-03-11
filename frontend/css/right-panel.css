@@ -61,6 +61,42 @@
     letter-spacing: 0.02em;
     color: #333333;
     font-family: var(--font-sans);
+    flex: 1;
+}
+
+.right-panel-status-label {
+    font-size: 10px;
+    color: #666;
+    font-family: var(--font-sans);
+    flex-shrink: 0;
+}
+
+.right-panel-status-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #999;
+    transition: background 0.3s;
+}
+
+.right-panel-status-led.connected {
+    background: #3a9a5c;
+    box-shadow: 0 0 4px #3a9a5c88;
+}
+
+.right-panel-status-led.disconnected {
+    background: #c0392b;
+}
+
+.right-panel-status-led.connecting {
+    background: #e6a817;
+    animation: led-pulse 1.2s infinite ease-in-out;
+}
+
+@keyframes led-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
 }
 
 .right-panel-content {

@@ -13,6 +13,7 @@ import { RightPanel } from './RightPanel.js';
 import { TabBar } from './TabBar.js';
 import { TocPanel } from './TocPanel.js';
 import { DocumentViewer } from './panels/DocumentViewer.js';
+import { notify } from './Notify.js';
 
 
 /**
@@ -438,8 +439,14 @@ class App {
         this._rightPanel.show('assistant');
 
         this._chatService = new ChatService(this._chatPanel);
+        this._chatService.onStatusChange((status) => {
+            this._rightPanel.setStatusLed(status);
+            if (status === 'connected') notify.success('Assistant connected');
+            else if (status === 'disconnected') notify.error('Assistant disconnected');
+        });
         this._chatService.connect().catch(err => {
             console.error('Chat service connection failed:', err);
+            this._rightPanel.setStatusLed('disconnected');
         });
     }
 
@@ -789,22 +796,27 @@ class App {
     }
 
     _checkServiceStatus(key, led, label) {
+        const names = { airflow: 'Airflow', mlflow: 'MLflow', minio: 'MinIO' };
+        const name = names[key] || key;
         fetch(`/${key}/`)
             .then(res => {
                 if (res.ok) {
                     led.classList.add('connected');
                     led.classList.remove('disconnected');
                     label.textContent = 'Connected';
+                    notify.success(`${name} connected`);
                 } else {
                     led.classList.add('disconnected');
                     led.classList.remove('connected');
                     label.textContent = 'unreachable';
+                    notify.error(`${name} unreachable`);
                 }
             })
             .catch(() => {
                 led.classList.add('disconnected');
                 led.classList.remove('connected');
                 label.textContent = 'unreachable';
+                notify.error(`${name} unreachable`);
             });
     }
 

@@ -20,6 +20,9 @@ export class ChatService {
         this.threadId = crypto.randomUUID();
         this._streamBuffer = '';
 
+        // Status callback
+        this._onStatusChange = null;
+
         // Voice state
         this.voiceActive = false;
         this._audioContext = null;
@@ -49,12 +52,27 @@ export class ChatService {
         });
     }
 
+    onStatusChange(callback) {
+        this._onStatusChange = callback;
+    }
+
+    _emitStatus(status) {
+        if (this._onStatusChange) this._onStatusChange(status);
+    }
+
     async connect() {
+        this._emitStatus('connecting');
         this.agentClient = new AgentClient({ url: AGENT_URL });
         await this.agentClient.connect({
             onReconnect: () => {
                 console.log('[ChatService] Agent reconnected');
+                this._emitStatus('connected');
             },
+        });
+
+        // Track socket disconnect/reconnect
+        this.agentClient.socket.on('disconnect', () => {
+            this._emitStatus('disconnected');
         });
 
         // STT transcripts
@@ -88,6 +106,7 @@ export class ChatService {
         });
 
         console.log('[ChatService] Connected to agent server');
+        this._emitStatus('connected');
 
         // Auto-greet on first connection
         this.sendMessage('Hello!');
