@@ -65,7 +65,7 @@
 .icon-bar-btn-active::before {
     content: '';
     position: absolute;
-    left: 0;
+    left: -4px;
     top: 8px;
     bottom: 8px;
     width: 2px;
