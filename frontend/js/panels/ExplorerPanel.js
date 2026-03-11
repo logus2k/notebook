@@ -16,6 +16,7 @@ export class ExplorerPanel {
      *   onNotebookDeleted(projectId, notebookName)
      *   onProjectRenamed(oldId, newId)
      *   onNotebookRenamed(projectId, oldName, newName)
+     *   onSrcFileSelect(projectId, filename)
      */
     constructor(callbacks = {}) {
         this._callbacks = callbacks;
@@ -254,6 +255,8 @@ export class ExplorerPanel {
                 if (key === 'root-projects' || key === 'root-envs' || key === 'root-docs') type = 'root';
                 else if (key.startsWith('project:')) type = 'project';
                 else if (key.startsWith('notebook:')) type = 'notebook';
+                else if (key.startsWith('srcfolder:')) type = 'srcfolder';
+                else if (key.startsWith('srcfile:')) type = 'srcfile';
                 else if (key.startsWith('runtime:')) type = 'runtime';
                 else if (key.startsWith('env:')) type = 'env';
                 else if (key.startsWith('doccat:')) type = 'doccat';
@@ -266,13 +269,32 @@ export class ExplorerPanel {
                 if (key.startsWith('project:')) {
                     const projectId = key.replace('project:', '');
                     try {
-                        const resp = await fetch(`api/projects/${encodeURIComponent(projectId)}/notebooks`);
-                        const notebooks = await resp.json();
-                        return notebooks.map(nb => ({
+                        const [nbResp, srcResp] = await Promise.all([
+                            fetch(`api/projects/${encodeURIComponent(projectId)}/notebooks`),
+                            fetch(`api/projects/${encodeURIComponent(projectId)}/src`),
+                        ]);
+                        const notebooks = await nbResp.json();
+                        const srcFiles = srcResp.ok ? await srcResp.json() : [];
+                        const children = notebooks.map(nb => ({
                             title: nb.name,
                             key: `notebook:${projectId}:${nb.name}`,
                             icon: 'fa-solid fa-file',
                         }));
+                        // Add src/ folder with src files as direct children
+                        const srcChildren = srcFiles.map(f => ({
+                            title: f.name,
+                            key: `srcfile:${projectId}:${f.name}`,
+                            icon: 'fa-solid fa-file-code',
+                        }));
+                        children.push({
+                            title: 'src',
+                            key: `srcfolder:${projectId}`,
+                            icon: 'fa-solid fa-folder',
+                            folder: true,
+                            children: srcChildren,
+                            expanded: false,
+                        });
+                        return children;
                     } catch {
                         return [];
                     }
@@ -300,7 +322,13 @@ export class ExplorerPanel {
 
                 // Toggle expand for branch nodes on click
                 if (key === 'root-projects' || key === 'root-envs' || key === 'root-docs' ||
-                    key.startsWith('project:') || key.startsWith('runtime:') || key.startsWith('doccat:')) {
+                    key.startsWith('project:') || key.startsWith('runtime:') || key.startsWith('doccat:') ||
+                    key.startsWith('srcfolder:')) {
+                    // Wunderbaum strips `folder` from lazyLoad results,
+                    // so re-set it for srcfolder nodes to enable expansion
+                    if (key.startsWith('srcfolder:') && node.children) {
+                        node.folder = true;
+                    }
                     node.setExpanded(!node.isExpanded());
                 }
 
@@ -330,6 +358,11 @@ export class ExplorerPanel {
                         });
                     }
                     this._showEnvDetail(envName, runtimeId, this._getDisplayName(runtimeId));
+                }
+                // Open source file
+                else if (key.startsWith('srcfile:') && this._callbacks.onSrcFileSelect) {
+                    const parts = key.replace('srcfile:', '').split(':');
+                    this._callbacks.onSrcFileSelect(parts[0], parts.slice(1).join(':'));
                 }
                 // Open document
                 else if (key.startsWith('doc:') && this._callbacks.onDocumentOpen) {
@@ -386,6 +419,17 @@ export class ExplorerPanel {
             const projectId = rest.substring(0, colonIdx);
             const nbName = rest.substring(colonIdx + 1);
             return { crumbs: ['Projects', projectId, nbName] };
+        }
+        if (nodeKey.startsWith('srcfolder:')) {
+            const projectId = nodeKey.substring(10);
+            return { crumbs: ['Projects', projectId, 'src'] };
+        }
+        if (nodeKey.startsWith('srcfile:')) {
+            const rest = nodeKey.substring(8);
+            const colonIdx = rest.indexOf(':');
+            const projectId = rest.substring(0, colonIdx);
+            const fileName = rest.substring(colonIdx + 1);
+            return { crumbs: ['Projects', projectId, 'src', fileName] };
         }
         if (nodeKey.startsWith('runtime:')) {
             const runtimeId = nodeKey.substring(8);
@@ -483,6 +527,11 @@ export class ExplorerPanel {
         } else if (key.startsWith('notebook:')) {
             const parts = key.replace('notebook:', '').split(':');
             this._showNotebookDetail(parts[0], parts.slice(1).join(':'));
+        } else if (key.startsWith('srcfolder:')) {
+            this._showSrcFolderDetail(key.replace('srcfolder:', ''));
+        } else if (key.startsWith('srcfile:')) {
+            const parts = key.replace('srcfile:', '').split(':');
+            this._showSrcFileDetail(parts[0], parts.slice(1).join(':'));
         } else if (key.startsWith('runtime:')) {
             const rtId = key.substring(8);
             this._showRuntimeDetail(rtId, this._getDisplayName(rtId));
@@ -911,6 +960,94 @@ export class ExplorerPanel {
 
     }
 
+    _showSrcFolderDetail(projectId) {
+        this._detailEl.innerHTML = '';
+        this._addParentLabel(projectId);
+
+        const header = this._createDetailHeader('src', 'fa-solid fa-folder');
+        this._detailEl.appendChild(header);
+
+        // New Python File form
+        const form = document.createElement('div');
+        form.className = 'explorer-create-form';
+
+        const label = document.createElement('label');
+        label.textContent = 'New Python File';
+        form.appendChild(label);
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.placeholder = 'Filename (without .py)';
+        nameInput.spellcheck = false;
+        form.appendChild(nameInput);
+
+        const errorEl = document.createElement('div');
+        errorEl.className = 'explorer-form-error';
+        form.appendChild(errorEl);
+
+        const createBtn = document.createElement('button');
+        createBtn.className = 'explorer-btn primary';
+        createBtn.textContent = 'Create File';
+        createBtn.addEventListener('click', () => this._createSrcFile(projectId, nameInput, createBtn, errorEl));
+        form.appendChild(createBtn);
+
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') createBtn.click();
+        });
+
+        this._detailEl.appendChild(form);
+        nameInput.focus();
+    }
+
+    _showSrcFileDetail(projectId, filename) {
+        this._detailEl.innerHTML = '';
+        this._addParentLabel(projectId);
+
+        const header = this._createEditableHeader(filename, 'fa-solid fa-file-code', async (newName) => {
+            return this._renameSrcFile(projectId, filename, newName);
+        });
+        this._detailEl.appendChild(header);
+
+        const actions = document.createElement('div');
+        actions.className = 'explorer-detail-actions';
+
+        const openBtn = document.createElement('button');
+        openBtn.className = 'explorer-btn primary';
+        openBtn.textContent = 'Open File';
+        openBtn.addEventListener('click', () => {
+            if (this._callbacks.onSrcFileSelect) {
+                this._callbacks.onSrcFileSelect(projectId, filename);
+            }
+        });
+        actions.appendChild(openBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'explorer-btn danger';
+        delBtn.textContent = 'Delete File';
+        delBtn.style.marginLeft = 'auto';
+        delBtn.addEventListener('click', async () => {
+            if (!confirm(`Delete "${filename}"?`)) return;
+            try {
+                const resp = await fetch(
+                    `api/projects/${encodeURIComponent(projectId)}/src/${encodeURIComponent(filename)}`,
+                    { method: 'DELETE' }
+                );
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to delete file');
+                }
+                const node = this._tree.findKey(`srcfile:${projectId}:${filename}`);
+                if (node) node.remove();
+                this._showWelcomeDetail();
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        });
+        actions.appendChild(delBtn);
+
+        this._detailEl.appendChild(actions);
+    }
+
     async _showEnvDetail(envName, runtimeId, displayName) {
         this._detailEl.innerHTML = '';
         this._detailEl.style.overflowY = 'hidden';
@@ -1205,6 +1342,73 @@ export class ExplorerPanel {
             createBtn.disabled = false;
             createBtn.textContent = 'Create Notebook';
         }
+    }
+
+    async _createSrcFile(projectId, nameInput, createBtn, errorEl) {
+        const name = nameInput.value.trim();
+        if (!name) { nameInput.focus(); return; }
+        errorEl.textContent = '';
+        createBtn.disabled = true;
+        createBtn.textContent = 'Creating...';
+        try {
+            const resp = await fetch(`api/projects/${encodeURIComponent(projectId)}/src`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.detail || 'Failed to create file');
+            }
+            const result = await resp.json();
+            const filename = result.name;
+            // Add to tree under src/ folder
+            const srcNode = this._tree.findKey(`srcfolder:${projectId}`);
+            if (srcNode) {
+                srcNode.addChildren([{
+                    title: filename,
+                    key: `srcfile:${projectId}:${filename}`,
+                    icon: 'fa-solid fa-file-code',
+                }]);
+                srcNode.setExpanded(true);
+            }
+            // Open it
+            if (this._callbacks.onSrcFileSelect) {
+                this._callbacks.onSrcFileSelect(projectId, filename);
+            }
+        } catch (err) {
+            errorEl.textContent = err.message;
+        } finally {
+            createBtn.disabled = false;
+            createBtn.textContent = 'Create File';
+        }
+    }
+
+    async _renameSrcFile(projectId, oldName, newName) {
+        if (!newName.endsWith('.py')) newName += '.py';
+        const resp = await fetch(
+            `api/projects/${encodeURIComponent(projectId)}/src/${encodeURIComponent(oldName)}/rename`,
+            {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ new_name: newName })
+            }
+        );
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to rename file');
+        }
+        // Update tree node
+        const node = this._tree.findKey(`srcfile:${projectId}:${oldName}`);
+        if (node) {
+            node.title = newName;
+            node.key = `srcfile:${projectId}:${newName}`;
+            node.update();
+        }
+        // Refresh detail with new name
+        this._showSrcFileDetail(projectId, newName);
+        const newNode = this._tree.findKey(`srcfile:${projectId}:${newName}`);
+        if (newNode) newNode.setActive(true, { noEvents: true });
     }
 
     _importNotebook(projectId, errorEl) {
@@ -1922,11 +2126,16 @@ export class ExplorerPanel {
             node.title = newId;
             node.key = `project:${newId}`;
             node.update();
-            // Update child notebook keys
+            // Update child notebook, srcfolder, and srcfile keys
             node.visit(child => {
                 if (child.key && child.key.startsWith(`notebook:${oldId}:`)) {
                     const nbName = child.key.replace(`notebook:${oldId}:`, '');
                     child.key = `notebook:${newId}:${nbName}`;
+                } else if (child.key === `srcfolder:${oldId}`) {
+                    child.key = `srcfolder:${newId}`;
+                } else if (child.key && child.key.startsWith(`srcfile:${oldId}:`)) {
+                    const fname = child.key.replace(`srcfile:${oldId}:`, '');
+                    child.key = `srcfile:${newId}:${fname}`;
                 }
             });
         }

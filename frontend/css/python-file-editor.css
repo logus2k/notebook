@@ -1,0 +1,65 @@
+/* Python File Editor - CodeMirror-based editor for .py files */
+
+.python-file-editor {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.python-file-editor .cm-editor {
+    flex: 1;
+    min-height: 0;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.python-file-editor .cm-editor .cm-scroller {
+    overflow: auto;
+}
+
+.python-file-editor .cm-editor .cm-content {
+    padding: 8px 0 8px 4px;
+    caret-color: var(--text-primary);
+}
+
+.python-file-editor .cm-editor .cm-gutters {
+    background: var(--bg-tertiary);
+    border-right: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 0 5px 0 10px;
+}
+
+.python-file-editor .cm-editor .cm-lineNumbers .cm-gutterElement {
+    text-align: right;
+    padding: 0 4px;
+    font-size: 11px;
+    line-height: 19.5px;
+    color: var(--text-muted);
+}
+
+.python-file-editor .cm-editor .cm-activeLineGutter {
+    background: var(--bg-hover);
+}
+
+.python-file-editor .cm-editor .cm-activeLine {
+    background: rgba(108, 140, 255, 0.05);
+}
+
+.python-file-editor .cm-editor.cm-focused {
+    outline: none;
+}
+
+.python-file-editor .cm-editor .cm-selectionBackground {
+    background: rgba(108, 140, 255, 0.2) !important;
+}
+
+/* Python file tab container in service-tab-container */
+.pyfile-editor-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}

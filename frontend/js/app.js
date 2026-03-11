@@ -13,6 +13,7 @@ import { RightPanel } from './RightPanel.js';
 import { TabBar } from './TabBar.js';
 import { TocPanel } from './TocPanel.js';
 import { DocumentViewer } from './panels/DocumentViewer.js';
+import { PythonFileEditor } from './PythonFileEditor.js';
 import { notify } from './Notify.js';
 
 
@@ -36,6 +37,8 @@ class App {
         this._kernelRunning = false;
         this._chatVisible = true;
         this._documentViewer = null;
+        /** @type {Map<string, PythonFileEditor>} keyed by tab key "pyfile:{projectId}:{filename}" */
+        this._pyfileEditors = new Map();
     }
 
     async init() {
@@ -70,6 +73,7 @@ class App {
             onBreadcrumbChange: (crumbs) => this._updateWorkspaceBreadcrumbs(crumbs),
             onActivate: () => this._openWorkspaceTab(),
             onDocumentOpen: (doc) => this._openDocumentTab(doc),
+            onSrcFileSelect: (projectId, filename) => this._openPyFileTab(projectId, filename),
         });
 
         // Register sidebar views — tree from ExplorerPanel
@@ -246,7 +250,13 @@ class App {
         document.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
-                this._editor.save();
+                const activeKey = this._tabBar?.activeKey;
+                if (activeKey && activeKey.startsWith('pyfile:')) {
+                    const editor = this._pyfileEditors.get(activeKey);
+                    if (editor) editor.save();
+                } else {
+                    this._editor.save();
+                }
             }
             if ((e.ctrlKey || e.metaKey) && e.key === 'Home') {
                 e.preventDefault();
@@ -542,6 +552,8 @@ class App {
         if (settingsEl) settingsEl.remove();
         const docViewer = serviceContainer.querySelector('.document-viewer-wrapper');
         if (docViewer) docViewer.remove();
+        const pyfileWrapper = serviceContainer.querySelector('.pyfile-editor-wrapper');
+        if (pyfileWrapper) pyfileWrapper.remove();
         // Remove transient bars (workspace/settings/doc bars)
         for (const bar of serviceContainer.querySelectorAll('.service-top-bar:not(.service-wrapper .service-top-bar), .service-second-bar:not(.service-wrapper .service-second-bar)')) {
             bar.remove();
@@ -563,6 +575,18 @@ class App {
             serviceContainer.style.display = 'flex';
             serviceContainer.appendChild(this._buildSettingsBars());
             serviceContainer.appendChild(this._displaySettingsPanel.element);
+        } else if (key.startsWith('pyfile:')) {
+            // Show Python file editor
+            notebookContainer.style.display = 'none';
+            serviceContainer.style.display = 'flex';
+            serviceContainer.appendChild(this._buildPyFileBars(key));
+            const editor = this._pyfileEditors.get(key);
+            if (editor) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'pyfile-editor-wrapper';
+                wrapper.appendChild(editor.element);
+                serviceContainer.appendChild(wrapper);
+            }
         } else if (key.startsWith('doc:')) {
             // Show document viewer
             notebookContainer.style.display = 'none';
@@ -651,6 +675,66 @@ class App {
             type: 'settings',
             closable: true,
         });
+    }
+
+    _openPyFileTab(projectId, filename) {
+        const tabKey = `pyfile:${projectId}:${filename}`;
+        if (!this._pyfileEditors.has(tabKey)) {
+            const editor = new PythonFileEditor();
+            editor.onDirtyChange = (dirty) => {
+                // Update tab label with dirty indicator
+                const tab = this._tabBar._tabs.get(tabKey);
+                if (tab) {
+                    tab.label = dirty ? `${filename} *` : filename;
+                    this._tabBar._render();
+                }
+            };
+            editor.open(projectId, filename);
+            this._pyfileEditors.set(tabKey, editor);
+        }
+        this._tabBar.addTab({
+            key: tabKey,
+            label: filename,
+            type: 'pyfile',
+            closable: true,
+        });
+    }
+
+    _buildPyFileBars(key) {
+        const frag = document.createDocumentFragment();
+
+        const bar = document.createElement('div');
+        bar.className = 'service-top-bar';
+
+        const title = document.createElement('span');
+        title.className = 'service-top-bar-title';
+        // Extract filename from key "pyfile:{projectId}:{filename}"
+        const parts = key.substring(7).split(':');
+        const projectId = parts[0];
+        const filename = parts.slice(1).join(':');
+        title.textContent = filename;
+        bar.appendChild(title);
+
+        frag.appendChild(bar);
+
+        // Second bar with breadcrumbs
+        const secondBar = this._buildSecondBar();
+        const crumbs = ['Projects', projectId, filename];
+        crumbs.forEach((text, i) => {
+            if (i > 0) {
+                const sep = document.createElement('span');
+                sep.className = 'breadcrumb-sep';
+                sep.textContent = '|';
+                secondBar.appendChild(sep);
+            }
+            const span = document.createElement('span');
+            span.className = 'breadcrumb-segment';
+            if (i === crumbs.length - 1) span.classList.add('breadcrumb-current');
+            span.textContent = text;
+            secondBar.appendChild(span);
+        });
+        frag.appendChild(secondBar);
+        return frag;
     }
 
     _openDocumentTab(doc) {
@@ -822,6 +906,14 @@ class App {
     }
 
     _onTabClosed(key) {
+        // Clean up pyfile editor when its tab is closed
+        if (key.startsWith('pyfile:')) {
+            const editor = this._pyfileEditors.get(key);
+            if (editor) {
+                editor.destroy();
+                this._pyfileEditors.delete(key);
+            }
+        }
         // Clean up document viewer when its tab is closed
         if (key.startsWith('doc:')) {
             this._documentViewer.clear();

@@ -73,6 +73,13 @@ class KernelManagerService:
         if not kernel_cwd or not os.path.isdir(kernel_cwd):
             kernel_cwd = None
 
+        # Add project src/ directory to PYTHONPATH so notebooks can import source files
+        src_dir = os.path.join(PROJECTS_DIR, project_id, "src") if project_id else None
+        if src_dir and os.path.isdir(src_dir):
+            src_dir = os.path.realpath(src_dir)
+        else:
+            src_dir = None
+
         # Build a clean environment for the kernel subprocess.
         # The server process may lack GPU library paths, so we ensure
         # CUDA/WSL driver paths are included in LD_LIBRARY_PATH.
@@ -85,6 +92,11 @@ class KernelManagerService:
         extra = ":".join(p for p in gpu_lib_paths if os.path.isdir(p))
         if extra:
             kernel_env["LD_LIBRARY_PATH"] = f"{extra}:{existing_ld}" if existing_ld else extra
+
+        # Add project src/ to PYTHONPATH for notebook imports
+        if src_dir:
+            existing_pp = kernel_env.get("PYTHONPATH", "")
+            kernel_env["PYTHONPATH"] = f"{src_dir}:{existing_pp}" if existing_pp else src_dir
 
         # Run blocking kernel start in executor to avoid blocking the event loop
         kw = {"env": kernel_env}
