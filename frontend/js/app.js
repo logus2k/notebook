@@ -489,13 +489,22 @@ class App {
         const notebookContainer = document.getElementById('notebook-container');
         const serviceContainer = document.getElementById('service-tab-container');
 
-        // Detach reusable elements before clearing (preserve DOM state)
+        // Hide all persistent service wrappers
+        for (const wrapper of serviceContainer.querySelectorAll('.service-wrapper')) {
+            wrapper.style.display = 'none';
+        }
+
+        // Detach reusable elements (workspace, settings, docs) before clearing transient content
         const wsDetail = serviceContainer.querySelector('.explorer-detail-pane');
         if (wsDetail) wsDetail.remove();
         const settingsEl = serviceContainer.querySelector('.settings-panel-wrapper');
         if (settingsEl) settingsEl.remove();
         const docViewer = serviceContainer.querySelector('.document-viewer-wrapper');
         if (docViewer) docViewer.remove();
+        // Remove transient bars (workspace/settings/doc bars)
+        for (const bar of serviceContainer.querySelectorAll('.service-top-bar:not(.service-wrapper .service-top-bar), .service-second-bar:not(.service-wrapper .service-second-bar)')) {
+            bar.remove();
+        }
 
         if (key === 'notebook') {
             // Show notebook, hide service container
@@ -505,40 +514,44 @@ class App {
             // Show workspace detail pane
             notebookContainer.style.display = 'none';
             serviceContainer.style.display = 'flex';
-            serviceContainer.innerHTML = '';
             serviceContainer.appendChild(this._buildWorkspaceBars());
             serviceContainer.appendChild(this._explorerPanel.detailElement);
         } else if (key === 'settings') {
             // Show settings pane
             notebookContainer.style.display = 'none';
             serviceContainer.style.display = 'flex';
-            serviceContainer.innerHTML = '';
             serviceContainer.appendChild(this._buildSettingsBars());
             serviceContainer.appendChild(this._displaySettingsPanel.element);
         } else if (key.startsWith('doc:')) {
             // Show document viewer
             notebookContainer.style.display = 'none';
             serviceContainer.style.display = 'flex';
-            serviceContainer.innerHTML = '';
             serviceContainer.appendChild(this._buildDocumentBars(key));
             serviceContainer.appendChild(this._documentViewer.element);
         } else {
-            // Show service iframe, hide notebook
+            // Show service iframe (persistent wrapper)
             notebookContainer.style.display = 'none';
             serviceContainer.style.display = 'flex';
 
-            // Create or reuse iframe for this service
+            // Create persistent wrapper on first use
             if (!this._serviceIframes[key]) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'service-wrapper';
+                wrapper.dataset.serviceKey = key;
+                wrapper.style.cssText = 'display:flex; flex-direction:column; flex:1; min-height:0;';
+
+                wrapper.appendChild(this._buildServiceBars(key));
+
                 const iframe = document.createElement('iframe');
                 iframe.src = `/${key}`;
-                iframe.dataset.serviceKey = key;
-                this._serviceIframes[key] = iframe;
+                wrapper.appendChild(iframe);
+
+                serviceContainer.appendChild(wrapper);
+                this._serviceIframes[key] = wrapper;
             }
 
-            // Build service top bar + iframe
-            serviceContainer.innerHTML = '';
-            serviceContainer.appendChild(this._buildServiceBars(key));
-            serviceContainer.appendChild(this._serviceIframes[key]);
+            // Show the wrapper
+            this._serviceIframes[key].style.display = 'flex';
         }
     }
 
@@ -755,10 +768,9 @@ class App {
         if (key.startsWith('doc:')) {
             this._documentViewer.clear();
         }
-        // Remove cached iframe
+        // Hide persistent service wrapper (keep iframe alive)
         if (this._serviceIframes[key]) {
-            this._serviceIframes[key].remove();
-            delete this._serviceIframes[key];
+            this._serviceIframes[key].style.display = 'none';
         }
         // Remove accent bar from the service icon
         this._iconBar.setTabIndicator(key, false);
