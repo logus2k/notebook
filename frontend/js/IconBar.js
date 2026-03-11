@@ -26,6 +26,13 @@ export class IconBar {
     _build() {
         this._container.innerHTML = '';
 
+        // Logo at the very top
+        const logo = document.createElement('img');
+        logo.src = 'static/images/noted_logo_small.png';
+        logo.alt = 'noted';
+        logo.className = 'icon-bar-logo';
+        this._container.appendChild(logo);
+
         // Workspace category icons
         const topGroup = document.createElement('div');
         topGroup.className = 'icon-bar-group';

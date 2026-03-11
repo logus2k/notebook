@@ -8,7 +8,16 @@
     flex-shrink: 0;
     z-index: 10;
     user-select: none;
-    padding-top: var(--toolbar-height, 37px);
+}
+
+.icon-bar-logo {
+    width: 40px;
+    height: var(--toolbar-height, 40px);
+    object-fit: contain;
+    padding: 6px 8px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    margin-top: 3px;
 }
 
 .icon-bar-group {
