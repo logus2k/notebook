@@ -393,6 +393,7 @@
 .cell-sidebar .cell-run-btn.stopping {
     color: #e04040;
     font-size: 12px;
+    padding-right: 4px;
 }
 
 .cell-sidebar .cell-run-btn.stopping:hover {
