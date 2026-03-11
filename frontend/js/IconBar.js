@@ -18,7 +18,6 @@ export class IconBar {
     constructor(containerEl, callbacks = {}) {
         this._container = containerEl;
         this._callbacks = callbacks;
-        this._activeKey = null;
         this._buttons = {};
 
         this._build();
@@ -97,52 +96,16 @@ export class IconBar {
     }
 
     _onIconClick(key) {
-        // Toggle active state
-        if (this._activeKey === key) {
-            this._activeKey = null;
-            this._buttons[key].classList.remove('icon-bar-btn-active');
-        } else {
-            // Deactivate previous
-            if (this._activeKey && this._buttons[this._activeKey]) {
-                this._buttons[this._activeKey].classList.remove('icon-bar-btn-active');
-            }
-            this._activeKey = key;
-            this._buttons[key].classList.add('icon-bar-btn-active');
-        }
-
+        // Delegate all state management to the app via callback
         if (this._callbacks.onIconClick) {
-            this._callbacks.onIconClick(key, this._activeKey === key);
+            this._callbacks.onIconClick(key);
         }
     }
 
-    /** Set the active icon programmatically */
-    setActive(key) {
-        if (this._activeKey && this._buttons[this._activeKey]) {
-            this._buttons[this._activeKey].classList.remove('icon-bar-btn-active');
-        }
-        this._activeKey = key;
-        if (key && this._buttons[key]) {
-            this._buttons[key].classList.add('icon-bar-btn-active');
-        }
-    }
-
-    /** Clear any active state */
-    clearActive() {
-        if (this._activeKey && this._buttons[this._activeKey]) {
-            this._buttons[this._activeKey].classList.remove('icon-bar-btn-active');
-        }
-        this._activeKey = null;
-    }
-
-    /** Show/hide the accent bar on a service icon when its tab is open/closed */
+    /** Show/hide the active indicator on an icon */
     setTabIndicator(key, show) {
         const btn = this._buttons[key];
         if (!btn) return;
         btn.classList.toggle('icon-bar-btn-active', show);
-    }
-
-    /** Get the currently active key */
-    get activeKey() {
-        return this._activeKey;
     }
 }

@@ -50,21 +50,21 @@
 /* Close button */
 .tab-bar .tab-close-btn {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 12px;
-    height: 12px;
+    top: 3px;
+    right: 3px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background-color: #fff5e6;
     color: #333333;
-    font-size: 12px;
+    font-size: 15px;
     line-height: 12px;
     font-weight: 400;
     text-align: center;
     cursor: pointer;
     display: none;
     border: none;
-    padding: 0;
+    padding: 1px;
     font-family: Arial, sans-serif;
 }
 

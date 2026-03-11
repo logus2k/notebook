@@ -56,14 +56,6 @@ class App {
         // Initialize sidebar panel (between icon bar and content area)
         this._sidebar = new SidebarPanel({
             onResize: () => this._tocPanel?.refresh(),
-            onViewChange: (key) => {
-                // Sync icon bar with sidebar view
-                if (key === 'projects') {
-                    this._iconBar.setActive('projects');
-                } else {
-                    this._iconBar.clearActive();
-                }
-            },
         });
 
         // Initialize unified explorer panel (projects + environments)
@@ -186,8 +178,8 @@ class App {
             );
             // Open sidebar tree + workspace tab, navigate to env
             this._sidebar.show('projects');
-            this._iconBar.setActive('projects');
             this._openWorkspaceTab();
+            this._syncIconBar();
             this._explorerPanel.navigate({
                 currentProject: this._currentProject,
                 currentNotebook: this._currentNotebook,
@@ -277,7 +269,10 @@ class App {
         }, true);
 
         // Show TOC in sidebar by default
-        requestAnimationFrame(() => this._sidebar.show('toc'));
+        requestAnimationFrame(() => {
+            this._sidebar.show('toc');
+            this._syncIconBar();
+        });
 
         // Load workspace tree data (deferred so DOM is ready)
         this._explorerPanel.init();
@@ -456,9 +451,23 @@ class App {
 
     _onIconBarClick(key) {
         if (key === 'projects') {
-            // Toggle the Workspace sidebar view + workspace tab
-            const shown = this._sidebar.toggle('projects');
-            if (shown) {
+            const wsActive = this._tabBar.activeKey === 'workspace'
+                          || this._tabBar.activeKey === 'notebook';
+            const sidebarShowingTree = this._sidebar.visible
+                && (this._sidebar.activeView === 'projects' || this._sidebar.activeView === 'toc');
+
+            if (wsActive && sidebarShowingTree) {
+                // Sidebar visible with workspace/toc → close tab and sidebar
+                if (this._tabBar._tabs.has('workspace')) this._tabBar.closeTab('workspace');
+                this._sidebar.hide();
+                this._syncIconBar();
+            } else if (this._tabBar._tabs.has('workspace')) {
+                // Workspace tab exists but not active → activate and show sidebar
+                this._tabBar.activate('workspace');
+                this._sidebar.show('projects');
+            } else {
+                // Doesn't exist → open tab and sidebar
+                this._sidebar.show('projects');
                 this._explorerPanel.setActiveVenv(this._activeVenv ? this._activeVenv.name : null);
                 this._openWorkspaceTab();
                 this._explorerPanel.navigate({
@@ -467,31 +476,55 @@ class App {
                 });
             }
         } else if (key === 'mlflow' || key === 'airflow' || key === 'minio') {
-            // Open service as a tab in the center pane
-            const title = key.charAt(0).toUpperCase() + key.slice(1);
-            this._tabBar.addTab({
-                key,
-                label: title,
-                type: 'service',
-                icon: `static/images/${key}.png`,
-                closable: true,
-            });
-            this._iconBar.clearActive();
-            this._iconBar.setTabIndicator(key, true);
+            if (this._tabBar.activeKey === key) {
+                this._tabBar.closeTab(key);
+            } else if (this._tabBar._tabs.has(key)) {
+                this._tabBar.activate(key);
+            } else {
+                const title = key.charAt(0).toUpperCase() + key.slice(1);
+                this._tabBar.addTab({
+                    key,
+                    label: title,
+                    type: 'service',
+                    icon: `static/images/${key}.png`,
+                    closable: true,
+                });
+            }
         } else if (key === 'settings') {
-            this._openSettingsTab();
-            this._iconBar.clearActive();
-            this._iconBar.setTabIndicator(key, true);
+            if (this._tabBar.activeKey === key) {
+                this._tabBar.closeTab(key);
+            } else if (this._tabBar._tabs.has(key)) {
+                this._tabBar.activate(key);
+            } else {
+                this._openSettingsTab();
+            }
         }
+    }
+
+    /** Sync icon bar indicators with currently open tabs */
+    _syncIconBar() {
+        if (!this._tabBar || !this._iconBar) return;
+        const serviceKeys = ['mlflow', 'airflow', 'minio', 'settings'];
+        for (const k of serviceKeys) {
+            this._iconBar.setTabIndicator(k, this._tabBar._tabs.has(k));
+        }
+        // Projects icon: active when sidebar is visible with projects or toc view
+        const sidebarActive = this._sidebar?.visible
+            && (this._sidebar.activeView === 'projects' || this._sidebar.activeView === 'toc');
+        this._iconBar.setTabIndicator('projects', sidebarActive);
     }
 
     _onTabActivated(key) {
         const notebookContainer = document.getElementById('notebook-container');
         const serviceContainer = document.getElementById('service-tab-container');
 
-        // Hide all persistent service wrappers
+        // Hide all persistent service wrappers (visibility keeps iframes alive)
         for (const wrapper of serviceContainer.querySelectorAll('.service-wrapper')) {
-            wrapper.style.display = 'none';
+            wrapper.style.visibility = 'hidden';
+            wrapper.style.position = 'absolute';
+            wrapper.style.width = '0';
+            wrapper.style.height = '0';
+            wrapper.style.overflow = 'hidden';
         }
 
         // Detach reusable elements (workspace, settings, docs) before clearing transient content
@@ -538,7 +571,7 @@ class App {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'service-wrapper';
                 wrapper.dataset.serviceKey = key;
-                wrapper.style.cssText = 'display:flex; flex-direction:column; flex:1; min-height:0;';
+                wrapper.style.cssText = 'display:flex; flex-direction:column; flex:1; min-height:0; visibility:hidden; position:absolute; width:0; height:0; overflow:hidden;';
 
                 wrapper.appendChild(this._buildServiceBars(key));
 
@@ -550,9 +583,15 @@ class App {
                 this._serviceIframes[key] = wrapper;
             }
 
-            // Show the wrapper
-            this._serviceIframes[key].style.display = 'flex';
+            // Show the wrapper (restore from hidden state)
+            this._serviceIframes[key].style.visibility = '';
+            this._serviceIframes[key].style.position = '';
+            this._serviceIframes[key].style.width = '';
+            this._serviceIframes[key].style.height = '';
+            this._serviceIframes[key].style.overflow = '';
         }
+
+        this._syncIconBar();
     }
 
     _buildServiceBars(key) {
@@ -774,12 +813,15 @@ class App {
         if (key.startsWith('doc:')) {
             this._documentViewer.clear();
         }
-        // Hide persistent service wrapper (keep iframe alive)
+        // Hide persistent service wrapper (visibility keeps iframe connections alive)
         if (this._serviceIframes[key]) {
-            this._serviceIframes[key].style.display = 'none';
+            this._serviceIframes[key].style.visibility = 'hidden';
+            this._serviceIframes[key].style.position = 'absolute';
+            this._serviceIframes[key].style.width = '0';
+            this._serviceIframes[key].style.height = '0';
+            this._serviceIframes[key].style.overflow = 'hidden';
         }
-        // Remove accent bar from the service icon
-        this._iconBar.setTabIndicator(key, false);
+        this._syncIconBar();
     }
 
     _generateUserName() {
