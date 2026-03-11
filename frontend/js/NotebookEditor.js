@@ -627,6 +627,23 @@ export class NotebookEditor {
         }
     }
 
+    _reorderDOM() {
+        if (!this._wrapperEl) return;
+        // Remove all children after topBar and secondBar
+        while (this._wrapperEl.children.length > 2) {
+            this._wrapperEl.lastChild.remove();
+        }
+        // Re-append addBtn + cell pairs in current _cells order
+        for (let i = 0; i < this._cells.length; i++) {
+            this._wrapperEl.appendChild(this._createAddCellButton(i));
+            this._wrapperEl.appendChild(this._cells[i].element);
+        }
+        // Final add-cell button
+        const lastBtn = this._createAddCellButton(this._cells.length);
+        lastBtn.classList.add('add-cell-last');
+        this._wrapperEl.appendChild(lastBtn);
+    }
+
     _updateAddCellLast() {
         if (!this._wrapperEl) return;
         const addBtns = this._wrapperEl.querySelectorAll('.add-cell-container');
@@ -747,7 +764,7 @@ export class NotebookEditor {
         this._reindexCells();
 
         this._notebook.cells = this._cells.map(c => c.toJSON());
-        this._render();
+        this._reorderDOM();
     }
 
     _onCellOutput(data) {

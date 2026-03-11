@@ -92,7 +92,7 @@ export class NotebookDragDrop {
         editor._cells.splice(insertAt, 0, ...draggedCells);
         editor._reindexCells();
         editor._notebook.cells = editor._cells.map(c => c.toJSON());
-        editor._render();
+        editor._reorderDOM();
 
         for (let i = 0; i < sorted.length; i++) {
             editor._client.moveCell(sorted[i], insertAt + i);
