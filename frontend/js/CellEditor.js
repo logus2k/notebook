@@ -546,7 +546,7 @@ export class CellEditor {
         if (!this._sidebarExecCountEl) return;
         if (this._cellType === 'code') {
             const count = this._executionCount;
-            this._sidebarExecCountEl.textContent = count != null ? `[${count}]` : '[ ]';
+            this._sidebarExecCountEl.textContent = count != null ? `[${count}]` : '';
         } else {
             this._sidebarExecCountEl.textContent = '';
         }

@@ -586,7 +586,7 @@ export class NotebookEditor {
 
         if (this._wrapperEl) {
             const addBtn = this._createAddCellButton(index + 1);
-            const refChild = this._wrapperEl.children[index * 2 + 1] || null;
+            const refChild = this._wrapperEl.children[2 + index * 2] || null;
             this._wrapperEl.insertBefore(cellEditor.element, refChild);
             this._wrapperEl.insertBefore(addBtn, cellEditor.element.nextSibling);
             this._updateAddCellLast();
@@ -605,7 +605,7 @@ export class NotebookEditor {
         this._cells.splice(index, 1);
 
         if (this._wrapperEl) {
-            const addBtnEl = this._wrapperEl.children[index * 2 + 1];
+            const addBtnEl = this._wrapperEl.children[2 + index * 2];
             if (addBtnEl) addBtnEl.remove();
         }
 
@@ -733,7 +733,7 @@ export class NotebookEditor {
 
         if (this._wrapperEl) {
             const addBtn = this._createAddCellButton(index + 1);
-            const refChild = this._wrapperEl.children[index * 2 + 1] || null;
+            const refChild = this._wrapperEl.children[2 + index * 2] || null;
             this._wrapperEl.insertBefore(cellEditor.element, refChild);
             this._wrapperEl.insertBefore(addBtn, cellEditor.element.nextSibling);
         }
@@ -747,7 +747,7 @@ export class NotebookEditor {
             this._cells.splice(index, 1);
 
             if (this._wrapperEl) {
-                const addBtnEl = this._wrapperEl.children[index * 2 + 1];
+                const addBtnEl = this._wrapperEl.children[2 + index * 2];
                 if (addBtnEl) addBtnEl.remove();
             }
             this._reindexCells();
