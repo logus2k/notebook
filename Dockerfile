@@ -33,6 +33,9 @@ RUN apt-get update && \
     # Remove broken distutils-precedence.pth (references missing _distutils_hack)
     rm -f /usr/lib/python3/dist-packages/distutils-precedence.pth
 
+# Install uv — fast Python package installer (used internally for env setup)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 # Ensure pip is available for each Python version
 RUN for py in python3.10 python3.11 python3.12 python3.13 python3.14; do \
         $py -m ensurepip --upgrade 2>/dev/null || true; \
@@ -40,9 +43,9 @@ RUN for py in python3.10 python3.11 python3.12 python3.13 python3.14; do \
 
 WORKDIR /app
 
-# Install Python dependencies (using system Python 3.12)
+# Install Python dependencies (using uv for speed)
 COPY backend/requirements.txt backend/requirements.txt
-RUN python3.12 -m pip install --no-cache-dir --break-system-packages \
+RUN uv pip install --system --break-system-packages --python python3.12 \
     -r backend/requirements.txt
 
 

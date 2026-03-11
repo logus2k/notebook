@@ -98,6 +98,11 @@ class KernelManagerService:
             existing_pp = kernel_env.get("PYTHONPATH", "")
             kernel_env["PYTHONPATH"] = f"{src_dir}:{existing_pp}" if existing_pp else src_dir
 
+        # MLflow integration — auto-connect notebooks to the platform MLflow instance
+        kernel_env["MLFLOW_TRACKING_URI"] = "http://mlflow:5000"
+        if project_id:
+            kernel_env["MLFLOW_EXPERIMENT_NAME"] = project_id
+
         # Run blocking kernel start in executor to avoid blocking the event loop
         kw = {"env": kernel_env}
         if kernel_cwd:

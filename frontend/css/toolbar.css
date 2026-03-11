@@ -3,14 +3,14 @@
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
+    left: 48px;
     right: 0;
     height: var(--toolbar-height, 37px);
     background: #ffde8c;
     z-index: 1;
     pointer-events: none;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-bottom: 0.5px solid #999999;
+    /* border-bottom: 0.5px solid #aeaeae; */
 }
 
 /* Toolbar — absolute overlay, not in document flow */
@@ -41,6 +41,12 @@
 
 .toolbar-spacer {
     flex: 1;
+}
+
+.toolbar-right {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
 }
 
 .connected-users {

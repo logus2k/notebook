@@ -23,6 +23,7 @@ class CreateEnvRequest(BaseModel):
 
 class PackagesRequest(BaseModel):
     packages: list[str]
+    installer: str = "uv"  # "uv" (default, fast) or "pip" (classic)
 
 
 # --- New runtime-aware endpoints ---
@@ -79,7 +80,7 @@ async def install_packages_new(runtime_id: str, name: str, req: PackagesRequest)
     try:
         async def generate():
             async for line in venv_mgr.env_manager.install_packages_stream(
-                runtime_id, name, req.packages
+                runtime_id, name, req.packages, installer=req.installer
             ):
                 yield line
         return StreamingResponse(generate(), media_type="text/plain")

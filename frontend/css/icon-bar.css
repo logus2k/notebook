@@ -4,7 +4,7 @@
     align-items: center;
     width: 48px;
     min-width: 48px;
-    background: linear-gradient(to bottom, transparent var(--toolbar-height, 37px), #181818 var(--toolbar-height, 37px));
+    background: #181818;
     flex-shrink: 0;
     z-index: 10;
     user-select: none;

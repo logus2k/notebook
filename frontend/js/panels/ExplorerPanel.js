@@ -473,6 +473,7 @@ export class ExplorerPanel {
 
     _navigateToVenv(envKey) {
         if (!this._tree) return;
+        this._detailEl.style.paddingBottom = '';
         const envsRoot = this._tree.findKey('root-envs');
         if (envsRoot && !envsRoot.isExpanded()) envsRoot.setExpanded(true);
         // envKey = "runtimeId:name" (e.g. "python/3.12:my-env")
@@ -493,6 +494,7 @@ export class ExplorerPanel {
 
     async _navigateToCurrentNotebook() {
         if (!this._tree || !this._currentProject || !this._currentNotebook) return;
+        this._detailEl.style.paddingBottom = '';
 
         // Expand the project node (triggers lazy load of notebooks)
         const projectNode = this._tree.findKey(`project:${this._currentProject}`);
@@ -517,6 +519,7 @@ export class ExplorerPanel {
     _showDetailForNode(node) {
         this._clearActionBar();
         this._detailEl.style.overflowY = '';
+        this._detailEl.style.paddingBottom = '';
         const key = node.key || '';
         if (key === 'root-projects') {
             this._showProjectsRootDetail();
@@ -652,22 +655,41 @@ export class ExplorerPanel {
         errorEl.className = 'explorer-form-error';
         form.appendChild(errorEl);
 
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;';
+
         const createBtn = document.createElement('button');
         createBtn.className = 'explorer-btn primary';
         createBtn.textContent = 'Create Environment';
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'explorer-btn inverted';
+        copyBtn.textContent = 'Copy Output';
+        copyBtn.title = 'Copy terminal output to clipboard';
+        copyBtn.addEventListener('click', () => {
+            const term = termArea._term;
+            if (!term) return;
+            const lines = [];
+            for (let i = 0; i < term.buffer.active.length; i++) {
+                lines.push(term.buffer.active.getLine(i)?.translateToString(true) ?? '');
+            }
+            navigator.clipboard.writeText(lines.join('\n').trimEnd());
+        });
 
         const termArea = document.createElement('div');
         termArea.className = 'env-create-term';
         termArea.style.display = 'flex';
 
         createBtn.addEventListener('click', () => this._createEnv(nameInput, runtimeSelect, createBtn, errorEl, termArea));
-        form.appendChild(createBtn);
+        btnRow.append(createBtn, copyBtn);
+        form.appendChild(btnRow);
         form.appendChild(termArea);
 
         // Make form expand so terminal fills remaining space
         form.style.flex = '1';
         form.style.minHeight = '0';
         container.style.overflowY = 'hidden';
+        container.style.paddingBottom = '0';
 
         nameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') createBtn.click();
@@ -1156,8 +1178,13 @@ export class ExplorerPanel {
             installBtn.className = 'explorer-btn primary';
             installBtn.textContent = 'Install';
 
+            // Installer selector (uv / pip)
+            const installerSelect = document.createElement('select');
+            installerSelect.className = 'installer-select';
+            installerSelect.innerHTML = '<option value="uv">uv</option><option value="pip">pip</option>';
+
             installBtn.addEventListener('click', () =>
-                this._doInstall(textarea, installBtn, envName, runtimeId)
+                this._doInstall(textarea, installBtn, envName, runtimeId, installerSelect.value)
             );
 
             textarea.addEventListener('keydown', (e) => {
@@ -1181,7 +1208,7 @@ export class ExplorerPanel {
             countLabel.className = 'package-count';
             countLabel.textContent = `${packages.length} packages`;
 
-            installRow.append(countLabel, terminalBtn, installBtn);
+            installRow.append(countLabel, terminalBtn, installerSelect, installBtn);
             pkgSection.appendChild(installRow);
 
             // Reconnect cancel button if an install is actively running
@@ -1621,7 +1648,7 @@ export class ExplorerPanel {
 
     // --- Install helper ---
 
-    async _doInstall(textarea, installBtn, envName, runtimeId) {
+    async _doInstall(textarea, installBtn, envName, runtimeId, installer = 'uv') {
         const tokens = this._parseInstallInput(textarea.value);
         if (!tokens.length) return;
         const termKey = `${runtimeId}:${envName}`;
@@ -1652,7 +1679,8 @@ export class ExplorerPanel {
         await termState.openPanel();
         this._setTerminalPanelTitle(termState, envName, null);
 
-        term.writeln(`\x1b[1m> pip install ${tokens.join(' ')}\x1b[0m\r\n`);
+        const installLabel = installer === 'uv' ? 'uv pip install' : 'pip install';
+        term.writeln(`\x1b[1m> ${installLabel} ${tokens.join(' ')}\x1b[0m\r\n`);
 
         const apiBase = `api/envs/${runtimeId}/${envName}/packages`;
         let hasError = false;
@@ -1679,7 +1707,7 @@ export class ExplorerPanel {
             const resp = await fetch(apiBase, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ packages: tokens })
+                body: JSON.stringify({ packages: tokens, installer })
             });
 
             if (!resp.ok) {
@@ -1738,7 +1766,7 @@ export class ExplorerPanel {
     }
 
     _parseInstallInput(text) {
-        let cleaned = text.replace(/^\s*(pip3?|python\s+-m\s+pip)\s+install\s+/i, '');
+        let cleaned = text.replace(/^\s*(uv\s+pip|uv\s+install|pip3?|python\s+-m\s+pip)\s+install\s*/i, '');
         const tokens = [];
         for (const line of cleaned.split('\n')) {
             const stripped = line.replace(/#.*$/, '').trim();

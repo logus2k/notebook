@@ -16,3 +16,4 @@ plotly
 statsmodels
 pillow
 dvc[s3]
+mlflow

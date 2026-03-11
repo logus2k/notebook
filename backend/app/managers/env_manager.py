@@ -55,9 +55,9 @@ class RuntimeRegistry:
                 "language": spec["language"],
                 "version": spec["version"],
                 "display_name": spec["display_name"],
-                "runtime_id": f"{spec['language']}/{spec['version']}",
+                "runtime_id": runtime_id,
             }
-            for spec in self._cache.values()
+            for runtime_id, spec in self._cache.items()
         ]
 
     def get_runtime(self, runtime_id: str) -> Optional[dict]:
@@ -392,7 +392,8 @@ class EnvironmentManager:
             clean_env = {k: v for k, v in os.environ.items()
                          if k not in ("PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV")}
             clean_env.update({"PYTHONUNBUFFERED": "1", "TERM": "xterm-256color",
-                              "SETUPTOOLS_USE_DISTUTILS": "stdlib"})
+                              "SETUPTOOLS_USE_DISTUTILS": "stdlib",
+                              "UV_LINK_MODE": "copy"})
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=slave_fd, stderr=slave_fd,
@@ -495,7 +496,8 @@ class EnvironmentManager:
         return json.loads(stdout.decode())
 
     async def install_packages(self, runtime_id: str, name: str,
-                               packages: list[str]) -> dict:
+                               packages: list[str],
+                               installer: str = "uv") -> dict:
         runtime = self._registry.get_runtime(runtime_id)
         if not runtime or "package_manager" not in runtime:
             raise ValueError(f"No package manager for runtime: {runtime_id}")
@@ -503,11 +505,18 @@ class EnvironmentManager:
         if not os.path.exists(env_path):
             raise FileNotFoundError(f"Environment not found: {name}")
         pm = runtime["package_manager"]
-        cmd = self._registry.resolve_template(
-            pm["install_cmd"],
-            env_path=env_path,
-            executable=runtime["executable"],
-        )
+        if installer == "uv" and "uv_install_cmd" in pm:
+            cmd = self._registry.resolve_template(
+                pm["uv_install_cmd"],
+                env_path=env_path,
+                executable=runtime["executable"],
+            )
+        else:
+            cmd = self._registry.resolve_template(
+                pm["install_cmd"],
+                env_path=env_path,
+                executable=runtime["executable"],
+            )
         proc = await asyncio.create_subprocess_exec(
             *cmd, *packages,
             stdout=asyncio.subprocess.PIPE,
@@ -516,13 +525,18 @@ class EnvironmentManager:
         stdout, stderr = await proc.communicate()
         if proc.returncode != 0:
             raise RuntimeError(
-                f"pip install failed:\n{stderr.decode()}\n{stdout.decode()}"
+                f"Package install failed:\n{stderr.decode()}\n{stdout.decode()}"
             )
         return {"installed": packages, "output": stdout.decode()}
 
     async def install_packages_stream(self, runtime_id: str, name: str,
-                                       packages: list[str]):
-        """Yield pip output lines as they happen."""
+                                       packages: list[str],
+                                       installer: str = "uv"):
+        """Yield install output lines as they happen.
+
+        Args:
+            installer: "uv" (default, fast) or "pip" (classic).
+        """
         runtime = self._registry.get_runtime(runtime_id)
         if not runtime or "package_manager" not in runtime:
             raise ValueError(f"No package manager for runtime: {runtime_id}")
@@ -530,11 +544,18 @@ class EnvironmentManager:
         if not os.path.exists(env_path):
             raise FileNotFoundError(f"Environment not found: {name}")
         pm = runtime["package_manager"]
-        cmd = self._registry.resolve_template(
-            pm["install_cmd"],
-            env_path=env_path,
-            executable=runtime["executable"],
-        )
+        if installer == "uv" and "uv_install_cmd" in pm:
+            cmd = self._registry.resolve_template(
+                pm["uv_install_cmd"],
+                env_path=env_path,
+                executable=runtime["executable"],
+            )
+        else:
+            cmd = self._registry.resolve_template(
+                pm["install_cmd"],
+                env_path=env_path,
+                executable=runtime["executable"],
+            )
         proc_key = f"{runtime_id}:{name}"
 
         # Use a pty so pip thinks it's in a real terminal (enables progress bars)
@@ -548,7 +569,8 @@ class EnvironmentManager:
 
         clean_env = {k: v for k, v in os.environ.items()
                      if k not in ("PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV")}
-        clean_env.update({"PYTHONUNBUFFERED": "1", "TERM": "xterm-256color"})
+        clean_env.update({"PYTHONUNBUFFERED": "1", "TERM": "xterm-256color",
+                          "UV_LINK_MODE": "copy"})
         proc = await asyncio.create_subprocess_exec(
             *cmd, *packages,
             stdout=slave_fd,
@@ -573,7 +595,7 @@ class EnvironmentManager:
                     break
             await proc.wait()
             if proc.returncode != 0:
-                yield f"\n[ERROR] pip install exited with code {proc.returncode}\n"
+                yield f"\n[ERROR] Install exited with code {proc.returncode}\n"
         finally:
             os.close(master_fd)
             self._install_procs.pop(proc_key, None)

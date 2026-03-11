@@ -89,7 +89,7 @@ html, body {
     background-image:
         linear-gradient(rgba(140, 160, 180, 0.35) 1px, transparent 1px),
         linear-gradient(90deg, rgba(140, 160, 180, 0.35) 1px, transparent 1px);
-    background-size: 20px 20px;
+    background-size: 10px 10px;
     color: var(--text-primary);
     overflow: hidden;
 }
@@ -177,6 +177,7 @@ html, body {
     border-left: 0.5px solid #666666;
     border-right: 0.5px solid #666666;
     border-bottom: 0.5px solid #cecece;
+    container-type: inline-size;
 }
 
 #notebook-container:hover #notebook-second-bar {
@@ -198,6 +199,20 @@ html, body {
     gap: 2px;
     margin-left: auto;
     margin-right: 4px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+#notebook-second-bar .info-bar-kernel {
+    overflow: hidden;
+    max-width: 240px;
+    min-width: 0;
+}
+
+#notebook-second-bar .info-bar-kernel .info-bar-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 #notebook-top-bar .info-bar-text {
@@ -274,7 +289,7 @@ body.resizing iframe {
     border: none;
     border-radius: 0;
     margin: 0;
-    padding-top: var(--toolbar-height, 37px);
+    padding-top: 17px;
 }
 
 button {

@@ -24,22 +24,27 @@ export class NotebookToolbar {
     _build() {
         this._container.innerHTML = '';
 
-        // Left: title/logo
+        // Left spacer
+        const leftSpacer = document.createElement('div');
+        leftSpacer.className = 'toolbar-spacer';
+        this._container.appendChild(leftSpacer);
+
+        // Center: logo
         const title = document.createElement('img');
         title.className = 'toolbar-title';
         title.src = 'static/images/noted_logo.png';
         title.alt = 'noted';
         this._container.appendChild(title);
 
-        // Spacer
-        const spacer = document.createElement('div');
-        spacer.className = 'toolbar-spacer';
-        this._container.appendChild(spacer);
+        // Right spacer (contains connected users, right-aligned)
+        const rightSpacer = document.createElement('div');
+        rightSpacer.className = 'toolbar-spacer toolbar-right';
+        this._container.appendChild(rightSpacer);
 
-        // Connected users
+        // Connected users (inside right spacer)
         this._usersEl = document.createElement('div');
         this._usersEl.className = 'connected-users';
-        this._container.appendChild(this._usersEl);
+        rightSpacer.appendChild(this._usersEl);
     }
 
     _setupListeners() {
