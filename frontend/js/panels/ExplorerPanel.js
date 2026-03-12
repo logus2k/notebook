@@ -1322,6 +1322,7 @@ export class ExplorerPanel {
             this._showProjectDetail(name);
             const newNode = this._tree.findKey(`project:${name}`);
             if (newNode) newNode.setActive(true, { noEvents: true });
+            if (this._callbacks.onProjectCreated) this._callbacks.onProjectCreated(name);
         } catch (err) {
             errorEl.textContent = err.message;
         } finally {

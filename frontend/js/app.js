@@ -15,6 +15,7 @@ import { TocPanel } from './TocPanel.js';
 import { DocumentViewer } from './panels/DocumentViewer.js';
 import { PythonFileEditor } from './PythonFileEditor.js';
 import { notify } from './Notify.js';
+import { GitPanel } from './GitPanel.js';
 
 
 /**
@@ -39,6 +40,7 @@ class App {
         this._documentViewer = null;
         /** @type {Map<string, PythonFileEditor>} keyed by tab key "pyfile:{projectId}:{filename}" */
         this._pyfileEditors = new Map();
+        this._gitPanel = null;
     }
 
     async init() {
@@ -74,6 +76,15 @@ class App {
             onActivate: () => this._openWorkspaceTab(),
             onDocumentOpen: (doc) => this._openDocumentTab(doc),
             onSrcFileSelect: (projectId, filename) => this._openPyFileTab(projectId, filename),
+            onProjectCreated: (projectId) => this._gitPanel?.setProject(projectId),
+            onProjectDeleted: (projectId) => {
+                if (this._gitPanel?._projectId === projectId) this._gitPanel.setProject(null);
+            },
+            onProjectRenamed: (oldId, newId) => {
+                if (this._gitPanel?._projectId === oldId) this._gitPanel.setProject(newId);
+            },
+            onNotebookDeleted: () => this._gitPanel?.refresh(),
+            onNotebookRenamed: () => this._gitPanel?.refresh(),
         });
 
         // Register sidebar views — tree from ExplorerPanel
@@ -94,6 +105,15 @@ class App {
             element: this._tocPanel.element,
             onActivate: () => this._tocPanel.activate(),
             onDeactivate: () => this._tocPanel.deactivate(),
+        });
+
+        // Git panel — sidebar view for per-project version control
+        this._gitPanel = new GitPanel();
+        this._sidebar.registerView('git', {
+            tabLabel: 'Git',
+            title: 'Version Control',
+            element: this._gitPanel.element,
+            onActivate: () => this._gitPanel.activate(),
         });
 
         // Restore display toggles
@@ -199,6 +219,7 @@ class App {
         // Wire notebook bar callbacks to toolbar panels and file actions
         this._editor.setOnPostItToggle(() => this._toolbar._postItIndex.toggle());
         this._editor.setOnSave(() => this._toolbar._callbacks.onSave?.());
+        this._editor.setOnSaved(() => this._gitPanel?.refresh());
 
         // Initialize display settings panel (jsPanel)
         this._displaySettingsPanel = new DisplaySettingsPanel();
@@ -326,6 +347,7 @@ class App {
         this._currentProject = projectId;
         this._currentNotebook = notebookName;
 
+        this._gitPanel?.setProject(projectId);
         this._editor.setProject(projectId);
         this._editor.setNotebook(notebookName);
         this._tabBar.setNotebookLabel(notebookName);
@@ -493,6 +515,14 @@ class App {
                     currentNotebook: this._currentNotebook,
                 });
             }
+        } else if (key === 'git') {
+            if (this._sidebar.visible && this._sidebar.activeView === 'git') {
+                this._sidebar.hide();
+            } else {
+                if (this._currentProject) this._gitPanel.setProject(this._currentProject);
+                this._sidebar.show('git');
+            }
+            this._syncIconBar();
         } else if (key === 'mlflow' || key === 'airflow' || key === 'minio') {
             if (this._tabBar.activeKey === key) {
                 this._tabBar.closeTab(key);
@@ -530,6 +560,8 @@ class App {
         const sidebarActive = this._sidebar?.visible
             && (this._sidebar.activeView === 'projects' || this._sidebar.activeView === 'toc');
         this._iconBar.setTabIndicator('projects', sidebarActive);
+        // Git icon: active when git sidebar view is visible
+        this._iconBar.setTabIndicator('git', this._sidebar?.visible && this._sidebar.activeView === 'git');
     }
 
     _onTabActivated(key) {

@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from app.config import FRONTEND_DIR
-from app.routers import notebooks, venvs, documents, source_files
+from app.routers import notebooks, venvs, documents, source_files, git
 from app.managers.kernel_manager import KernelManagerService
 from app.managers.execution_bridge import ExecutionBridge
 from app.managers.collaboration import CollaborationManager
@@ -59,6 +59,7 @@ app.include_router(notebooks.router)
 app.include_router(venvs.router)
 app.include_router(documents.router)
 app.include_router(source_files.router)
+app.include_router(git.router)
 
 
 # --- Socket.IO Events ---

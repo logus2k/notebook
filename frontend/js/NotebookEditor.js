@@ -827,9 +827,12 @@ export class NotebookEditor {
         }
     }
 
+    setOnSaved(cb) { this._onSavedCallback = cb; }
+
     _onNotebookSaved(data) {
         if (data.success) {
             notify.success('Saved');
+            this._onSavedCallback?.();
         } else {
             notify.error('Save failed');
             console.error('Save failed:', data.error);

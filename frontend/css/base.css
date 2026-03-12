@@ -85,10 +85,8 @@ html, body {
     height: 100%;
     font-family: var(--font-sans);
     font-size: 14px;
-    background-color: #e8e4db;
-    background-image:
-        linear-gradient(rgba(140, 160, 180, 0.35) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(140, 160, 180, 0.35) 1px, transparent 1px);
+    background-color: #e8e4db63;
+    background-image: linear-gradient(rgb(107 107 107 / 14%) 1px, transparent 1px), linear-gradient(90deg, rgba(140, 160, 180, 0.35) 1px, transparent 1px);
     background-size: 10px 10px;
     color: var(--text-primary);
     overflow: hidden;
