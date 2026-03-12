@@ -122,7 +122,7 @@ export class SidebarPanel {
         tab.className = 'sidebar-tab';
         tab.textContent = view.tabLabel || view.title;
         tab.dataset.key = key;
-        tab.addEventListener('click', () => this.toggle(key));
+        tab.addEventListener('click', () => this.show(key));
         this._tabsEl.appendChild(tab);
         view._tab = tab;
     }
