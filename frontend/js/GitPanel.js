@@ -8,7 +8,7 @@ export class GitPanel {
         this._status = null;
         this._historyOpen = true;
         this._changesOpen = true;
-        this._expandedCommit = null;
+        this._onCommitOpen = null;
 
         this._el = document.createElement('div');
         this._el.className = 'git-panel';
@@ -17,11 +17,12 @@ export class GitPanel {
 
     get element() { return this._el; }
 
+    setOnCommitOpen(cb) { this._onCommitOpen = cb; }
+
     // Called by app.js when the active project changes
     setProject(projectId) {
         if (this._projectId === projectId) return;
         this._projectId = projectId;
-        this._expandedCommit = null;
         this._render();
     }
 
@@ -325,7 +326,6 @@ export class GitPanel {
     _buildCommitItem(commit) {
         const item = document.createElement('div');
         item.className = 'git-commit-item';
-        if (this._expandedCommit === commit.hash) item.classList.add('expanded');
 
         const row = document.createElement('div');
         row.className = 'git-commit-row';
@@ -347,37 +347,8 @@ export class GitPanel {
         row.append(hash, msg, meta);
         item.appendChild(row);
 
-        // Diff area (lazy loaded on click)
-        let diffEl = null;
-
-        item.addEventListener('click', async () => {
-            if (this._expandedCommit === commit.hash) {
-                // Collapse
-                this._expandedCommit = null;
-                item.classList.remove('expanded');
-                if (diffEl) { diffEl.remove(); diffEl = null; }
-                return;
-            }
-            this._expandedCommit = commit.hash;
-            item.classList.add('expanded');
-
-            if (!diffEl) {
-                diffEl = document.createElement('div');
-                diffEl.className = 'git-commit-diff';
-                diffEl.textContent = 'Loading…';
-                item.appendChild(diffEl);
-
-                try {
-                    const res = await fetch(
-                        `api/projects/${encodeURIComponent(this._projectId)}/git/show/${commit.hash}`
-                    );
-                    if (!res.ok) throw new Error(await res.text());
-                    const data = await res.json();
-                    diffEl.innerHTML = _colorDiff(data.diff);
-                } catch (e) {
-                    diffEl.textContent = `Error: ${e.message}`;
-                }
-            }
+        item.addEventListener('click', () => {
+            this._onCommitOpen?.(this._projectId, commit);
         });
 
         return item;
@@ -414,24 +385,3 @@ function _statusChar(f) {
     return '~';
 }
 
-function _colorDiff(raw) {
-    return raw
-        .split('\n')
-        .map(line => {
-            const esc = _esc(line);
-            if (line.startsWith('+++') || line.startsWith('---')) {
-                return `<span>${esc}</span>`;
-            }
-            if (line.startsWith('+')) {
-                return `<span class="diff-add">${esc}</span>`;
-            }
-            if (line.startsWith('-')) {
-                return `<span class="diff-del">${esc}</span>`;
-            }
-            if (line.startsWith('@@')) {
-                return `<span class="diff-hunk">${esc}</span>`;
-            }
-            return `<span>${esc}</span>`;
-        })
-        .join('\n');
-}

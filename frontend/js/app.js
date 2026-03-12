@@ -16,6 +16,7 @@ import { DocumentViewer } from './panels/DocumentViewer.js';
 import { PythonFileEditor } from './PythonFileEditor.js';
 import { notify } from './Notify.js';
 import { GitPanel } from './GitPanel.js';
+import { GitCommitViewer } from './GitCommitViewer.js';
 
 
 /**
@@ -109,6 +110,8 @@ class App {
 
         // Git panel — sidebar view for per-project version control
         this._gitPanel = new GitPanel();
+        this._gitCommitViewer = new GitCommitViewer();
+        this._gitPanel.setOnCommitOpen((projectId, commit) => this._openGitCommitTab(projectId, commit));
         this._sidebar.registerView('git', {
             tabLabel: 'Git',
             title: 'Version Control',
@@ -586,6 +589,8 @@ class App {
         if (docViewer) docViewer.remove();
         const pyfileWrapper = serviceContainer.querySelector('.pyfile-editor-wrapper');
         if (pyfileWrapper) pyfileWrapper.remove();
+        const gitCommitWrapper = serviceContainer.querySelector('.git-commit-viewer-wrapper');
+        if (gitCommitWrapper) gitCommitWrapper.remove();
         // Remove transient bars (workspace/settings/doc bars)
         for (const bar of serviceContainer.querySelectorAll('.service-top-bar:not(.service-wrapper .service-top-bar), .service-second-bar:not(.service-wrapper .service-second-bar)')) {
             bar.remove();
@@ -625,6 +630,18 @@ class App {
             serviceContainer.style.display = 'flex';
             serviceContainer.appendChild(this._buildDocumentBars(key));
             serviceContainer.appendChild(this._documentViewer.element);
+        } else if (key === 'git-commit') {
+            // Show git commit diff
+            notebookContainer.style.display = 'none';
+            serviceContainer.style.display = 'flex';
+            serviceContainer.appendChild(this._buildGitCommitBars(key));
+            const wrapper = document.createElement('div');
+            wrapper.className = 'git-commit-viewer-wrapper';
+            wrapper.appendChild(this._gitCommitViewer.element);
+            serviceContainer.appendChild(wrapper);
+            // Re-show commit if switching back to this tab
+            const entry = this._gitCommits?.get(key);
+            if (entry) this._gitCommitViewer.show(entry.projectId, entry.commit);
         } else {
             // Show service iframe (persistent wrapper)
             notebookContainer.style.display = 'none';
@@ -848,6 +865,61 @@ class App {
             span.textContent = text;
             secondBar.appendChild(span);
         });
+        frag.appendChild(secondBar);
+        return frag;
+    }
+
+    _openGitCommitTab(projectId, commit) {
+        const tabKey = 'git-commit';
+        if (!this._gitCommits) this._gitCommits = new Map();
+        this._gitCommits.set(tabKey, { projectId, commit });
+        // Always update the viewer directly — activate() is a no-op when tab is already active
+        this._gitCommitViewer.show(projectId, commit);
+        if (!this._tabBar._tabs.has(tabKey)) {
+            this._tabBar.addTab({
+                key: tabKey,
+                label: 'Git History',
+                type: 'git-commit',
+                closable: true,
+            });
+        } else {
+            this._tabBar.activate(tabKey);
+        }
+    }
+
+    _buildGitCommitBars(_key) {
+        const entry = this._gitCommits?.get('git-commit');
+        const projectId = entry?.projectId || '';
+        const commit = entry?.commit;
+
+        const frag = document.createDocumentFragment();
+
+        // Top bar: breadcrumbs — "projectId | short_hash"
+        const bar = document.createElement('div');
+        bar.className = 'service-top-bar';
+        [projectId, commit?.short_hash || ''].forEach((text, i) => {
+            if (i > 0) {
+                const sep = document.createElement('span');
+                sep.className = 'breadcrumb-sep';
+                sep.textContent = '|';
+                bar.appendChild(sep);
+            }
+            const span = document.createElement('span');
+            span.className = 'breadcrumb-segment';
+            if (i === 1) span.classList.add('breadcrumb-current');
+            span.textContent = text;
+            bar.appendChild(span);
+        });
+        frag.appendChild(bar);
+
+        // Second bar: commit message
+        const secondBar = this._buildSecondBar();
+        if (commit?.message) {
+            const msg = document.createElement('span');
+            msg.className = 'breadcrumb-segment breadcrumb-current';
+            msg.textContent = commit.message;
+            secondBar.appendChild(msg);
+        }
         frag.appendChild(secondBar);
         return frag;
     }

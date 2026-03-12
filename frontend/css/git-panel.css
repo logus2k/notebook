@@ -313,3 +313,30 @@
 .git-commit-diff .diff-add  { color: #2a8a2a; }
 .git-commit-diff .diff-del  { color: #cc3333; }
 .git-commit-diff .diff-hunk { color: #4a7bd0; }
+
+/* ── Center-area commit viewer ── */
+
+.git-commit-viewer-wrapper {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.git-commit-viewer {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.git-commit-viewer .cm-editor {
+    flex: 1;
+    min-height: 0;
+}
+
+.git-commit-viewer .cm-scroller::-webkit-scrollbar-track {
+    margin: 0;
+}
