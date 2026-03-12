@@ -149,7 +149,7 @@ html, body {
 
 #notebook-top-bar {
     height: 24px;
-    background: #ffd670;
+    background: #ffe39e;
     margin: 0 0 0 36px;
     display: flex;
     align-items: center;
@@ -165,7 +165,7 @@ html, body {
 
 #notebook-second-bar {
     height: 26px;
-    background: #fff2bc;
+    background: #fff9e3;
     margin: 0 0 0 36px;
     display: flex;
     position: sticky;

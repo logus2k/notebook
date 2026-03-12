@@ -63,7 +63,8 @@
 .postit-panel-title-content {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 10px;
+    padding-bottom: 3px;
 }
 
 .postit-color-circle {

@@ -4,7 +4,7 @@
 }
 
 .jsPanel .jsPanel-hdr {
-    background: #ffe39eed !important;
+    background: #ffd97aba !important;
     border-bottom: 0.5px solid var(--border-color);
     border-radius: 4px 4px 0px 0px !important;
     overflow: hidden;
@@ -63,7 +63,7 @@
 }
 
 .jsPanel .jsPanel-content {
-    background: var(--bg-primary) !important;
+    background: #fff9e3;
     color: var(--text-primary) !important;
     overflow-y: auto;
 }

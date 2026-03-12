@@ -53,7 +53,7 @@
 }
 
 .sidebar-tab.active {
-    background-color: #ffd670ed;
+    background-color: #ffe39e;
     color: #1a1a1a;
     font-weight: 500;
     z-index: 1;
@@ -67,7 +67,7 @@
     align-items: center;
     gap: 9px;
     padding: 6px 12px;
-    background: #ffd670ed;
+    background: #ffe39e;
     flex-shrink: 0;
     border-right: 0.5px solid #666666;
     /* border-radius: 3px 3px 0px 0px; */
@@ -87,7 +87,7 @@
     flex-direction: column;
     overflow: hidden;
     padding-right: 10px;
-    background: #fff9e3;
+    background: #fffae8;
     border-right: 0.5px solid #666666;
     box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
 }
