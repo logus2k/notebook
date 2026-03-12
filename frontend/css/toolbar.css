@@ -6,7 +6,8 @@
     left: 48px;
     right: 0;
     height: var(--toolbar-height, 37px);
-    background: #606060;
+    background-image: url("../images/low-contrast-linen.png");
+    background-color: #1f1f1ffe;
     z-index: 1;
     pointer-events: none;
     box-shadow: 0 3px 4px rgba(0, 0, 0, 0.3);
