@@ -223,7 +223,7 @@ export class ExplorerPanel {
                 children: runtimeNodes,
             },
             {
-                title: 'Documents',
+                title: 'Knowledge Base',
                 key: 'root-docs',
                 icon: 'fa-solid fa-book',
                 folder: true,
@@ -458,18 +458,18 @@ export class ExplorerPanel {
         }
         if (nodeKey === 'root-docs') {
             const n = (this._docsCatalog?.documents || []).length;
-            return { crumbs: ['Documents'], rootCount: n };
+            return { crumbs: ['Knowledge Base'], rootCount: n };
         }
         if (nodeKey.startsWith('doccat:')) {
             const cat = nodeKey.substring(7);
-            return { crumbs: ['Documents', cat] };
+            return { crumbs: ['Knowledge Base', cat] };
         }
         if (nodeKey.startsWith('doc:')) {
             const rest = nodeKey.substring(4);
             const colonIdx = rest.indexOf(':');
             const cat = rest.substring(0, colonIdx);
             const docName = rest.substring(colonIdx + 1);
-            return { crumbs: ['Documents', cat, docName] };
+            return { crumbs: ['Knowledge Base', cat, docName] };
         }
         return { crumbs: ['Workspace'] };
     }
@@ -1800,7 +1800,7 @@ export class ExplorerPanel {
         this._detailEl.innerHTML = '';
         this._addParentLabel('Workspace');
 
-        const header = this._createDetailHeader('Documents', 'fa-solid fa-book');
+        const header = this._createDetailHeader('Knowledge Base', 'fa-solid fa-book');
         this._detailEl.appendChild(header);
 
         // Upload form
@@ -1865,7 +1865,7 @@ export class ExplorerPanel {
 
     _showDocCategoryDetail(category) {
         this._detailEl.innerHTML = '';
-        this._addParentLabel('Documents');
+        this._addParentLabel('Knowledge Base');
 
         const header = this._createDetailHeader(category, 'fa-solid fa-folder');
         this._detailEl.appendChild(header);

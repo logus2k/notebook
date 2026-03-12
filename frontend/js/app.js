@@ -859,7 +859,7 @@ class App {
         const secondBar = this._buildSecondBar();
         const category = parts[0] || '';
         const docName = parts.slice(1).join(':') || '';
-        const crumbs = ['Documents', category, docName].filter(Boolean);
+        const crumbs = ['Knowledge Base', category, docName].filter(Boolean);
         crumbs.forEach((text, i) => {
             if (i > 0) {
                 const sep = document.createElement('span');
@@ -951,10 +951,10 @@ class App {
 
         // Root level: "Create X" on left, "n X" on right
         if (crumbs.length === 1 && rootCount !== undefined) {
-            const section = crumbs[0]; // 'Projects', 'Environments', or 'Documents'
-            const singularMap = { Projects: 'Project', Environments: 'Environment', Documents: 'Document' };
+            const section = crumbs[0]; // 'Projects', 'Environments', or 'Knowledge Base'
+            const singularMap = { Projects: 'Project', Environments: 'Environment', 'Knowledge Base': 'Document' };
             const singular = singularMap[section] || section;
-            const actionMap = { Projects: 'Create Project', Environments: 'Create Environment', Documents: 'Upload Document' };
+            const actionMap = { Projects: 'Create Project', Environments: 'Create Environment', 'Knowledge Base': 'Upload Document' };
             const actionText = actionMap[section] || `Create ${singular}`;
 
             const left = document.createElement('div');

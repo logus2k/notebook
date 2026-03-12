@@ -43,7 +43,6 @@
 .right-panel-tab.active {
     background-color: #ffe39e;
     color: #1a1a1a;
-    font-weight: 500;
     z-index: 1;
     padding: 4px 11px 1px 11px;
     margin-bottom: -1px;

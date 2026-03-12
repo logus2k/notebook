@@ -8,6 +8,8 @@
     overflow: hidden;
     font-family: var(--font-sans);
     font-size: 12px;
+    margin-left: 10px;
+    margin-top: 10px;
 }
 
 /* ── Top bar: project label + refresh button ── */
@@ -30,7 +32,6 @@
 }
 
 .git-panel-project-name {
-    font-weight: 500;
     color: #222222;
 }
 
@@ -71,21 +72,23 @@
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #666666;
+    color: #333333;
     cursor: pointer;
     user-select: none;
-    border-bottom: 0.5px solid #e0e0e0;
+    border: 0.5px solid #e1ca8ee3;
+    background-color: #ffa11124;
+    border-radius: 2px;
     flex-shrink: 0;
 }
 
 .git-section-header:hover {
-    background: rgba(0, 0, 0, 0.03);
+    background: rgba(255, 200, 148, 0.365);
 }
 
 .git-section-chevron {
     font-size: 9px;
     transition: transform 0.15s;
-    color: #999999;
+    color: #333333;
 }
 
 .git-section-chevron.open {
@@ -128,12 +131,12 @@
     display: flex;
     align-items: center;
     gap: 5px;
-    padding: 4px 6px 5px 3px;
+    padding: 5px 6px 5px 3px;
     font-size: 11px;
     cursor: default;
-    border-bottom: 0.5px solid #f0f0f0;
-    background-color: #acacac26;
+    background-color: #f5faffc2;
     margin-bottom: 2px;
+    border-bottom: 0.5px solid #cecece;
 }
 
 .git-file-item:hover {
@@ -194,7 +197,7 @@
 .git-repo-section,
 .git-changes-section {
     gap: 6px;
-    padding: 8px 10px;
+    padding: 8px 0px;
 }
 
 .git-history-section {
@@ -211,7 +214,7 @@
 }
 
 .git-branch-icon {
-    color: #888888;
+    color: #333333;
     display: flex;
     align-items: center;
     flex-shrink: 0;
@@ -302,10 +305,10 @@
 }
 
 .git-commit-btn {
-    padding: 4px 10px;
-    font-size: 11px;
+    padding: 6px 10px;
+    font-size: 12px;
     font-family: var(--font-sans);
-    background: #4a7bd0;
+    background: #378dcd;
     color: #ffffff;
     border: none;
     border-radius: 4px;
@@ -332,10 +335,11 @@
 .git-commit-item {
     display: flex;
     flex-direction: column;
-    padding: 5px 10px 5px 16px;
-    border-bottom: 0.5px solid #f0f0f0;
+    padding: 5px 6px 5px 6px;
+    border-bottom: 0.5px solid #999999a1;
     cursor: pointer;
     gap: 1px;
+    background-color: #fefefe;
 }
 
 .git-commit-item:hover {
@@ -354,7 +358,7 @@
 
 .git-commit-hash {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 11px;
     color: #4a7bd0;
     flex-shrink: 0;
 }
@@ -370,7 +374,7 @@
 
 .git-commit-meta {
     font-size: 10px;
-    color: #888888;
+    color: #333333;
     white-space: nowrap;
 }
 

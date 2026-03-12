@@ -48,13 +48,7 @@ export class GitPanel {
         this._projectLabel.className = 'git-panel-project-label';
         this._projectLabel.textContent = 'No project open';
 
-        const refreshBtn = document.createElement('button');
-        refreshBtn.className = 'git-panel-refresh-btn';
-        refreshBtn.title = 'Refresh';
-        refreshBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
-        refreshBtn.addEventListener('click', () => this._refresh());
-
-        this._topbar.append(this._projectLabel, refreshBtn);
+        this._topbar.append(this._projectLabel);
 
         this._body = document.createElement('div');
         this._body.className = 'git-panel-body';
@@ -192,7 +186,7 @@ export class GitPanel {
     // --- 3.2 Repository ---
 
     _buildRepositorySection() {
-        return this._buildSection('Repository', '_repoOpen', (body) => {
+        return this._buildSection('Repositories', '_repoOpen', (body) => {
             body.className += ' git-repo-section';
 
             const branches = this._branches?.branches || [];
@@ -269,7 +263,7 @@ export class GitPanel {
 
     _buildChangesSection() {
         const files = this._status?.files || [];
-        return this._buildSection(`Changes (${files.length})`, '_changesOpen', (body) => {
+        const wrap = this._buildSection(`Changes (${files.length})`, '_changesOpen', (body) => {
             body.className += ' git-changes-section';
 
             // Commit message
@@ -281,7 +275,8 @@ export class GitPanel {
             // Commit button
             const commitBtn = document.createElement('button');
             commitBtn.className = 'git-commit-btn';
-            commitBtn.textContent = 'Commit All';
+            commitBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;vertical-align:-2px"><polyline points="20 6 9 17 4 12"/></svg>Commit`;
+            commitBtn.style.width = '100%';
             commitBtn.disabled = true;
 
             msgInput.addEventListener('input', () => {
@@ -307,6 +302,18 @@ export class GitPanel {
             }
             body.appendChild(list);
         });
+
+        // Add refresh button to the Changes section header
+        const header = wrap.firstElementChild;
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'git-panel-refresh-btn';
+        refreshBtn.title = 'Refresh';
+        refreshBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+        refreshBtn.addEventListener('click', (e) => { e.stopPropagation(); this._refresh(); });
+        refreshBtn.style.marginLeft = 'auto';
+        header.appendChild(refreshBtn);
+
+        return wrap;
     }
 
     _buildFileItem(f) {
@@ -420,11 +427,11 @@ export class GitPanel {
                 throw new Error(err.detail || res.statusText);
             }
             msgInput.value = '';
-            commitBtn.textContent = 'Committed!';
-            setTimeout(() => { commitBtn.textContent = 'Commit All'; }, 1500);
+            commitBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;vertical-align:-2px"><polyline points="20 6 9 17 4 12"/></svg>Committed!`;
+            setTimeout(() => { commitBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;vertical-align:-2px"><polyline points="20 6 9 17 4 12"/></svg>Commit`; }, 1500);
             this._refresh();
         } catch (e) {
-            commitBtn.textContent = 'Commit All';
+            commitBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;vertical-align:-2px"><polyline points="20 6 9 17 4 12"/></svg>Commit`;
             commitBtn.disabled = false;
             alert(`Commit failed: ${e.message}`);
         }
