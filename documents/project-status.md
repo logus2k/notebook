@@ -1,130 +1,225 @@
-# Notebook Collaboration Platform - Project Status
+# noted - Project Status
 
-## Current State
+## Document Information
 
-The PoC is functional with the core execution loop working end-to-end.
-
-### Working Features
-
-**Backend**
-
-- FastAPI + Socket.IO server running on uvicorn
-- Project CRUD via REST API (create, list)
-- Notebook CRUD via REST API (create, list, get, update, delete)
-- Venv management via REST API (create, delete, list packages, install, uninstall)
-- Support for both project-scoped and shared venvs
-- Kernel lifecycle management via jupyter_client (start, stop, restart, interrupt)
-- Execution bridge: ZMQ to Socket.IO streaming of cell outputs
-- Collaboration manager with Socket.IO rooms and cell-level locking with lease TTL
-- Heartbeat-based idle kernel timeout and lock renewal
-- Automatic cleanup on client disconnect (locks released, kernel stopped, room left)
-
-**Frontend**
-
-- Project selector with inline create button
-- Notebook selector with inline create button
-- CodeMirror 6 code editor per cell with Python syntax highlighting and oneDark theme
-- Cell execution via Shift+Enter or Ctrl+Enter or Run button
-- Streamed output rendering (stdout, stderr, execute_result, display_data, errors)
-- Kernel controls (Start, Stop, Restart, Interrupt) with status indicator
-- Venv selector dropdown (grouped by project/shared)
-- Venv management slide-out panel (create venv, view/install packages)
-- Add Code / Add Markdown cell buttons
-- Markdown cell rendering with edit/preview toggle (click rendered markdown to edit)
-- Cell delete functionality
-- Connected users display (avatar circles)
-- URL-based auto-open (project and notebook params)
-- Ctrl+S save shortcut
-- Socket.IO heartbeat every 30 seconds
-
-### Bug Fixes Applied
-
-- Fixed async enter_room/leave_room calls in collaboration manager
-- Fixed kernel spec lookup failure by injecting a minimal KernelSpec directly
-- Fixed CodeMirror duplicate @codemirror/state instances via esm.sh ?deps pinning
-- Fixed double notebook open on page load (suppress toolbar events during init, async project change)
+| Field | Value |
+|-------|-------|
+| Last Updated | 2026-03-12 |
+| Current Phase | Phase 1B (starting) |
+| Phase 0 | COMPLETED 2026-03-10 |
+| Phase 1A | COMPLETED 2026-03-11 |
 
 ---
 
-## What Is Missing
+## What Is Working (as of 2026-03-12)
 
-### Phase 4 Gaps - Cell Editing (partially done)
+### Infrastructure
 
-- **Cell reordering via drag and drop**: drag handle is styled but not wired up
-- **Cell move via keyboard**: no up/down cell movement shortcuts
-- **Save persists outputs**: currently toJSON() saves cell source but uses stale outputs from the original data rather than capturing outputs produced during the session
-- **Markdown preview on Shift+Enter**: running a markdown cell should render it instead of sending to kernel
-- **Cell type switching**: no way to change a cell from code to markdown or vice versa
+- Docker stack: `noted`, `noted-mlflow`, `noted-airflow-apiserver`, `noted-minio`, `noted-postgres`, `noted-redis`, `noted-nginx`
+- Compose files: `services/docker-compose.yml` (base), `docker-compose.gpu.yml` (GPU override), `docker-compose.local.yml` (nginx standalone)
+- Service URLs: `/mlflow`, `/airflow`, `/minio` (nginx routing, same for local and production)
+- GPU passthrough via `deploy.resources.reservations.devices` in compose
+- `uv` installed in Docker image for fast package installs
 
-### Phase 5 Gaps - Collaboration (partially done)
+### UI Layout (VS Code-like 4-column)
 
-- **Cell locking UI feedback for self**: when you lock a cell, there is no visual confirmation on your own client
-- **Lock denial feedback**: if lock is denied, the error is logged to console but no toast/notification is shown
-- **Concurrent editing tested**: rooms and broadcasting are implemented but not yet tested with multiple browser tabs
-- **Conflict edge cases**: lock expiry during active editing could lead to overwrites (last-write-wins is the accepted MVP behavior)
+- **Icon Bar** (`frontend/js/IconBar.js`, `frontend/css/icon-bar.css`): dark `#181818` vertical bar, logo at top (`noted_logo_small.png`), icons for Projects, Environments (top), Airflow/MLflow/MinIO service images + Settings (bottom)
+- **Sidebar** (`frontend/js/SidebarPanel.js`, `frontend/css/sidebar.css`): collapsible panel, 280px default (160–500px range), named views registered via `registerView()`, toggled from icon bar. Active tab shown in tab strip; clicking tab switches (not closes); closing via icon bar only.
+- **Center pane** (`frontend/js/TabBar.js`): tabbed, supports notebooks, Python files, service iframes (MLflow/Airflow/MinIO), document viewer, git commit viewer. Service iframes are persistent DOM wrappers (not removed on close).
+- **Right panel** (`frontend/js/RightPanel.js`): Chat assistant with status LED + label in title bar.
+- **Info bar** (`frontend/js/InfoBar.js`): decorative only.
+- **Notebook bars**: two sticky bars inside `.notebook` wrapper:
+  - Top bar (`#notebook-top-bar`): bg `#ffe39eed`, breadcrumb left
+  - Second bar (`#notebook-second-bar`): bg `#fff2bcd9`, Save + PostIt left, kernel controls center, kernel selector right. Labels hide at `@container (max-width: 580px)`.
 
-### General Missing Features
+### Workspace Tree (Wunderbaum)
 
-- **Notebook save on cell change**: changes are broadcast to other clients but not auto-saved to disk; only manual Ctrl+S or Save button persists
-- **Auto-save / dirty indicator**: no visual indicator that unsaved changes exist
-- **Error toasts/notifications**: server errors are logged to console only, no user-facing feedback
-- **Delete project / delete notebook UI**: only creatable from the toolbar, no delete buttons in the UI (available via REST API)
-- **Import existing .ipynb**: no upload/import functionality; notebooks must be manually copied to the data directory or created empty via UI
-- **Notebook download/export**: no way to download the .ipynb file from the UI
-- **Cell output persistence on save**: outputs generated during execution should be captured and saved with the notebook
-- **Run All behavior**: currently fires all cells simultaneously; should run sequentially (wait for each cell to complete before running the next)
-- **Execution count display**: execution count updates on complete but resets on page reload since outputs are not persisted
-- **Cell selection / focus management**: no concept of "active cell" for keyboard navigation between cells
-- **Undo at notebook level**: CodeMirror has per-cell undo, but no notebook-level undo for cell add/delete/move
-- **Loading states**: no loading indicators during project/notebook/venv creation or kernel startup
-- **Reconnection handling**: Socket.IO reconnects automatically but does not re-open the notebook or restore state after reconnection
-- **Favicon**: 404 on favicon.ico
+Sections:
+- **Projects**: notebooks, src/ Python files. Create/import notebooks, create/delete projects.
+- **Environments**: project-scoped and shared venvs, package install/uninstall with terminal (xterm.js PTY streaming). uv or pip selector.
+- **Knowledge Base** (formerly Documents): markdown (marked.js) and PDF (pdf.js ESM, lazy render) viewer. Two-level category/document organization via `documents.json`.
+- **Storage**: MinIO bucket browser (placeholder).
+- **Pipelines**: DVC pipeline stages + Airflow DAGs (placeholder).
+- **Models**: MLflow model registry (placeholder).
+- **APIs**: serving endpoints (placeholder).
 
-### Deferred (per spec)
+Wunderbaum quirks:
+- `folder` property stripped on lazyLoad — must set `node.folder = true` programmatically.
+- `return false` in click handler prevents default expand — must explicitly list expandable node types.
 
-- Authentication (clients identified by Socket.IO SID only)
-- File upload (drag and drop notebook import)
-- Terminal access (web terminal to venv)
-- Git integration (version control for notebooks)
-- Resource limits (CPU/RAM caps per kernel)
-- Export (notebooks as HTML/PDF)
-- Autocomplete (Python autocomplete via kernel introspection)
+### Notebooks
+
+- CodeMirror 6 editor per cell (Python, oneDark theme)
+- Markdown cells (edit/preview toggle)
+- Cell execution (Shift+Enter / Ctrl+Enter / Run button), Run All, Interrupt
+- Streamed output rendering: stdout, stderr, execute_result, display_data, errors, images
+- Cell sidebar: drag handle, execution count (absolute `left: -36px`), type indicator
+- Drag-and-drop cell reordering (midpoint detection, wrapper offset by 2 for top/second bars)
+- Cell add (code/markdown), delete
+- TOC (table of contents) panel with 30px scroll offset for sticky bar
+- Post-it notes panel
+- Save (Ctrl+S), export (.ipynb download), import (.ipynb upload)
+- URL-based auto-open (project + notebook params)
+- Execution counts: always visible, Jupyter-standard numbering
+
+### Python Source Files
+
+- Full CRUD: `projects/{id}/src/` directory
+- CodeMirror editor in center pane (edit + save only, no execution UI)
+- `PYTHONPATH` injected into kernel — notebooks can `import` from `src/`
+- Tree keys: `srcfolder:{projectId}`, `srcfile:{projectId}:{filename}`
+
+### MLflow Integration (Phase 1A — T-1A.6)
+
+- `MLFLOW_TRACKING_URI=http://mlflow:5000` and `MLFLOW_EXPERIMENT_NAME={project_id}` injected into every kernel
+- `mlflow` auto-installed in new venvs via `runtime.json` post-create commands (via `uv`)
+- Notebooks can `import mlflow` and auto-connect without configuration
+- Experiment name = project name; runs visible in MLflow UI at `/mlflow`
+- MLflow tab as persistent iframe in center pane
+- `mlflow.autolog()` captures sklearn/pytorch/keras params+metrics automatically
+- Service health check with Notyf toast on connect/disconnect
+
+### Kernel & Environment Management
+
+- jupyter_client kernel lifecycle (start, stop, restart, interrupt)
+- ZMQ → Socket.IO execution bridge with streamed output
+- Kernel env: `MLFLOW_TRACKING_URI`, `MLFLOW_EXPERIMENT_NAME`, `PYTHONPATH`, `LD_LIBRARY_PATH` (WSL/CUDA)
+- PTY-based terminal install: 24×120, `TERM=xterm-256color`, clean env (strips `PYTHONPATH`, `PYTHONHOME`, `VIRTUAL_ENV`)
+- Cancel active install: `_install_procs` dict, SIGTERM + 5s timeout + SIGKILL
+- Terminal theme: `TerminalThemes.js` with listener pattern, default "Adventure"
+- Panel title: `"Terminal - {envName} installation"`
+
+### Git Panel (Source Control sidebar view)
+
+- Sections: Author · Repositories · Changes · History
+- Branch selector + new branch form
+- Commit textarea + full-width "Commit" button with checkmark SVG
+- Changed files list with file type icons and status badges (M/A/D/R/?)
+- Commit history list with short hash, message, relative date
+- Expandable commit items with diff viewer (CodeMirror read-only)
+- Refresh button in CHANGES section header (right-aligned, `e.stopPropagation()`)
+- Section headers: styled with `#ffa11124` background, `#e1ca8ee3` border, orange hover
+
+### Notifications
+
+- Notyf library (`frontend/vendor/notyf.min.js/css`), singleton `frontend/js/Notify.js`, bottom-right
+- Kernel toasts: `venvName (displayName) started/failed`
+- Assistant toasts: connect/disconnect
+- Service toasts: MLflow/Airflow/MinIO health checks
+
+### Chat Assistant
+
+- ChatPanel + ChatService + AgentClient
+- Connects to external LLM at `logus2k.com/llm`, agent `"docbro"`
+- Status LED in RightPanel title bar
+- Visible by default, auto-sends "Hello!" on connect
+
+### MLOps Vision Documents (in `documents/`)
+
+Full use-case specs for Phase 1B–4 integrations:
+- `noted_mlflow.md`: 9 use cases (run logging, live metrics, artifact management, model registry, serving, hygiene)
+- `noted_dvc.md`: 7 use cases (dataset versioning, MinIO remote, lineage, DVC pipelines)
+- `noted_hydra.md`: 6 use cases (config management, sweeps, MLflow auto-log)
+- `noted_airflow.md`: 8 use cases (DAG authoring, trigger, monitoring, inline logs, scheduling)
 
 ---
 
-## File Inventory
+## What Is Next (Phase 1B)
 
-### Backend (backend/app/)
+### DVC Integration (Phase 1B — first priority)
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| config.py | 16 | Paths, constants, defaults |
-| main.py | 210 | FastAPI + Socket.IO app, all event handlers |
-| managers/notebook_manager.py | 120 | Notebook file CRUD |
-| managers/venv_manager.py | 130 | Venv lifecycle + packages |
-| managers/kernel_manager.py | 170 | Kernel process management |
-| managers/execution_bridge.py | 110 | ZMQ to Socket.IO bridge |
-| managers/collaboration.py | 205 | Rooms, locks, broadcast |
-| routers/notebooks.py | 65 | REST endpoints for notebooks |
-| routers/venvs.py | 95 | REST endpoints for venvs |
+1. DVC init + remote config: auto-init in new projects, auto-configure MinIO remote
+2. Workspace tree badges: DVC-tracked file indicators
+3. Source Control panel extension: DVC push/pull buttons alongside Git
+4. Context menu: "Track with DVC" on files
+5. Pipeline tree: list DVC stages from `dvc.yaml`
+6. Reproduce from MLflow run: "Restore environment" action
 
-### Frontend (frontend/)
+### MLflow Experiments Panel (Phase 1B)
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| index.html | 31 | Entry point, CDN imports |
-| js/app.js | 145 | Bootstrap, wiring, URL routing |
-| js/KernelClient.js | 195 | Socket.IO wrapper |
-| js/NotebookEditor.js | 325 | Cell array management, remote sync |
-| js/CellEditor.js | 345 | CodeMirror per cell, lock/focus/run |
-| js/CellOutput.js | 141 | Output renderer |
-| js/NotebookToolbar.js | 340 | Toolbar with selectors and controls |
-| js/VenvPanel.js | 324 | Venv management panel |
-| css/base.css | 121 | Reset, variables, scrollbar |
-| css/toolbar.css | 100 | Toolbar layout |
-| css/notebook.css | 95 | Notebook container |
-| css/cell.css | 206 | Cell styling, CodeMirror overrides |
-| css/output.css | 150 | Output rendering |
-| css/venv-panel.css | 199 | Venv panel |
+1. Experiments section in workspace tree: run list per project
+2. Run detail panel: metrics, params, artifacts inline
+3. Live metric streaming during active runs (poll every few seconds)
+4. Run compare panel: side-by-side metrics + param diff
 
-**Total: ~3500 lines across 23 files**
+---
+
+## Known Pending Issues
+
+- Wire up `onProjectDeleted`, `onNotebookDeleted`, `onProjectRenamed`, `onNotebookRenamed` callbacks in `app.js`
+- Cancel active install before deleting an environment
+- External projects feature designed but not implemented (see `documents/external-projects.md`)
+- Multi-notebook support deferred (one notebook tab at a time)
+
+---
+
+## Key File Map
+
+### Backend
+
+| File | Purpose |
+|------|---------|
+| `backend/app/main.py` | FastAPI + Socket.IO app, event handlers |
+| `backend/app/managers/kernel_manager.py` | Kernel lifecycle + env injection |
+| `backend/app/managers/env_manager.py` | Venv lifecycle, PTY install stream |
+| `backend/app/managers/notebook_manager.py` | Notebook file CRUD |
+| `backend/app/managers/document_manager.py` | Document file CRUD |
+| `backend/app/managers/source_file_manager.py` | Python src/ file CRUD |
+| `backend/app/routers/venvs.py` | REST: venv endpoints |
+| `backend/app/routers/documents.py` | REST: document endpoints |
+| `backend/app/routers/source_files.py` | REST: src file endpoints |
+| `backend/app/routers/git.py` | REST: git status/commit/branch/log |
+
+### Frontend
+
+| File | Purpose |
+|------|---------|
+| `frontend/js/app.js` | Bootstrap, wiring, tab management, breadcrumbs |
+| `frontend/js/IconBar.js` | Icon bar with view toggles |
+| `frontend/js/SidebarPanel.js` | Sidebar with registered views, tab strip |
+| `frontend/js/RightPanel.js` | Chat/right panel with status LED |
+| `frontend/js/panels/ExplorerPanel.js` | Workspace tree (Wunderbaum), detail panes |
+| `frontend/js/NotebookEditor.js` | Cell array, remote sync, top/second bars |
+| `frontend/js/CellEditor.js` | CodeMirror per cell, lock/focus/run |
+| `frontend/js/CellOutput.js` | Output renderer |
+| `frontend/js/NotebookToolbar.js` | Toolbar (spacer + connected users) |
+| `frontend/js/panels/DocumentViewer.js` | Markdown + PDF document renderer |
+| `frontend/js/PythonFileEditor.js` | CodeMirror Python file editor |
+| `frontend/js/GitPanel.js` | Source Control sidebar view |
+| `frontend/js/ChatPanel.js` | Chat UI |
+| `frontend/js/ChatService.js` | LLM connection + status callbacks |
+| `frontend/js/TabBar.js` | Center pane tab bar |
+| `frontend/js/Notify.js` | Notyf singleton wrapper |
+| `frontend/js/TerminalThemes.js` | xterm.js theme registry |
+
+### CSS
+
+| File | Purpose |
+|------|---------|
+| `frontend/css/base.css` | CSS variables, reset, scrollbars, fonts |
+| `frontend/css/icon-bar.css` | Icon bar |
+| `frontend/css/sidebar.css` | Sidebar panel + tab strip |
+| `frontend/css/tab-bar.css` | Center pane tab bar |
+| `frontend/css/right-panel.css` | Right/chat panel |
+| `frontend/css/explorer-panel.css` | Workspace tree + detail pane |
+| `frontend/css/document-viewer.css` | Markdown + PDF viewer |
+| `frontend/css/python-file-editor.css` | Python file editor |
+| `frontend/css/git-panel.css` | Git/Source Control panel |
+| `frontend/css/cell.css` | Cell styling, CodeMirror overrides |
+| `frontend/css/output.css` | Output rendering |
+| `frontend/css/venv-panel.css` | Environment panel |
+
+---
+
+## Architecture Notes
+
+- **No frontend framework**: vanilla JS classes, no React/Vue/Angular
+- **jsPanel**: floating/draggable panels (not currently in active use for main layout)
+- **Wunderbaum**: workspace tree (lazy-load, virtual scroll)
+- **CodeMirror 6**: all code/text editing (cells, Python files, git diff, YAML)
+- **xterm.js**: UMD build, DOM renderer (not WebGL), `MesloLGS NF` font, 24×120 cols
+- **Socket.IO**: kernel execution bridge, collaboration
+- **marked v15.0.12**: GFM markdown rendering (tables, code blocks)
+- **pdf.js ESM**: lazy page rendering with IntersectionObserver
+- **Notyf**: toast notifications
+- **Split.js**: explorer left/right pane split
