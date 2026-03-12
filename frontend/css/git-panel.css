@@ -16,9 +16,8 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 10px;
-    border-bottom: 0.5px solid #cccccc;
-    flex-shrink: 0;
+    flex: 1;
+    min-width: 0;
 }
 
 .git-panel-project-label {
@@ -31,7 +30,7 @@
 }
 
 .git-panel-project-name {
-    font-weight: 600;
+    font-weight: 500;
     color: #222222;
 }
 
@@ -128,25 +127,41 @@
 .git-file-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 3px 10px 3px 16px;
+    gap: 5px;
+    padding: 3px 6px 3px 3px;
     font-size: 11px;
     cursor: default;
     border-bottom: 0.5px solid #f0f0f0;
+    background-color: #efefef;
 }
 
 .git-file-item:hover {
     background: rgba(0, 0, 0, 0.04);
 }
 
+.git-file-icon {
+    font-size: 11px;
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+    color: #999999;
+}
+
+.git-file-icon.fa-python        { color: #3776ab; }
+.git-file-icon.fa-book          { color: #e07a10; }
+.git-file-icon.fa-file-pdf      { color: #cc3333; }
+.git-file-icon.fa-file-code     { color: #4a7bd0; }
+.git-file-icon.fa-file-image    { color: #c4a6e0; }
+.git-file-icon.fa-file-lines    { color: #6aaa6a; }
+.git-file-icon.fa-file          { color: #aaaaaa; }
+
 .git-file-status {
     font-size: 10px;
     font-weight: 700;
     width: 14px;
-    text-align: center;
+    text-align: right;
     flex-shrink: 0;
-    border-radius: 2px;
-    padding: 0 2px;
+    margin-left: auto;
 }
 
 .git-file-status.modified  { color: #c07a00; }
@@ -163,19 +178,86 @@
     color: #333333;
     flex: 1;
     font-family: var(--font-mono);
-    font-size: 10.5px;
+    font-size: 11px;
 }
 
-/* ── Commit form ── */
+/* ── Section bodies ── */
 
-.git-commit-form {
+.git-section-body {
     display: flex;
     flex-direction: column;
+    border-bottom: 0.5px solid #e8e8e8;
+}
+
+.git-author-section,
+.git-repo-section,
+.git-changes-section {
     gap: 6px;
     padding: 8px 10px;
-    border-bottom: 0.5px solid #e0e0e0;
+}
+
+.git-history-section {
+    gap: 0;
+    padding: 0;
+}
+
+/* ── Branch row ── */
+
+.git-branch-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.git-branch-icon {
+    color: #888888;
+    display: flex;
+    align-items: center;
     flex-shrink: 0;
 }
+
+.git-branch-select {
+    flex: 1;
+    padding: 3px 5px;
+    font-size: 11px;
+    font-family: var(--font-sans);
+    border: 0.5px solid #c8c8c8;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #222222;
+    outline: none;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.git-branch-select:focus {
+    border-color: #4a7bd0;
+}
+
+.git-new-branch-btn {
+    background: none;
+    border: 0.5px solid #c8c8c8;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666666;
+    padding: 3px 5px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.git-new-branch-btn:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: #222222;
+}
+
+.git-new-branch-form {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+/* ── Author / commit form ── */
 
 .git-author-row {
     display: flex;

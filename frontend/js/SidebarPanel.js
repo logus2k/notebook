@@ -38,7 +38,7 @@ export class SidebarPanel {
 
         this._panel.appendChild(this._header);
 
-        // Title bar — shows the active view's full title
+        // Title bar — shows the active view's title or a custom titleElement
         this._titleBar = document.createElement('div');
         this._titleBar.className = 'sidebar-title-bar';
 
@@ -47,6 +47,7 @@ export class SidebarPanel {
         this._titleBar.appendChild(this._titleEl);
 
         this._panel.appendChild(this._titleBar);
+        this._activeTitleElement = null;
 
         // Content area
         this._contentEl = document.createElement('div');
@@ -143,7 +144,20 @@ export class SidebarPanel {
 
         // Show new view
         this._activeView = key;
-        this._titleEl.textContent = view.title;
+
+        // Restore default title element if previous view had a custom one
+        if (this._activeTitleElement) {
+            this._titleBar.replaceChild(this._titleEl, this._activeTitleElement);
+            this._activeTitleElement = null;
+        }
+
+        if (view.titleElement) {
+            this._titleBar.replaceChild(view.titleElement, this._titleEl);
+            this._activeTitleElement = view.titleElement;
+        } else {
+            this._titleEl.textContent = view.title;
+        }
+
         view.element.style.display = '';
         if (view._tab) view._tab.classList.add('active');
         if (view.onActivate) view.onActivate();

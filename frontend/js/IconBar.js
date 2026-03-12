@@ -52,7 +52,7 @@ export class IconBar {
         const gitBtn = document.createElement('button');
         gitBtn.className = 'icon-bar-btn';
         gitBtn.innerHTML = ICON_BAR_ICONS.git;
-        gitBtn.title = 'Git';
+        gitBtn.title = 'Source Control';
         gitBtn.dataset.key = 'git';
         gitBtn.addEventListener('click', () => this._onIconClick('git'));
         topGroup.appendChild(gitBtn);

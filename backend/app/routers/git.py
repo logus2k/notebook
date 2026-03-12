@@ -87,3 +87,41 @@ def show_commit(project_id: str, ref: str):
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+class BranchRequest(BaseModel):
+    branch: str
+
+
+@router.get("/projects/{project_id}/git/branches")
+def get_branches(project_id: str):
+    try:
+        return git_mgr.branches(project_id)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/projects/{project_id}/git/checkout")
+def checkout(project_id: str, body: BranchRequest):
+    try:
+        return git_mgr.checkout(project_id, body.branch)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(status_code=500, detail=e.stderr or str(e))
+
+
+@router.post("/projects/{project_id}/git/branches")
+def create_branch(project_id: str, body: BranchRequest):
+    try:
+        return git_mgr.create_branch(project_id, body.branch)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(status_code=500, detail=e.stderr or str(e))

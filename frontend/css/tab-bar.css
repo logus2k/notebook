@@ -194,7 +194,7 @@ body.resizing #service-tab-container iframe {
 .breadcrumb-segment {
     font-size: 11px;
     font-family: var(--font-sans);
-    color: #666666;
+    color: #333333;
 }
 
 .breadcrumb-segment.breadcrumb-current {

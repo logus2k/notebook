@@ -113,9 +113,10 @@ class App {
         this._gitCommitViewer = new GitCommitViewer();
         this._gitPanel.setOnCommitOpen((projectId, commit) => this._openGitCommitTab(projectId, commit));
         this._sidebar.registerView('git', {
-            tabLabel: 'Git',
-            title: 'Version Control',
+            tabLabel: 'Source Control',
+            title: 'Source Control',
             element: this._gitPanel.element,
+            titleElement: this._gitPanel.titleElement,
             onActivate: () => this._gitPanel.activate(),
         });
 

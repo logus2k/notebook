@@ -176,6 +176,35 @@ class GitManager:
         result = self._run(args, path, check=False)
         return {"diff": result.stdout}
 
+    def branches(self, project_id: str) -> dict:
+        if not self.is_initialized(project_id):
+            return {"branches": [], "current": None}
+
+        path = self._project_path(project_id)
+        current_res = self._run(["git", "branch", "--show-current"], path, check=False)
+        current = current_res.stdout.strip() or None
+
+        list_res = self._run(["git", "branch", "--format=%(refname:short)"], path, check=False)
+        branches = [b.strip() for b in list_res.stdout.splitlines() if b.strip()]
+
+        return {"branches": branches, "current": current}
+
+    def checkout(self, project_id: str, branch: str) -> dict:
+        if not branch or ".." in branch or " " in branch:
+            raise ValueError(f"Invalid branch name: {branch}")
+
+        path = self._project_path(project_id)
+        self._run(["git", "checkout", branch], path)
+        return {"branch": branch}
+
+    def create_branch(self, project_id: str, branch: str) -> dict:
+        if not branch or ".." in branch or " " in branch:
+            raise ValueError(f"Invalid branch name: {branch}")
+
+        path = self._project_path(project_id)
+        self._run(["git", "checkout", "-b", branch], path)
+        return {"branch": branch}
+
     def show_commit(self, project_id: str, ref: str) -> dict:
         if not self.is_initialized(project_id):
             return {"diff": "", "files": []}
