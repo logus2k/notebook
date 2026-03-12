@@ -110,8 +110,8 @@
 }
 
 .document-viewer-markdown th {
-    background: rgba(0, 0, 0, 0.04);
-    font-weight: 600;
+    background: rgb(43 139 255 / 32%);
+    font-weight: 500;
 }
 
 .document-viewer-markdown ul,

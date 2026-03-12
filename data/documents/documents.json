@@ -1,6 +1,7 @@
 {
   "categories": {
-    "MLOps": {}
+    "MLOps": {},
+    "noted": {}
   },
   "documents": [
     {
@@ -12,6 +13,26 @@
       "name": "Airflow Installation",
       "category": "MLOps",
       "location": "files/installation.md"
+    },
+    {
+      "name": "DVC Use Cases",
+      "category": "noted",
+      "location": "files/noted_dvc.md"
+    },
+    {
+      "name": "Hydra Use Cases",
+      "category": "noted",
+      "location": "files/noted_hydra.md"
+    },
+    {
+      "name": "Airflow Use Cases",
+      "category": "noted",
+      "location": "files/noted_airflow.md"
+    },
+    {
+      "name": "MLFlow Use Cases",
+      "category": "noted",
+      "location": "files/noted_mlflow.md"
     }
   ]
 }
