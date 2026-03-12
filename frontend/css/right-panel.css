@@ -19,6 +19,7 @@
 }
 
 .right-panel-tab {
+    display: none;
     position: relative;
     padding: 2px 11px 1px 11px;
     background-color: #ffecb9;
@@ -33,6 +34,10 @@
     line-height: 1.8;
     user-select: none;
     -webkit-user-select: none;
+}
+
+.right-panel-tab.open {
+    display: block;
 }
 
 .right-panel-tab.active {

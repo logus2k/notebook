@@ -55,8 +55,7 @@ class App {
         this._iconBar = new IconBar(
             document.getElementById('icon-bar'),
             {
-                onIconClick: (key, isActive) => this._onIconBarClick(key, isActive),
-                onChatToggle: () => this._toggleChatPanel(),
+                onIconClick: (key) => this._onIconBarClick(key),
             }
         );
 
@@ -305,9 +304,11 @@ class App {
             }
         }, true);
 
-        // Show TOC in sidebar by default
+        // Open all sidebar views by default, with Workspace shown
         requestAnimationFrame(() => {
-            this._sidebar.show('toc');
+            this._sidebar.show('toc');      // open toc (added to openViews)
+            this._sidebar.show('git');      // open git (added to openViews, shown)
+            this._sidebar.show('projects'); // open projects, shown last
             this._syncIconBar();
         });
 
@@ -472,7 +473,10 @@ class App {
             element: promptsEl,
         });
 
-        // Show Assistant by default
+        this._rightPanel.onClose = () => this._hideRightPanel();
+
+        // Open both views, show Assistant by default
+        this._rightPanel.show('prompts');
         this._rightPanel.show('assistant');
 
         this._chatService = new ChatService(this._chatPanel);
@@ -487,46 +491,48 @@ class App {
         });
     }
 
-    _toggleChatPanel() {
+    _toggleRightPanel(view) {
         const panel = document.getElementById('right-panel');
-        this._chatVisible = !this._chatVisible;
+        this._rightPanel.toggle(view);
+        this._chatVisible = this._rightPanel.openViews.size > 0;
         panel.style.display = this._chatVisible ? 'flex' : 'none';
+        this._syncIconBar();
+    }
+
+    _hideRightPanel() {
+        const panel = document.getElementById('right-panel');
+        this._chatVisible = false;
+        panel.style.display = 'none';
+        this._syncIconBar();
     }
 
     _onIconBarClick(key) {
         if (key === 'projects') {
-            const wsActive = this._tabBar.activeKey === 'workspace'
-                          || this._tabBar.activeKey === 'notebook';
-            const sidebarShowingTree = this._sidebar.visible
-                && (this._sidebar.activeView === 'projects' || this._sidebar.activeView === 'toc');
-
-            if (wsActive && sidebarShowingTree) {
-                // Sidebar visible with workspace/toc → close tab and sidebar
-                if (this._tabBar._tabs.has('workspace')) this._tabBar.closeTab('workspace');
-                this._sidebar.hide();
-                this._syncIconBar();
-            } else if (this._tabBar._tabs.has('workspace')) {
-                // Workspace tab exists but not active → activate and show sidebar
-                this._tabBar.activate('workspace');
-                this._sidebar.show('projects');
-            } else {
-                // Doesn't exist → open tab and sidebar
-                this._sidebar.show('projects');
-                this._explorerPanel.setActiveVenv(this._activeVenv ? this._activeVenv.name : null);
-                this._openWorkspaceTab();
-                this._explorerPanel.navigate({
-                    currentProject: this._currentProject,
-                    currentNotebook: this._currentNotebook,
-                });
-            }
-        } else if (key === 'git') {
-            if (this._sidebar.visible && this._sidebar.activeView === 'git') {
-                this._sidebar.hide();
-            } else {
-                if (this._currentProject) this._gitPanel.setProject(this._currentProject);
-                this._sidebar.show('git');
+            const opening = !this._sidebar.openViews.has('projects');
+            this._sidebar.toggle('projects');
+            if (opening) {
+                if (!this._tabBar._tabs.has('workspace')) {
+                    this._explorerPanel.setActiveVenv(this._activeVenv ? this._activeVenv.name : null);
+                    this._openWorkspaceTab();
+                    this._explorerPanel.navigate({
+                        currentProject: this._currentProject,
+                        currentNotebook: this._currentNotebook,
+                    });
+                } else {
+                    this._tabBar.activate('workspace');
+                }
             }
             this._syncIconBar();
+        } else if (key === 'toc') {
+            this._sidebar.toggle('toc');
+            this._syncIconBar();
+        } else if (key === 'git') {
+            const opening = !this._sidebar.openViews.has('git');
+            if (opening && this._currentProject) this._gitPanel.setProject(this._currentProject);
+            this._sidebar.toggle('git');
+            this._syncIconBar();
+        } else if (key === 'assistant' || key === 'prompts') {
+            this._toggleRightPanel(key);
         } else if (key === 'mlflow' || key === 'airflow' || key === 'minio') {
             if (this._tabBar.activeKey === key) {
                 this._tabBar.closeTab(key);
@@ -560,12 +566,13 @@ class App {
         for (const k of serviceKeys) {
             this._iconBar.setTabIndicator(k, this._tabBar._tabs.has(k));
         }
-        // Projects icon: active when sidebar is visible with projects or toc view
-        const sidebarActive = this._sidebar?.visible
-            && (this._sidebar.activeView === 'projects' || this._sidebar.activeView === 'toc');
-        this._iconBar.setTabIndicator('projects', sidebarActive);
-        // Git icon: active when git sidebar view is visible
-        this._iconBar.setTabIndicator('git', this._sidebar?.visible && this._sidebar.activeView === 'git');
+        const ov = this._sidebar?.openViews;
+        this._iconBar.setTabIndicator('projects', ov?.has('projects') ?? false);
+        this._iconBar.setTabIndicator('toc',      ov?.has('toc')      ?? false);
+        this._iconBar.setTabIndicator('git',      ov?.has('git')      ?? false);
+        const rov = this._rightPanel?.openViews;
+        this._iconBar.setTabIndicator('assistant', this._chatVisible && (rov?.has('assistant') ?? false));
+        this._iconBar.setTabIndicator('prompts',   this._chatVisible && (rov?.has('prompts')   ?? false));
     }
 
     _onTabActivated(key) {

@@ -8,6 +8,8 @@ export class RightPanel {
         this._container = container;
         this._views = {};
         this._activeView = null;
+        this._openViews = new Set();
+        this._onClose = null;
         this._build();
     }
 
@@ -64,8 +66,9 @@ export class RightPanel {
     show(key) {
         const view = this._views[key];
         if (!view) return;
+        this._openViews.add(key);
 
-        // Deactivate previous
+        // Deactivate previous (keep 'open', only remove 'active')
         if (this._activeView && this._activeView !== key) {
             const prev = this._views[this._activeView];
             prev.element.style.display = 'none';
@@ -75,11 +78,36 @@ export class RightPanel {
 
         // Activate new
         view.element.style.display = '';
-        view._tab.classList.add('active');
+        view._tab.classList.add('open', 'active');
         this._activeView = key;
         this._titleEl.textContent = view.title || '';
         if (view.onActivate) view.onActivate();
     }
+
+    close(key) {
+        this._openViews.delete(key);
+        const view = this._views[key];
+        if (view?._tab) view._tab.classList.remove('open', 'active');
+        if (this._activeView === key) {
+            const remaining = [...this._openViews];
+            if (remaining.length > 0) {
+                this.show(remaining[remaining.length - 1]);
+            } else {
+                if (this._onClose) this._onClose();
+            }
+        }
+    }
+
+    toggle(key) {
+        if (this._openViews.has(key)) {
+            this.close(key);
+        } else {
+            this.show(key);
+        }
+    }
+
+    set onClose(cb) { this._onClose = cb; }
+    get openViews() { return this._openViews; }
 
     updateViewTitle(key, title) {
         const view = this._views[key];

@@ -128,11 +128,12 @@
     display: flex;
     align-items: center;
     gap: 5px;
-    padding: 3px 6px 3px 3px;
+    padding: 4px 6px 5px 3px;
     font-size: 11px;
     cursor: default;
     border-bottom: 0.5px solid #f0f0f0;
-    background-color: #efefef;
+    background-color: #acacac26;
+    margin-bottom: 2px;
 }
 
 .git-file-item:hover {

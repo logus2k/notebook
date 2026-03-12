@@ -20,6 +20,7 @@ export class SidebarPanel {
         this._activeView = null;
         this._savedWidth = null;
         this._views = {};
+        this._openViews = new Set(); // tracks all currently open (not just shown) view keys
 
         this._build();
         this._setupResize();
@@ -133,8 +134,9 @@ export class SidebarPanel {
     show(key) {
         const view = this._views[key];
         if (!view) return;
+        this._openViews.add(key);
 
-        // Deactivate previous view
+        // Deactivate previous view (keep 'open', only remove 'active')
         if (this._activeView && this._views[this._activeView]) {
             const prev = this._views[this._activeView];
             prev.element.style.display = 'none';
@@ -159,7 +161,7 @@ export class SidebarPanel {
         }
 
         view.element.style.display = '';
-        if (view._tab) view._tab.classList.add('active');
+        if (view._tab) view._tab.classList.add('open', 'active');
         if (view.onActivate) view.onActivate();
 
         if (!this._visible) {
@@ -178,6 +180,7 @@ export class SidebarPanel {
      * Hide the sidebar entirely.
      */
     hide() {
+        this._openViews.clear();
         this._visible = false;
         this._panel.classList.remove('sidebar-open');
         this._resizer.classList.remove('sidebar-open');
@@ -185,8 +188,11 @@ export class SidebarPanel {
         if (this._activeView && this._views[this._activeView]) {
             const prev = this._views[this._activeView];
             prev.element.style.display = 'none';
-            if (prev._tab) prev._tab.classList.remove('active');
+            if (prev._tab) prev._tab.classList.remove('open', 'active');
             if (prev.onDeactivate) prev.onDeactivate();
+        }
+        for (const view of Object.values(this._views)) {
+            if (view._tab) view._tab.classList.remove('open', 'active');
         }
         this._activeView = null;
 
@@ -194,16 +200,33 @@ export class SidebarPanel {
     }
 
     /**
-     * Toggle the sidebar for a specific view.
-     * If already showing that view, hide. Otherwise, show it.
+     * Close a specific view. If it was the active view, switch to another open view
+     * or hide the sidebar if none remain open.
+     */
+    close(key) {
+        this._openViews.delete(key);
+        const view = this._views[key];
+        if (view?._tab) view._tab.classList.remove('open', 'active');
+        if (this._activeView === key) {
+            const remaining = [...this._openViews];
+            if (remaining.length > 0) {
+                this.show(remaining[remaining.length - 1]);
+            } else {
+                this.hide();
+            }
+        }
+        if (this._callbacks.onViewChange) this._callbacks.onViewChange(this._activeView);
+    }
+
+    /**
+     * Toggle a view: open it if not open, close it if already open.
      */
     toggle(key) {
-        if (this._visible && this._activeView === key) {
-            this.hide();
-            return false;
+        if (this._openViews.has(key)) {
+            this.close(key);
+        } else {
+            this.show(key);
         }
-        this.show(key);
-        return true;
     }
 
     /**
@@ -217,6 +240,8 @@ export class SidebarPanel {
             this._titleEl.textContent = title;
         }
     }
+
+    get openViews() { return this._openViews; }
 
     get visible() {
         return this._visible;
