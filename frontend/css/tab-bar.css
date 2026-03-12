@@ -110,7 +110,7 @@ body.resizing #service-tab-container iframe {
 
 /* Service top bar — mirrors notebook top bar */
 .service-top-bar {
-    height: 24px;
+    height: 25px;
     background: #ffd670;
     display: flex;
     align-items: center;
