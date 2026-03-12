@@ -247,7 +247,7 @@ export class NotebookEditor {
         this._wrapperEl.appendChild(this._secondBar);
 
         if (total === 0) {
-            const addBtn = this._createAddCellButton(0);
+            const addBtn = this._createAddCellButton();
             addBtn.classList.add('add-cell-last');
             this._wrapperEl.appendChild(addBtn);
             this._container.appendChild(this._wrapperEl);
@@ -262,13 +262,13 @@ export class NotebookEditor {
 
         for (let i = 0; i < total; i++) {
             if (i === 0) {
-                this._wrapperEl.appendChild(this._createAddCellButton(i));
+                this._wrapperEl.appendChild(this._createAddCellButton());
             }
 
             const cellEditor = this._createCellEditor(cells[i], i);
             this._cells.push(cellEditor);
             this._wrapperEl.appendChild(cellEditor.element);
-            const addBtn = this._createAddCellButton(i + 1);
+            const addBtn = this._createAddCellButton();
             if (i === total - 1) addBtn.classList.add('add-cell-last');
             this._wrapperEl.appendChild(addBtn);
 
@@ -544,19 +544,24 @@ export class NotebookEditor {
         });
     }
 
-    _createAddCellButton(insertIndex) {
+    _createAddCellButton() {
         const container = document.createElement('div');
         container.className = 'add-cell-container';
+
+        const getIndex = () => {
+            const addBtns = this._wrapperEl.querySelectorAll('.add-cell-container');
+            return [...addBtns].indexOf(container);
+        };
 
         const codeBtn = document.createElement('button');
         codeBtn.className = 'add-cell-button add-cell-code';
         codeBtn.textContent = '+ code';
-        codeBtn.addEventListener('click', () => this._addCell(insertIndex, 'code'));
+        codeBtn.addEventListener('click', () => this._addCell(getIndex(), 'code'));
 
         const mdBtn = document.createElement('button');
         mdBtn.className = 'add-cell-button add-cell-markdown';
         mdBtn.textContent = '+ markdown';
-        mdBtn.addEventListener('click', () => this._addCell(insertIndex, 'markdown'));
+        mdBtn.addEventListener('click', () => this._addCell(getIndex(), 'markdown'));
 
         const center = document.createElement('div');
         center.className = 'add-cell-buttons';
@@ -585,7 +590,7 @@ export class NotebookEditor {
         this._reindexCells();
 
         if (this._wrapperEl) {
-            const addBtn = this._createAddCellButton(index + 1);
+            const addBtn = this._createAddCellButton();
             const refChild = this._wrapperEl.children[2 + index * 2] || null;
             this._wrapperEl.insertBefore(cellEditor.element, refChild);
             this._wrapperEl.insertBefore(addBtn, cellEditor.element.nextSibling);
@@ -635,11 +640,11 @@ export class NotebookEditor {
         }
         // Re-append addBtn + cell pairs in current _cells order
         for (let i = 0; i < this._cells.length; i++) {
-            this._wrapperEl.appendChild(this._createAddCellButton(i));
+            this._wrapperEl.appendChild(this._createAddCellButton());
             this._wrapperEl.appendChild(this._cells[i].element);
         }
         // Final add-cell button
-        const lastBtn = this._createAddCellButton(this._cells.length);
+        const lastBtn = this._createAddCellButton();
         lastBtn.classList.add('add-cell-last');
         this._wrapperEl.appendChild(lastBtn);
     }
@@ -732,7 +737,7 @@ export class NotebookEditor {
         this._reindexCells();
 
         if (this._wrapperEl) {
-            const addBtn = this._createAddCellButton(index + 1);
+            const addBtn = this._createAddCellButton();
             const refChild = this._wrapperEl.children[2 + index * 2] || null;
             this._wrapperEl.insertBefore(cellEditor.element, refChild);
             this._wrapperEl.insertBefore(addBtn, cellEditor.element.nextSibling);

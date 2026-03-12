@@ -17,7 +17,7 @@
 
 /* Last cell: no shadow below, round bottom corners */
 .notebook > .cell:has(+ .add-cell-last) {
-    box-shadow: 0 -4px 0 0 #fdfdfd;
+    box-shadow: 0 -4px 0 0 #fdfdfd, 0 0px 0 0 #fdfdfd;
     border-radius: 0 0 3px 3px;
 }
 
