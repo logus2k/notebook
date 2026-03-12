@@ -1,6 +1,6 @@
 .cell {
     position: relative;
-    margin: 4px 0px 4px 36px;
+    margin: 0px 0px 4px 36px;
     /* margin-left: 36px; */
     border: 1px solid transparent;
     border-radius: 0;
@@ -381,6 +381,7 @@
     flex-shrink: 0;
     margin-bottom: 4px;
     margin-right: 5px;
+    box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
 }
 
 .cell-sidebar .cell-run-btn:hover {

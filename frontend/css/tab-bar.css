@@ -39,8 +39,9 @@
     color: #1a1a1a;
     font-weight: 500;
     z-index: 1;
-    padding: 4px 11px 1px 11px;
+    padding: 3px 11px !important;
     margin-bottom: -1px;
+    line-height: 1.8;
 }
 
 .tab-bar .tab.sticky {
