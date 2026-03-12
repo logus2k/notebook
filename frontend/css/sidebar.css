@@ -63,7 +63,7 @@
     color: #1a1a1a;
     /* font-weight: 500; */
     z-index: 1;
-    padding: 4px 11px 1px 11px;
+    padding: 3px 11px 2px 11px;
     margin-bottom: -1px;
 }
 
@@ -93,7 +93,7 @@
     flex-direction: column;
     overflow: hidden;
     padding-right: 10px;
-    background: #fffae8;
+    background: #fffdf3;
     border-right: 0.5px solid #666666;
 }
 
