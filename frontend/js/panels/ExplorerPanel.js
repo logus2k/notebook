@@ -313,6 +313,17 @@ export class ExplorerPanel {
                     const parts = key.replace('notebook:', '').split(':');
                     this._callbacks.onNotebookSelect(parts[0], parts.slice(1).join(':'));
                 }
+                // Open document on activation (click or keyboard)
+                if (key.startsWith('doc:') && this._callbacks.onDocumentOpen) {
+                    const rest = key.substring(4);
+                    const colonIdx = rest.indexOf(':');
+                    const cat = rest.substring(0, colonIdx);
+                    const docName = rest.substring(colonIdx + 1);
+                    const doc = (this._docsCatalog?.documents || []).find(
+                        d => d.name === docName && (d.category || 'Uncategorized') === cat
+                    );
+                    if (doc) this._callbacks.onDocumentOpen(doc);
+                }
             },
             click: (e) => {
                 const node = e.node;
@@ -366,11 +377,14 @@ export class ExplorerPanel {
                 }
                 // Open document
                 else if (key.startsWith('doc:') && this._callbacks.onDocumentOpen) {
-                    const parts = key.replace('doc:', '').split(':');
-                    this._callbacks.onDocumentOpen({
-                        category: parts[0],
-                        name: parts.slice(1).join(':'),
-                    });
+                    const rest = key.substring(4);
+                    const colonIdx = rest.indexOf(':');
+                    const cat = rest.substring(0, colonIdx);
+                    const docName = rest.substring(colonIdx + 1);
+                    const doc = (this._docsCatalog?.documents || []).find(
+                        d => d.name === docName && (d.category || 'Uncategorized') === cat
+                    );
+                    if (doc) this._callbacks.onDocumentOpen(doc);
                 }
 
                 return false;
